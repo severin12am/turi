@@ -4,7 +4,6 @@ import { LanguageOption } from '../types';
 import { SelectionState } from '../types';
 import { POPULAR_LANGUAGES } from '../constants/languages';
 import { translations, SupportedLanguage } from '../constants/translations';
-import { animateText } from '../utils/animations';
 import { ArrowLeft } from 'lucide-react';
 
 interface LanguagePanelProps {
@@ -17,7 +16,6 @@ const LanguagePanel: React.FC<LanguagePanelProps> = ({ onLanguagesSelected }) =>
   const [selectionState, setSelectionState] = useState<SelectionState>(SelectionState.SELECT_KNOWN);
   
   const buttonRef = useRef<HTMLButtonElement>(null);
-  const titleRef = useRef<HTMLHeadingElement>(null);
   
   const getTranslation = (language: LanguageOption | null) => {
     if (!language) return null;
@@ -25,28 +23,16 @@ const LanguagePanel: React.FC<LanguagePanelProps> = ({ onLanguagesSelected }) =>
   };
   
   const handleKnownLanguageChange = (language: LanguageOption) => {
+    // Set the language
     setKnownLanguage(language);
-    
-    if (selectionState === SelectionState.SELECT_KNOWN) {
-      if (titleRef.current) {
-        const translation = getTranslation(language);
-        const text = translation ? translation.secondQuestion : "Good, now choose language you want to learn:";
-        animateText(titleRef.current, text, 1050);
-      }
-      setTimeout(() => {
-        setSelectionState(SelectionState.SELECT_LEARN);
-      }, 500);
-    }
+    // Always go to the learn language step when a known language is selected
+    setSelectionState(SelectionState.SELECT_LEARN);
   };
   
   const handleLearnLanguageChange = (language: LanguageOption) => {
+    // Set the language and immediately show the final screen
     setLearnLanguage(language);
-    
-    if (selectionState === SelectionState.SELECT_LEARN) {
-      setTimeout(() => {
-        setSelectionState(SelectionState.READY_TO_START);
-      }, 500);
-    }
+    setSelectionState(SelectionState.READY_TO_START);
   };
   
   const handleStart = () => {
@@ -65,19 +51,23 @@ const LanguagePanel: React.FC<LanguagePanelProps> = ({ onLanguagesSelected }) =>
     }
   };
   
-  useEffect(() => {
-    if (titleRef.current) {
-      const translation = getTranslation(knownLanguage);
-      let titleText = translation ? translation.firstQuestion : "Firstly, what language do you already speak?";
-      
-      if (selectionState === SelectionState.SELECT_LEARN) {
-        titleText = translation ? translation.secondQuestion : "Good, now choose language you want to learn:";
-      } else if (selectionState === SelectionState.READY_TO_START) {
-        titleText = translation ? translation.readyQuestion : "Perfect! Ready to begin your language journey?";
-      }
-      animateText(titleRef.current, titleText, 1050);
+  // Simplify title text logic even further
+  const getTitleText = () => {
+    const translation = getTranslation(knownLanguage);
+    
+    // If we have both languages selected, show the final text
+    if (knownLanguage && learnLanguage) {
+      return translation?.readyQuestion || "Perfect! Ready to begin your language journey?";
     }
-  }, [selectionState, knownLanguage]);
+    
+    // If we have only the first language selected, show the second prompt
+    if (knownLanguage) {
+      return translation?.secondQuestion || "Good, now choose language you want to learn:";
+    }
+    
+    // Default to first question
+    return translation?.firstQuestion || "Firstly, what language do you already speak?";
+  };
   
   const getLearnLanguages = () => {
     if (!knownLanguage) return POPULAR_LANGUAGES;
@@ -90,11 +80,10 @@ const LanguagePanel: React.FC<LanguagePanelProps> = ({ onLanguagesSelected }) =>
     <div className="fixed inset-0 flex items-center justify-center">
       <div className="w-full max-w-xl p-8 mx-4 shadow-2xl rounded-xl bg-slate-900/80 backdrop-blur-md border border-slate-700">
         <h1 
-          ref={titleRef}
           className="mb-8 text-2xl font-bold text-center text-slate-100"
           style={{ direction: knownLanguage?.code === 'ar' ? 'rtl' : 'ltr' }}
         >
-          {translation?.firstQuestion || "Firstly, what language do you already speak?"}
+          {getTitleText()}
         </h1>
         
         <div className="space-y-6">
@@ -103,10 +92,10 @@ const LanguagePanel: React.FC<LanguagePanelProps> = ({ onLanguagesSelected }) =>
             label={translation?.yourLanguage || "Your language"}
             onChange={handleKnownLanguageChange}
             selectedLanguage={knownLanguage}
-            animate={true}
+            animate={false}
           />
           
-          {selectionState !== SelectionState.SELECT_KNOWN && (
+          {knownLanguage && (
             <LanguageSelector
               languages={getLearnLanguages()}
               label={translation?.languageToLearn || "Language to learn"}
@@ -129,9 +118,8 @@ const LanguagePanel: React.FC<LanguagePanelProps> = ({ onLanguagesSelected }) =>
               <button
                 ref={buttonRef}
                 onClick={handleStart}
-                className="w-full p-4 text-lg font-bold transition-all duration-500 ease-in-out border-2 rounded-lg opacity-0 border-indigo-500 bg-indigo-600/20 text-slate-100 hover:bg-indigo-500 hover:text-white animate-fade-in"
+                className="w-full p-4 text-lg font-bold border-2 rounded-lg border-indigo-500 bg-indigo-600/20 text-slate-100 hover:bg-indigo-500 hover:text-white"
                 style={{ 
-                  animation: 'fadeIn 1s forwards',
                   direction: knownLanguage?.code === 'ar' ? 'rtl' : 'ltr'
                 }}
               >

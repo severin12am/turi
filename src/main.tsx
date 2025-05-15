@@ -14,8 +14,16 @@ if (typeof window !== 'undefined') {
   console.log('React, ReactDOM, and VocalQuizComponent exposed to window object');
 }
 
-// Initialize store with default values
-useStore.getState().resetState();
+// Initialize store with default language settings
+// but preserve any existing login state
+const state = useStore.getState();
+// Only initialize languages if not already selected
+// We'll let App component handle showing the selection panel based on this state
+if (!state.isLanguageSelected) {
+  console.log('Initializing default languages (but not marking as selected)');
+  // Set default languages but don't mark as selected yet - this keeps isLanguageSelected false
+  state.setLanguages('en', 'ru');
+}
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

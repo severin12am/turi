@@ -3,11 +3,16 @@ import { Canvas } from '@react-three/fiber';
 import { useStore } from '../store';
 import { logger } from '../services/logger';
 import HelperRobotModel from '../scenes/HelperRobotModel';
+import { supabase } from '../services/supabase';
+import { checkAndUpdateUserProgress } from '../services/auth';
 
 interface HelperRobotProps {
   instructions: Record<string, string>;
   onLanguageSelect: (mother: string, target: string) => void;
   onLogin: () => void;
+  position?: { x: number; y: number };
+  scale?: number;
+  onClick?: () => void;
 }
 
 const ANIMATION_SPEED = 30;
@@ -134,13 +139,20 @@ const translations = {
 const HelperRobot: React.FC<HelperRobotProps> = ({ 
   instructions, 
   onLanguageSelect, 
-  onLogin 
+  onLogin,
+  position = { x: 0, y: 0 },
+  scale = 1,
+  onClick
 }) => {
   const { 
     isHelperRobotOpen, 
     isLanguageSelected,
     modelPaths,
-    setIsLanguageSelected
+    setIsLanguageSelected,
+    user,
+    isLoggedIn,
+    targetLanguage,
+    motherLanguage
   } = useStore();
   
   const [selectedMotherLang, setSelectedMotherLang] = useState<string>('');
@@ -152,7 +164,7 @@ const HelperRobot: React.FC<HelperRobotProps> = ({
     account: ''
   });
   
-  const t = translations[selectedMotherLang] || translations.en;
+  const t = translations[selectedMotherLang as keyof typeof translations] || translations.en;
 
   const animateAllTexts = (questionText: string, accountText: string) => {
     setIsAnimating(true);
@@ -189,6 +201,12 @@ const HelperRobot: React.FC<HelperRobotProps> = ({
 
   useEffect(() => {
     animateAllTexts(translations.en.whatLanguage, translations.en.haveAccount);
+    
+    // Debug mount/unmount
+    console.log("🤖 HelperRobot component MOUNTED");
+    return () => {
+      console.log("🤖 HelperRobot component UNMOUNTED");
+    };
   }, []);
 
   useEffect(() => {
@@ -203,7 +221,7 @@ const HelperRobot: React.FC<HelperRobotProps> = ({
     
     setSelectedMotherLang(lang);
     setStep('target');
-    const newT = translations[lang] || translations.en;
+    const newT = translations[lang as keyof typeof translations] || translations.en;
     animateAllTexts(newT.whatToLearn, newT.haveAccount);
   };
 
@@ -245,19 +263,53 @@ const HelperRobot: React.FC<HelperRobotProps> = ({
     }
   };
 
+  // Handle robot click - delegate to parent onClick handler
+  const handleRobotClick = (e: React.MouseEvent) => {
+    // Prevent default behavior and stop propagation
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    console.log("🤖 Helper robot clicked! User:", user?.id, "isLoggedIn:", isLoggedIn);
+    logger.info('Helper robot clicked', { userId: user?.id, isLoggedIn });
+    
+    // Call the onClick prop if it exists
+    if (onClick) {
+      console.log("🤖 Calling parent onClick handler");
+      onClick();
+    }
+  };
+  
   return (
-    <div className="fixed top-[5%] left-[5%] z-50">
+    <div className="pointer-events-auto fixed" style={{ zIndex: 100 }}>
       <div className="relative">
-        <div className="w-96 h-96 mb-2">
-          <Canvas camera={{ position: [0, 0, 5], fov: 50 }}>
+        <div 
+          className="w-96 h-96 mb-2 helper-robot-container cursor-pointer"
+          onClick={handleRobotClick}
+          style={{ pointerEvents: 'auto' }}
+        >
+          <Canvas 
+            camera={{ position: [0, 0, 5], fov: 50 }}
+            style={{ pointerEvents: 'auto' }}
+            onClick={(e) => {
+              e.stopPropagation();
+              console.log("🤖 Canvas clicked");
+              handleRobotClick(e as any);
+            }}
+          >
             <ambientLight intensity={0.5} />
             <pointLight position={[10, 10, 10]} />
-            <HelperRobotModel path={modelPaths.helperRobot} />
+            <HelperRobotModel 
+              path={modelPaths.helperRobot} 
+              onClick={() => handleRobotClick(undefined as any)}
+            />
           </Canvas>
         </div>
         
-        {isHelperRobotOpen && !isLanguageSelected && (
-          <div className="fixed inset-0 flex items-center justify-center bg-black/30">
+        {/* LANGUAGE SELECTION PANEL - only show when this is being used for language selection */}
+        {Object.keys(instructions || {}).length > 0 && instructions.mode === "language_selection" && (
+          <div className="fixed inset-0 flex items-center justify-center bg-black/30" style={{ zIndex: 101 }}>
             <div 
               className="bg-black/50 backdrop-blur-md rounded-3xl border border-white/10 shadow-2xl relative overflow-hidden"
               style={{ 
@@ -307,46 +359,56 @@ const HelperRobot: React.FC<HelperRobotProps> = ({
                       <option 
                         key={lang.code} 
                         value={lang.code}
-                        disabled={lang.code === selectedMotherLang}
                         className="bg-gray-900"
+                        disabled={lang.code === selectedMotherLang}
                       >
-                        {lang.name}
+                        {lang.code === selectedMotherLang ? `${lang.name} (${t.selectDifferent})` : lang.name}
                       </option>
                     ))}
                   </select>
                 </div>
               </div>
               
-              {/* Bottom section - fixed position */}
-              <div className="absolute bottom-8 left-8 right-8">
-                <div className="flex justify-between items-center gap-4">
-                  {step !== 'mother' && (
-                    <button
-                      onClick={handleBack}
-                      className="w-32 h-16 bg-white/10 hover:bg-white/20 text-white rounded-2xl transition-all duration-200 font-medium text-lg backdrop-blur-sm border border-white/10 hover:border-white/30 hover:shadow-neon"
-                    >
-                      {t.back}
-                    </button>
-                  )}
-                  
-                  {step === 'ready' && (
-                    <button
-                      onClick={handleStartJourney}
-                      className="flex-1 h-16 bg-blue-500/90 hover:bg-blue-600/90 text-white rounded-2xl transition-all duration-200 font-medium text-lg backdrop-blur-sm border border-blue-400/30 hover:border-blue-400/50 hover:shadow-neon-blue"
-                    >
-                      {t.startJourney}
-                    </button>
-                  )}
-                </div>
-                
-                <div className="mt-4 flex justify-end">
+              {/* Action buttons - fixed position at bottom */}
+              <div className={`absolute bottom-8 left-8 right-8 flex ${step === 'target' || step === 'ready' ? 'justify-between' : 'justify-end'}`}>
+                {(step === 'target' || step === 'ready') && (
                   <button
-                    onClick={onLogin}
-                    className={`text-white/80 hover:text-white transition-colors text-sm ${isAnimating ? 'animate-glitch' : ''} hover:text-shadow-neon`}
+                    onClick={handleBack}
+                    className="px-6 py-3 rounded-2xl bg-white/10 border border-white/20 text-white backdrop-blur-sm hover:bg-white/20 transition-all"
                   >
-                    {texts.account || t.haveAccount}
+                    {t.back}
                   </button>
-                </div>
+                )}
+                
+                {step === 'target' && selectedTargetLang && selectedTargetLang !== selectedMotherLang && (
+                  <button
+                    onClick={handleStartJourney}
+                    className="px-6 py-3 rounded-2xl bg-blue-600/80 border border-blue-500/50 text-white backdrop-blur-sm hover:bg-blue-500/80 transition-all flex items-center"
+                  >
+                    {t.startJourney}
+                  </button>
+                )}
+                
+                {step === 'ready' && (
+                  <button
+                    onClick={handleStartJourney}
+                    className="px-6 py-3 rounded-2xl bg-blue-600/80 border border-blue-500/50 text-white backdrop-blur-sm hover:bg-blue-500/80 transition-all flex items-center"
+                  >
+                    {t.startJourney}
+                  </button>
+                )}
+                
+                {/* Only show the "Already have an account" link if user is not logged in */}
+                {!isLoggedIn && (
+                  <div className="text-sm text-blue-300 hover:text-white transition-colors cursor-pointer flex items-center">
+                    <button onClick={() => {
+                      // Toggle helper robot to hide the language panel
+                      useStore.getState().toggleHelperRobot();
+                      // Call the onLogin callback to show the login panel
+                      onLogin();
+                    }}>{t.haveAccount}</button>
+                  </div>
+                )}
               </div>
             </div>
           </div>

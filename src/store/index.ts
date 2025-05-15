@@ -10,6 +10,7 @@ interface UserState {
     helperRobot: string;
   };
   isLoggedIn: boolean;
+  isAuthenticated: boolean;
   motherLanguage: 'en' | 'ru';
   targetLanguage: 'en' | 'ru';
   isLanguageSelected: boolean;
@@ -24,6 +25,7 @@ interface UserState {
   setUser: (user: User | null) => void;
   setLanguageLevel: (level: LanguageLevel | null) => void;
   setIsLoggedIn: (isLoggedIn: boolean) => void;
+  setIsAuthenticated: (isAuthenticated: boolean) => void;
   setLanguages: (mother: 'en' | 'ru', target: 'en' | 'ru') => void;
   setIsLanguageSelected: (isSelected: boolean) => void;
   toggleHelperRobot: () => void;
@@ -31,6 +33,11 @@ interface UserState {
   setIsQuizActive: (isActive: boolean) => void;
   initializeModels: () => void;
   resetState: () => void;
+  resetLanguageSelection: () => void;
+  logout: () => void;
+  
+  // Debug utilities
+  setTestUser: () => void;
 }
 
 const initialState = {
@@ -41,10 +48,11 @@ const initialState = {
     helperRobot: '/models/helper-robot.glb'
   },
   isLoggedIn: false,
+  isAuthenticated: false,
   motherLanguage: 'en' as const,
   targetLanguage: 'ru' as const,
   isLanguageSelected: false,
-  isHelperRobotOpen: true,
+  isHelperRobotOpen: false,
   isDialogueOpen: false,
   isQuizActive: false,
   modelsInitialized: false
@@ -72,6 +80,11 @@ export const useStore = create<UserState>((set) => ({
   setIsLoggedIn: (isLoggedIn) => {
     set({ isLoggedIn });
     logger.info('Login status changed', { isLoggedIn });
+  },
+  
+  setIsAuthenticated: (isAuthenticated) => {
+    set({ isAuthenticated });
+    logger.info('Authentication status changed', { isAuthenticated });
   },
   
   setLanguages: (mother, target) => {
@@ -118,7 +131,73 @@ export const useStore = create<UserState>((set) => ({
   },
   
   resetState: () => {
-    set(initialState);
-    logger.info('State reset to initial values');
+    set(state => ({
+      ...initialState,
+      // Preserve the helper robot's visibility state
+      isHelperRobotOpen: state.isHelperRobotOpen
+    }));
+    logger.info('State reset to initial values (keeping helper robot visibility)');
+  },
+  
+  resetLanguageSelection: () => {
+    set(state => ({
+      // Only reset language-related properties
+      motherLanguage: 'en',
+      targetLanguage: 'ru',
+      isLanguageSelected: false,
+      languageLevel: null,
+      // Keep everything else
+      user: state.user,
+      isLoggedIn: state.isLoggedIn,
+      isAuthenticated: state.isAuthenticated,
+      isHelperRobotOpen: state.isHelperRobotOpen,
+      isDialogueOpen: state.isDialogueOpen,
+      isQuizActive: state.isQuizActive,
+      modelsInitialized: state.modelsInitialized,
+      modelPaths: state.modelPaths
+    }));
+    logger.info('Language selection reset (preserving login state)');
+  },
+  
+  logout: () => {
+    set(state => ({
+      ...initialState,
+      isLoggedIn: false,
+      isAuthenticated: false,
+      isLanguageSelected: false,
+      motherLanguage: 'en',
+      targetLanguage: 'ru',
+      // Preserve the helper robot's visibility state
+      isHelperRobotOpen: state.isHelperRobotOpen
+    }));
+    logger.info('User logged out');
+  },
+  
+  // Debug utility to set a test user with a consistent ID
+  setTestUser: () => {
+    const testUser: User = {
+      id: '00000000-0000-0000-0000-000000000001', // Test user ID
+      username: 'test@example.com',
+      password: 'password',
+      mother_language: 'en',
+      target_language: 'ru',
+      total_minutes: 0
+    };
+    
+    set({ 
+      user: testUser, 
+      isLoggedIn: true,
+      isAuthenticated: true,
+      isLanguageSelected: true,
+      motherLanguage: 'en', 
+      targetLanguage: 'ru' 
+    });
+    
+    logger.info('Set test user for debugging', { 
+      userId: testUser.id, 
+      username: testUser.username 
+    });
+    
+    console.log('DEBUG: Test user set', testUser);
   }
 }));

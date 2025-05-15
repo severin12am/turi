@@ -9,6 +9,7 @@ import Character from './Character';
 import { supabase } from '../services/supabase';
 import type { Character as CharacterType } from '../types';
 import DialogueBox from '../components/DialogueBox';
+import DialogueSelectionPanel from '../components/DialogueSelectionPanel';
 
 // Preload the character model
 useGLTF.preload('/models/character1.glb');
@@ -150,6 +151,10 @@ const CityScene: React.FC = () => {
   const [loadingDialogue, setLoadingDialogue] = useState(false);
   const [dialogueError, setDialogueError] = useState<string | null>(null);
   const [isNpcSpeaking, setIsNpcSpeaking] = useState(false);
+  
+  // Add new state for dialogue selection
+  const [showDialogueSelection, setShowDialogueSelection] = useState(false);
+  const [selectedDialogueId, setSelectedDialogueId] = useState<number>(1);
 
   // Fetch character data
   useEffect(() => {
@@ -224,66 +229,101 @@ const CityScene: React.FC = () => {
       
       setDistanceToCharacter(horizontalDistance);
       
-      // Start dialogue when close enough (5 units)
-      if (horizontalDistance <= 5 && !isDialogueActive && !loadingDialogue) {
-        logger.info('Player is within range of character, activating dialogue', { 
+      // Show dialogue selection when close enough (5 units)
+      if (horizontalDistance <= 5 && !isDialogueActive && !loadingDialogue && !showDialogueSelection) {
+        logger.info('Player is within range of character, showing dialogue selection', { 
           distance: horizontalDistance,
           playerPosition: [playerPosition.x, playerPosition.y, playerPosition.z],
           characterPosition: [characterPosition.x, characterPosition.y, characterPosition.z]
         });
-        handleDialogueActivation(1); // 1 is the character ID
+        setShowDialogueSelection(true);
+      }
+      
+      // Auto close panels when player moves away
+      if (horizontalDistance > 5 && (isDialogueActive || showDialogueSelection)) {
+        if (isDialogueActive) {
+          handleCloseDialogue();
+        }
+        if (showDialogueSelection) {
+          setShowDialogueSelection(false);
+        }
       }
     };
 
     checkDistance();
     const interval = setInterval(checkDistance, 500); // Check less frequently to reduce load
     return () => clearInterval(interval);
-  }, [playerPosition, character, isDialogueActive, loadingDialogue]);
+  }, [playerPosition, character, isDialogueActive, loadingDialogue, showDialogueSelection]);
   
   // Handle dialogue activation with proper error handling
-  const handleDialogueActivation = async (characterId: number) => {
+  const handleDialogueActivation = async (characterId: number, dialogueId: number) => {
     if (isDialogueActive || loadingDialogue) return;
     
     setLoadingDialogue(true);
     setDialogueError(null);
     
     try {
-      // Check if dialogue data exists for this character
-      const sourceTable = `${characterId}_phrases`;
+      // Check if this character has phrases for the selected dialogue
+      const sourceTable = `phrases_${characterId}`;
       
-      // Test query to check if table exists and has data
       const { data, error } = await supabase
         .from(sourceTable)
-        .select('count', { count: 'exact' })
-        .eq('dialogue_id', 1)
+        .select('*')
+        .eq('dialogue_id', dialogueId)
         .limit(1);
         
       if (error) {
-        logger.error('Error checking dialogue data', { error, table: sourceTable });
-        setDialogueError(`No dialogue data found for character ${characterId}. Table: ${sourceTable}`);
+        logger.error('Error checking dialogue data', { error, table: sourceTable, dialogueId });
+        setDialogueError(`No dialogue data found for character ${characterId}, dialogue ${dialogueId}`);
         throw new Error(`Dialogue data error: ${error.message}`);
       }
       
       if (!data || data.length === 0) {
-        logger.warn('No dialogue data found', { characterId, table: sourceTable });
-        setDialogueError(`Character ${characterId} has no dialogue phrases. Please add dialogue data to the database.`);
+        logger.warn('No dialogue data found', { characterId, dialogueId, table: sourceTable });
+        setDialogueError(`Character ${characterId} has no phrases for dialogue ${dialogueId}`);
         setTimeout(() => setDialogueError(null), 5000);
         return;
       }
       
       // If we get here, data exists so show dialogue
+      setSelectedDialogueId(dialogueId);
       setIsDialogueActive(true);
-      logger.info('Dialogue activated', { characterId });
+      setShowDialogueSelection(false); // Hide selection panel
+      logger.info('Dialogue activated', { characterId, dialogueId });
     } catch (error) {
-      logger.error('Failed to activate dialogue', { error, characterId });
+      logger.error('Failed to activate dialogue', { error, characterId, dialogueId });
     } finally {
       setLoadingDialogue(false);
     }
   };
   
+  // Add a console log to track panel visibility
+  useEffect(() => {
+    console.log('Dialogue selection panel visibility changed:', showDialogueSelection);
+    
+    // We no longer need to refresh data here as the DialogueSelectionPanel
+    // handles its own data fetching now
+  }, [showDialogueSelection, character]);
+
+  // Handle dialogue selection
+  const handleDialogueSelect = (dialogueId: number) => {
+    console.log('Dialogue selected in City component:', dialogueId);
+    if (character) {
+      handleDialogueActivation(character.id, dialogueId);
+    }
+  };
+  
+  // Handle dialogue panel close
+  const handleDialogueSelectionClose = () => {
+    console.log('Closing dialogue selection panel');
+    setShowDialogueSelection(false);
+  };
+  
   const handleCloseDialogue = () => {
     setIsDialogueActive(false);
     logger.info('Dialogue closed');
+    // Show dialogue selection again after dialogue is closed
+    setShowDialogueSelection(true);
   };
   
   return (
@@ -298,33 +338,15 @@ const CityScene: React.FC = () => {
           <Character 
             position={[character.position_x, character.position_y, character.position_z]}
             scale={[character.scale_x, character.scale_y, character.scale_z]}
-            onInteract={handleDialogueActivation}
+            onInteract={() => setShowDialogueSelection(true)}
             isSpeaking={isNpcSpeaking}
-            isDialogueActive={isDialogueActive}
+            isDialogueActive={isDialogueActive || showDialogueSelection}
           />
         )}
       </Canvas>
       
       <CoordinateTracker position={playerPosition} />
       
-      <div className="fixed bottom-4 left-4 bg-black/70 text-white p-4 rounded-lg">
-        <div className="text-sm mb-2">Controls:</div>
-        <div className="text-xs space-y-1">
-          <div>WASD / Arrow Keys - Move</div>
-          <div>Click + Drag - Look around</div>
-          {character && (
-            <div className="mt-2 text-xs">
-              Distance to {character.name}: {distanceToCharacter.toFixed(2)} units
-              {distanceToCharacter <= 5 && (
-                <div className="text-green-400 mt-1">
-                  Close enough to talk!
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-
       {dialogueError && (
         <div className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-red-600 text-white p-4 rounded-lg shadow-lg z-50">
           <div className="font-bold mb-1">Error</div>
@@ -339,6 +361,15 @@ const CityScene: React.FC = () => {
           distance={distanceToCharacter}
           onNpcSpeakStart={() => setIsNpcSpeaking(true)}
           onNpcSpeakEnd={() => setIsNpcSpeaking(false)}
+          dialogueId={selectedDialogueId}
+        />
+      )}
+      
+      {showDialogueSelection && character && !isDialogueActive && (
+        <DialogueSelectionPanel
+          characterId={character.id}
+          onDialogueSelect={handleDialogueSelect}
+          onClose={handleDialogueSelectionClose}
         />
       )}
     </div>

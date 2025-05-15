@@ -39,7 +39,6 @@ interface CharacterProps {
 const Character: React.FC<CharacterProps> = ({ position, scale, onInteract, isSpeaking, isDialogueActive }) => {
   const characterRef = useRef<THREE.Group>(null);
   const mixerRef = useRef<THREE.AnimationMixer | null>(null);
-  const [showDebug, setShowDebug] = useState(false);
   const [availableAnimations, setAvailableAnimations] = useState<string[]>([]);
   
   // Load the 3D model using useGLTF
@@ -128,78 +127,14 @@ const Character: React.FC<CharacterProps> = ({ position, scale, onInteract, isSp
     }
   };
 
-  const toggleDebug = () => {
-    setShowDebug(!showDebug);
-  };
-
   return (
-    <>
-      <primitive 
-        ref={characterRef}
-        object={scene} 
-        position={position}
-        scale={scale}
-        onClick={handleInteract}
-      />
-      
-      {/* Debug UI for development */}
-      <Html position={[position[0], position[1] + 2, position[2]]}>
-        <div style={{ 
-          display: 'flex', 
-          flexDirection: 'column', 
-          alignItems: 'center', 
-          padding: '10px',
-          backgroundColor: 'rgba(0,0,0,0.7)',
-          borderRadius: '4px',
-          color: 'white',
-          fontSize: '12px'
-        }}>
-          <button 
-            onClick={toggleDebug}
-            style={{ 
-              background: '#555', 
-              border: 'none', 
-              padding: '4px 8px', 
-              color: 'white',
-              cursor: 'pointer',
-              borderRadius: '4px'
-            }}
-          >
-            {showDebug ? 'Hide Debug' : 'Show Debug'}
-          </button>
-          
-          {showDebug && (
-            <div style={{ marginTop: '8px' }}>
-              <button 
-                onClick={handleInteract}
-                style={{ 
-                  background: '#4CAF50', 
-                  border: 'none', 
-                  padding: '4px 8px', 
-                  color: 'white',
-                  cursor: 'pointer',
-                  borderRadius: '4px',
-                  marginTop: '4px'
-                }}
-              >
-                Force Trigger Dialogue
-              </button>
-              <div style={{ marginTop: '4px' }}>
-                Position: [{position[0].toFixed(1)}, {position[1].toFixed(1)}, {position[2].toFixed(1)}]
-              </div>
-              {availableAnimations.length > 0 && (
-                <div style={{ marginTop: '4px' }}>
-                  Available Animations:
-                  {availableAnimations.map((anim, index) => (
-                    <div key={index}>{anim}</div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </Html>
-    </>
+    <primitive 
+      ref={characterRef}
+      object={scene} 
+      position={position}
+      scale={scale}
+      onClick={handleInteract}
+    />
   );
 };
 

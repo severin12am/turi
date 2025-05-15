@@ -14,6 +14,7 @@ export interface LanguageLevel {
   word_progress: number;
   mother_language: 'en' | 'ru';
   target_language: 'en' | 'ru';
+  dialogue_number?: number;
 }
 
 export interface Character {

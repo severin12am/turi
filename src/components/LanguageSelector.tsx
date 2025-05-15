@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { LanguageOption } from '../types';
-import { animateText } from '../utils/animations';
 import { ChevronDown, Check } from 'lucide-react';
 
 interface LanguageSelectorProps {
@@ -8,7 +7,7 @@ interface LanguageSelectorProps {
   label: string;
   onChange: (language: LanguageOption) => void;
   selectedLanguage: LanguageOption | null;
-  animate?: boolean;
+  animate?: boolean; // Keep for backward compatibility, but no longer use it
   direction?: 'ltr' | 'rtl';
 }
 
@@ -22,14 +21,7 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const labelRef = useRef<HTMLSpanElement>(null);
   
-  useEffect(() => {
-    if (animate && labelRef.current) {
-      animateText(labelRef.current, label, 1050);
-    }
-  }, [label, animate]);
-
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -44,7 +36,6 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   return (
     <div className="relative w-full mb-6" ref={dropdownRef}>
       <span 
-        ref={labelRef} 
         className="block mb-2 text-lg font-medium text-slate-300"
         style={{ direction }}
       >
