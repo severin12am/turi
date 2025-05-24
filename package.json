@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "start": "vite",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
@@ -20,6 +21,7 @@
     "lucide-react": "^0.344.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "react-flag-kit": "^1.1.1",
     "three": "^0.159.0",
     "zustand": "^4.5.6"
   },
