@@ -1,6 +1,6 @@
 // Support for 100+ most popular languages - expandable list
 export type SupportedLanguage = 
-  | 'en' | 'ru' | 'es' | 'fr' | 'de' | 'it' | 'pt' | 'ar' | 'CH' | 'ja' | 'av'
+  | 'en' | 'ru' | 'es' | 'fr' | 'de' | 'it' | 'ar' | 'CH' | 'ja'
   | 'ko' | 'hi' | 'th' | 'vi' | 'tr' | 'pl' | 'nl' | 'sv' | 'da' | 'no'
   | 'fi' | 'cs' | 'sk' | 'hu' | 'ro' | 'bg' | 'hr' | 'sr' | 'sl' | 'et'
   | 'lv' | 'lt' | 'mt' | 'ga' | 'cy' | 'is' | 'fo' | 'eu' | 'ca' | 'gl'
@@ -408,26 +408,6 @@ export const translations: Partial<Record<SupportedLanguage, TranslationStrings>
     // Google search
     explanationWithExamples: 'spiegazione con esempi'
   },
-  pt: {
-    firstQuestion: "Primeiro, que língua você já fala?",
-    secondQuestion: "Bom, agora escolha o idioma que deseja aprender:",
-    readyQuestion: "Perfeito! Pronto para começar sua jornada linguística?",
-    yourLanguage: "Seu idioma",
-    languageToLearn: "Idioma para aprender",
-    goBack: "Voltar",
-    startJourney: "Iniciar minha jornada",
-    
-    // Word explanation modal
-    meaningAndUsage: 'Significado e uso',
-    examples: 'Exemplos',
-    otherForms: 'Outras formas',
-    loadingExplanation: 'Carregando explicação...',
-    tryAgainOrSearch: 'Tente novamente ou use a pesquisa do Google.',
-    aiExplanationWarning: 'Esta explicação foi gerada por IA e pode conter imprecisões. Consulte dicionários para uso crítico.',
-    
-    // Google search
-    explanationWithExamples: 'explicação com exemplos'
-  },
   ar: {
     firstQuestion: "أولاً، ما هي اللغة التي تتحدثها بالفعل؟",
     secondQuestion: "جيد، الآن اختر اللغة التي تريد تعلمها:",
@@ -487,26 +467,6 @@ export const translations: Partial<Record<SupportedLanguage, TranslationStrings>
     
     // Google search
     explanationWithExamples: '例付きの説明'
-  },
-  av: {
-    firstQuestion: "Лъикӏасда, нуж мез бацӀцӀад мацӀ ругел?",
-    secondQuestion: "Лъикӏ, гьанже нужеб хъвангьа мацӀ кӏварал:",
-    readyQuestion: "Лъикӏ! Нуж мацӀалъул сапар бокьингьа готӀана?",
-    yourLanguage: "Дуда мацӀ",
-    languageToLearn: "Кӏваранилъул мацӀ",
-    goBack: "Нахъе",
-    startJourney: "Дуда сапар бокьине",
-    
-    // Word explanation modal
-    meaningAndUsage: 'МаъналъулгӀо гӀишло',
-    examples: 'Мисаллълъи',
-    otherForms: 'НаһиеялъЮл формалъи',
-    loadingExplanation: 'Шарх кӀалайдо...',
-    tryAgainOrSearch: 'Кӏочӏ кӏвараб я Google-ал лъазаб гӀишлъе.',
-    aiExplanationWarning: 'Гьаб шарх ИИ-лъул гӀуцӀубго ругел, нижецӀа рагъулассеб букӀинчӀогубал рал букӀанеб. Мухтараб гӀишлолъе словарзабихъе ончӀараб.',
-    
-    // Google search
-    explanationWithExamples: 'мисаллълъихъе шарх'
   }
 };
 

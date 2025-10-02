@@ -30,11 +30,9 @@ const languages = [
   { code: 'fr', name: 'Français (French)', nameRu: 'Французский (French)' },
   { code: 'de', name: 'Deutsch (German)', nameRu: 'Немецкий (German)' },
   { code: 'it', name: 'Italiano (Italian)', nameRu: 'Итальянский (Italian)' },
-  { code: 'pt', name: 'Português (Portuguese)', nameRu: 'Португальский (Portuguese)' },
   { code: 'ar', name: 'العربية (Arabic)', nameRu: 'Арабский (Arabic)' },
   { code: 'CH', name: '中文 (Chinese)', nameRu: 'Китайский (Chinese)' },
-  { code: 'ja', name: '日本語 (Japanese)', nameRu: 'Японский (Japanese)' },
-  { code: 'av', name: 'Авар мацӀ (Avar)', nameRu: 'Аварский (Avar)' }
+  { code: 'ja', name: '日本語 (Japanese)', nameRu: 'Японский (Japanese)' }
 ];
 
 const translations = {

@@ -23,7 +23,6 @@ const getRecognitionLanguage = (lang: SupportedLanguage): string => {
     'fr': 'fr-FR',
     'de': 'de-DE',
     'it': 'it-IT',
-    'pt': 'pt-PT',
     'ar': 'ar-SA',  // Arabic
     'CH': 'zh-CN',  // Chinese  
     'ja': 'ja-JP',  // Japanese
@@ -378,7 +377,7 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
     }
     
     // For languages that don't need transcription (same script), return empty
-    const sameScriptLanguages = ['en', 'es', 'fr', 'de', 'it', 'pt', 'nl', 'sv', 'da', 'no', 'fi', 'pl', 'cs', 'sk', 'hu', 'ro', 'hr', 'sl', 'et', 'lv', 'lt'];
+    const sameScriptLanguages = ['en', 'es', 'fr', 'de', 'it', 'nl', 'sv', 'da', 'no', 'fi', 'pl', 'cs', 'sk', 'hu', 'ro', 'hr', 'sl', 'et', 'lv', 'lt'];
     if (sameScriptLanguages.includes(targetLang) && sameScriptLanguages.includes(motherLang)) {
       return ''; // No transcription needed for same script languages
     }

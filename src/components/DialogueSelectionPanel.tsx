@@ -67,11 +67,9 @@ const DialogueSelectionPanel: React.FC<DialogueSelectionPanelProps> = ({
               'fr': 'entry_in_fr',
               'de': 'entry_in_de',
               'it': 'entry_in_it',
-              'pt': 'entry_in_pt',
               'ar': 'entry_in_ar',
               'CH': 'entry_in_ch',
-              'ja': 'entry_in_ja',
-              'av': 'entry_in_av'
+              'ja': 'entry_in_ja'
             };
             return columnMap[lang] || 'entry_in_en';
           };

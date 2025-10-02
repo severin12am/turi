@@ -58,10 +58,8 @@ const translations: Record<string, Partial<Record<SupportedLanguage, string>>> =
   'in French': { en: 'in French', ru: 'по-французски' },
   'in German': { en: 'in German', ru: 'по-немецки' },
   'in Italian': { en: 'in Italian', ru: 'по-итальянски' },
-  'in Portuguese': { en: 'in Portuguese', ru: 'по-португальски' },
   'in Arabic': { en: 'in Arabic', ru: 'по-арабски' },
   'in Japanese': { en: 'in Japanese', ru: 'по-японски' },
-  'in Avar': { en: 'in Avar', ru: 'по-аварски' },
   'Word to pronounce:': { en: 'Word to pronounce:', ru: 'Слово для произношения:' },
   'Translation:': { en: 'Translation:', ru: 'Перевод:' },
   'Say the word...': { en: 'Say the word...', ru: 'Скажите слово...' },
@@ -112,11 +110,9 @@ const getRecognitionLanguage = (lang: SupportedLanguage): string => {
     'fr': 'fr-FR',
     'de': 'de-DE',
     'it': 'it-IT',
-    'pt': 'pt-PT',
     'ar': 'ar-SA',
     'CH': 'zh-CN',
-    'ja': 'ja-JP',
-    'av': 'av-RU' // Avar uses Cyrillic script, fallback to Russian recognition
+    'ja': 'ja-JP'
   };
   return languageMap[lang] || 'en-US'; // Default to English
 };
@@ -130,11 +126,9 @@ const getLanguageName = (lang: SupportedLanguage, displayLang: SupportedLanguage
     'fr': { en: 'French', ru: 'французском' },
     'de': { en: 'German', ru: 'немецком' },
     'it': { en: 'Italian', ru: 'итальянском' },
-    'pt': { en: 'Portuguese', ru: 'португальском' },
     'ar': { en: 'Arabic', ru: 'арабском' },
     'CH': { en: 'Chinese', ru: 'китайском' },
-    'ja': { en: 'Japanese', ru: 'японском' },
-    'av': { en: 'Avar', ru: 'аварском' }
+    'ja': { en: 'Japanese', ru: 'японском' }
   };
   return languageNames[lang]?.[displayLang] || lang;
 };
@@ -272,11 +266,9 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
           'fr': 'entry_in_fr',
           'de': 'entry_in_de',
           'it': 'entry_in_it',
-          'pt': 'entry_in_pt',
           'ar': 'entry_in_ar',
           'CH': 'entry_in_ch',
-          'ja': 'entry_in_ja',
-          'av': 'entry_in_av'
+          'ja': 'entry_in_ja'
         };
         return columnMap[lang] || 'entry_in_en'; // fallback to English
       };
