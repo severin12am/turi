@@ -1,7 +1,7 @@
 // Support for 100+ most popular languages - expandable list
 export type SupportedLanguage = 
-  | 'en' | 'ru' | 'es' | 'fr' | 'de' | 'it' | 'ar' | 'CH' | 'ja'
-  | 'ko' | 'hi' | 'th' | 'vi' | 'tr' | 'pl' | 'nl' | 'sv' | 'da' | 'no'
+  | 'en' | 'ru' | 'es' | 'fr' | 'de' | 'it' | 'ar' | 'CH' | 'ja' | 'tr'
+  | 'ko' | 'hi' | 'th' | 'vi' | 'pl' | 'nl' | 'sv' | 'da' | 'no'
   | 'fi' | 'cs' | 'sk' | 'hu' | 'ro' | 'bg' | 'hr' | 'sr' | 'sl' | 'et'
   | 'lv' | 'lt' | 'mt' | 'ga' | 'cy' | 'is' | 'fo' | 'eu' | 'ca' | 'gl'
   | 'ast' | 'oc' | 'co' | 'sc' | 'rm' | 'fur' | 'lad' | 'an' | 'ext' | 'mwl'
@@ -427,6 +427,26 @@ export const translations: Partial<Record<SupportedLanguage, TranslationStrings>
     
     // Google search
     explanationWithExamples: 'شرح مع أمثلة'
+  },
+  tr: {
+    firstQuestion: "Öncelikle, zaten hangi dili konuşuyorsunuz?",
+    secondQuestion: "Güzel, şimdi öğrenmek istediğiniz dili seçin:",
+    readyQuestion: "Mükemmel! Dil yolculuğunuza başlamaya hazır mısınız?",
+    yourLanguage: "Diliniz",
+    languageToLearn: "Öğrenilecek dil",
+    goBack: "Geri Dön",
+    startJourney: "Yolculuğuma başla",
+    
+    // Word explanation modal
+    meaningAndUsage: 'Anlam ve Kullanım',
+    examples: 'Örnekler',
+    otherForms: 'Diğer Formlar',
+    loadingExplanation: 'Açıklama yükleniyor...',
+    tryAgainOrSearch: 'Lütfen tekrar deneyin veya Google aramasını kullanın.',
+    aiExplanationWarning: 'Bu açıklama yapay zeka tarafından oluşturulmuştur ve hatalı olabilir. Kritik kullanım için sözlüklere başvurun.',
+    
+    // Google search
+    explanationWithExamples: 'örneklerle açıklama'
   },
   CH: {
     firstQuestion: "首先，你已经会说什么语言？",

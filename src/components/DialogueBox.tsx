@@ -26,11 +26,11 @@ const getRecognitionLanguage = (lang: SupportedLanguage): string => {
     'ar': 'ar-SA',  // Arabic
     'CH': 'zh-CN',  // Chinese  
     'ja': 'ja-JP',  // Japanese
+    'tr': 'tr-TR',  // Turkish
     'ko': 'ko-KR',
     'hi': 'hi-IN',
     'th': 'th-TH',
     'vi': 'vi-VN',
-    'tr': 'tr-TR',
     'pl': 'pl-PL',
     'nl': 'nl-NL',
     'sv': 'sv-SE',

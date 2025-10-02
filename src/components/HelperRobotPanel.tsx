@@ -117,7 +117,8 @@ const HelperRobotPanel: React.FC<HelperRobotPanelProps> = ({ onClose }) => {
             'it': 'entry_in_it',
             'ar': 'entry_in_ar',
             'CH': 'entry_in_ch',
-            'ja': 'entry_in_ja'
+            'ja': 'entry_in_ja',
+            'tr': 'entry_in_tr'
           };
           return columnMap[lang] || 'entry_in_en'; // fallback to English
         };
@@ -217,7 +218,8 @@ const HelperRobotPanel: React.FC<HelperRobotPanelProps> = ({ onClose }) => {
       'it': 'Italian',
       'ar': 'Arabic',
       'CH': 'Chinese',
-      'ja': 'Japanese'
+      'ja': 'Japanese',
+      'tr': 'Turkish'
     };
     
     return languages[code] || code;

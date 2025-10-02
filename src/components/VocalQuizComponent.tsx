@@ -60,6 +60,7 @@ const translations: Record<string, Partial<Record<SupportedLanguage, string>>> =
   'in Italian': { en: 'in Italian', ru: 'по-итальянски' },
   'in Arabic': { en: 'in Arabic', ru: 'по-арабски' },
   'in Japanese': { en: 'in Japanese', ru: 'по-японски' },
+  'in Turkish': { en: 'in Turkish', ru: 'по-турецки' },
   'Word to pronounce:': { en: 'Word to pronounce:', ru: 'Слово для произношения:' },
   'Translation:': { en: 'Translation:', ru: 'Перевод:' },
   'Say the word...': { en: 'Say the word...', ru: 'Скажите слово...' },
@@ -112,7 +113,8 @@ const getRecognitionLanguage = (lang: SupportedLanguage): string => {
     'it': 'it-IT',
     'ar': 'ar-SA',
     'CH': 'zh-CN',
-    'ja': 'ja-JP'
+    'ja': 'ja-JP',
+    'tr': 'tr-TR'
   };
   return languageMap[lang] || 'en-US'; // Default to English
 };
@@ -128,7 +130,8 @@ const getLanguageName = (lang: SupportedLanguage, displayLang: SupportedLanguage
     'it': { en: 'Italian', ru: 'итальянском' },
     'ar': { en: 'Arabic', ru: 'арабском' },
     'CH': { en: 'Chinese', ru: 'китайском' },
-    'ja': { en: 'Japanese', ru: 'японском' }
+    'ja': { en: 'Japanese', ru: 'японском' },
+    'tr': { en: 'Turkish', ru: 'турецком' }
   };
   return languageNames[lang]?.[displayLang] || lang;
 };
@@ -268,7 +271,8 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
           'it': 'entry_in_it',
           'ar': 'entry_in_ar',
           'CH': 'entry_in_ch',
-          'ja': 'entry_in_ja'
+          'ja': 'entry_in_ja',
+          'tr': 'entry_in_tr'
         };
         return columnMap[lang] || 'entry_in_en'; // fallback to English
       };

@@ -45,5 +45,10 @@ export const POPULAR_LANGUAGES: LanguageOption[] = [
     code: 'ja',
     name: 'Japanese',
     nativeName: '日本語'
+  },
+  {
+    code: 'tr',
+    name: 'Turkish',
+    nativeName: 'Türkçe'
   }
 ]; 

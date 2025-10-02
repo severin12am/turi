@@ -32,7 +32,8 @@ const languages = [
   { code: 'it', name: 'Italiano (Italian)', nameRu: 'Итальянский (Italian)' },
   { code: 'ar', name: 'العربية (Arabic)', nameRu: 'Арабский (Arabic)' },
   { code: 'CH', name: '中文 (Chinese)', nameRu: 'Китайский (Chinese)' },
-  { code: 'ja', name: '日本語 (Japanese)', nameRu: 'Японский (Japanese)' }
+  { code: 'ja', name: '日本語 (Japanese)', nameRu: 'Японский (Japanese)' },
+  { code: 'tr', name: 'Türkçe (Turkish)', nameRu: 'Турецкий (Turkish)' }
 ];
 
 const translations = {
