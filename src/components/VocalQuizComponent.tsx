@@ -1285,28 +1285,54 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
     
     console.log('🔊 QUIZ playAudio called with:', { wordToPlay, targetLanguage });
     
-    // Use AI pronunciation for Chinese
-    if (targetLanguage === 'CH') {
-      try {
-        console.log('✅ QUIZ Detected Chinese language - using AI pronunciation');
-        console.log('🔊 QUIZ Word to speak:', wordToPlay);
-        console.log('🔊 QUIZ Calling speakWithAI...');
-        await speakWithAI(wordToPlay, targetLanguage);
-        console.log('✅ QUIZ AI pronunciation completed successfully');
+    // Use enhanced pronunciation for Chinese, Arabic, Turkish
+    const enhancedLanguages = ['CH', 'ar', 'tr'];
+    if (enhancedLanguages.includes(targetLanguage)) {
+      // For Chinese, check if text contains actual Chinese characters
+      if (targetLanguage === 'CH') {
+        const hasChineseCharacters = /[\u4e00-\u9fff]/.test(wordToPlay);
+        console.log('🔊 QUIZ Has Chinese characters:', hasChineseCharacters, 'Word:', wordToPlay);
         
-        // After speech completes, we can resume recognition if needed
-        if (isCorrect === null) {
-          userStoppedListening.current = false;
-          startListening();
+        if (!hasChineseCharacters) {
+          console.warn('⚠️ QUIZ Text is pinyin, not Chinese characters. Skipping enhanced pronunciation.');
+          console.warn('⚠️ Your database should contain Chinese characters (你好), not pinyin (nǐ hǎo)');
+          // Fall through to browser speech
+        } else {
+          try {
+            console.log(`✅ QUIZ Using enhanced pronunciation for ${targetLanguage}`);
+            await speakWithAI(wordToPlay, targetLanguage);
+            console.log('✅ QUIZ Enhanced pronunciation completed');
+            
+            if (isCorrect === null) {
+              userStoppedListening.current = false;
+              startListening();
+            }
+            return;
+          } catch (error) {
+            console.error('❌ QUIZ Enhanced pronunciation failed, falling back:', error);
+            // Fall through to browser speech
+          }
         }
-        return;
-      } catch (error) {
-        console.error('❌ QUIZ AI pronunciation failed, falling back to browser:', error);
-        // Fall through to browser speech
+      } else {
+        // For Arabic and Turkish, always use enhanced pronunciation
+        try {
+          console.log(`✅ QUIZ Using enhanced pronunciation for ${targetLanguage}`);
+          await speakWithAI(wordToPlay, targetLanguage);
+          console.log('✅ QUIZ Enhanced pronunciation completed');
+          
+          if (isCorrect === null) {
+            userStoppedListening.current = false;
+            startListening();
+          }
+          return;
+        } catch (error) {
+          console.error('❌ QUIZ Enhanced pronunciation failed, falling back:', error);
+          // Fall through to browser speech
+        }
       }
     }
     
-    console.log('🔊 QUIZ Not Chinese, using browser speech. Language:', targetLanguage);
+    console.log('🔊 QUIZ Using browser speech. Language:', targetLanguage);
     
     // Browser speech synthesis for other languages or fallback
     try {

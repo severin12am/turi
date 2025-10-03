@@ -894,6 +894,26 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
             .replace(/أ|إ|آ/g, 'ا'); // Normalize alif variations
           break;
           
+        case 'tr':
+          // For Turkish, normalize special characters to their ASCII equivalents for better matching
+          // Note: Speech recognition might return ASCII versions
+          normalized = normalized
+            .replace(/ı/g, 'i')
+            .replace(/İ/g, 'i')
+            .replace(/ğ/g, 'g')
+            .replace(/Ğ/g, 'g')
+            .replace(/ş/g, 's')
+            .replace(/Ş/g, 's')
+            .replace(/ç/g, 'c')
+            .replace(/Ç/g, 'c')
+            .replace(/ö/g, 'o')
+            .replace(/Ö/g, 'o')
+            .replace(/ü/g, 'u')
+            .replace(/Ü/g, 'u');
+          // Normalize spaces
+          normalized = normalized.replace(/\s+/g, ' ');
+          break;
+          
         case 'CH':
           // For Chinese, keep spaces for pinyin comparison
           normalized = normalized.replace(/\s+/g, ' ');
@@ -910,68 +930,54 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
     const cleanSpoken = normalizeText(spoken, targetLanguage);
     const cleanExpected = normalizeText(expected, targetLanguage);
     
-    // Chinese: convert characters to pinyin for proper matching
+    // Chinese: direct character comparison (no pinyin conversion needed)
     if (targetLanguage === 'CH') {
-      console.log(`🔍 CHINESE: spoken="${cleanSpoken}", expected="${cleanExpected}"`);
+      console.log(`🔍 CHINESE MATCH: spoken="${cleanSpoken}", expected="${cleanExpected}"`);
       
-      // Check if spoken contains Chinese characters
-      const hasChineseChars = /[\u4e00-\u9fff]/.test(cleanSpoken);
+      // Check if both contain Chinese characters
+      const spokenHasChinese = /[\u4e00-\u9fff]/.test(cleanSpoken);
+      const expectedHasChinese = /[\u4e00-\u9fff]/.test(cleanExpected);
       
-      if (hasChineseChars) {
-        // Simple character to pinyin conversion - essential characters for taxi dialogue
-        const charToPinyin: Record<string, string> = {
-          '我': 'wo', '的': 'de', '名': 'ming', '字': 'zi', '是': 'shi', '戴': 'dai', '夫': 'fu',
-          '谢': 'xie', '出': 'chu', '租': 'zu', '车': 'che', '司': 'si', '机': 'ji',
-          '这': 'zhe', '些': 'xie', '都': 'dou', '对': 'dui', '了': 'le',
-          '就': 'jiu', '去': 'qu', '试': 'shi'
-        };
+      console.log(`🔍 Has Chinese? spoken: ${spokenHasChinese}, expected: ${expectedHasChinese}`);
+      
+      if (spokenHasChinese && expectedHasChinese) {
+        // Both are Chinese characters - direct character-by-character comparison
+        const spokenChars = Array.from(cleanSpoken).filter(c => /[\u4e00-\u9fff]/.test(c));
+        const expectedChars = Array.from(cleanExpected).filter(c => /[\u4e00-\u9fff]/.test(c));
         
-        // Convert each character to pinyin
-        const spokenPinyin = Array.from(cleanSpoken)
-          .map(char => charToPinyin[char] || char)
-          .join(' ')
-          .toLowerCase();
+        console.log(`🔍 CHARACTER COMPARISON:`);
+        console.log(`  - Spoken chars: [${spokenChars.join(', ')}]`);
+        console.log(`  - Expected chars: [${expectedChars.join(', ')}]`);
         
-        console.log(`🔍 CONVERTED: "${cleanSpoken}" → "${spokenPinyin}"`);
+        // Count matching characters in order
+        let matchedChars = 0;
+        const minLength = Math.min(spokenChars.length, expectedChars.length);
         
-        // Remove tone marks from expected
-        const normalizedExpected = cleanExpected.replace(/[ǎǐǒǔǚāīōūǖáíóúǘàìòùǜèéē]/g, (match) => {
-          const toneMap: Record<string, string> = {
-            'ā': 'a', 'á': 'a', 'ǎ': 'a', 'à': 'a',
-            'ī': 'i', 'í': 'i', 'ǐ': 'i', 'ì': 'i',
-            'ō': 'o', 'ó': 'o', 'ǒ': 'o', 'ò': 'o',
-            'ū': 'u', 'ú': 'u', 'ǔ': 'u', 'ù': 'u',
-            'ǖ': 'u', 'ǘ': 'u', 'ǚ': 'u', 'ǜ': 'u',
-            'è': 'e', 'é': 'e', 'ē': 'e'
-          };
-          return toneMap[match] || match;
-        });
-        
-        console.log(`🔍 TONE MARK REMOVAL: "${cleanExpected}" → "${normalizedExpected}"`);
-        
-        // Compare pinyin words
-        const spokenWords = spokenPinyin.split(/\s+/).filter(w => w.length > 0);
-        const expectedWords = normalizedExpected.split(/\s+/).filter(w => w.length > 0);
-        
-        console.log(`🔍 WORD COMPARISON:`);
-        console.log(`  - Spoken words: [${spokenWords.join(', ')}]`);
-        console.log(`  - Expected words: [${expectedWords.join(', ')}]`);
-        
-        let matchedWords = 0;
-        for (const expectedWord of expectedWords) {
-          const isMatch = spokenWords.includes(expectedWord);
-          console.log(`  - "${expectedWord}" in spoken? ${isMatch}`);
-          if (isMatch) {
-            matchedWords++;
+        for (let i = 0; i < minLength; i++) {
+          if (spokenChars[i] === expectedChars[i]) {
+            matchedChars++;
+            console.log(`  ✅ Match at ${i}: "${spokenChars[i]}"`);
+          } else {
+            console.log(`  ❌ No match at ${i}: "${spokenChars[i]}" vs "${expectedChars[i]}"`);
           }
         }
         
-        const percentage = (matchedWords / expectedWords.length) * 100;
-        console.log(`🔍 RESULT: ${matchedWords}/${expectedWords.length} = ${percentage}%`);
+        // Also give credit for characters that appear but might be out of order
+        const spokenSet = new Set(spokenChars);
+        let charsCovered = matchedChars;
+        for (let i = 0; i < expectedChars.length; i++) {
+          if (spokenSet.has(expectedChars[i]) && spokenChars[i] !== expectedChars[i]) {
+            charsCovered += 0.5; // Half credit for correct char in wrong position
+          }
+        }
+        
+        const percentage = (charsCovered / expectedChars.length) * 100;
+        console.log(`🔍 RESULT: ${charsCovered}/${expectedChars.length} = ${percentage}%`);
         return Math.round(percentage);
       }
       
-      // If no Chinese characters, treat as pinyin input (fallback)
+      // If not both Chinese, can't match
+      console.warn('⚠️ Cannot match: spoken and expected must both be Chinese characters');
       return 0;
     }
 
@@ -1103,96 +1109,37 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
     const cleanSpoken = normalizeText(spoken, targetLanguage);
     const cleanExpected = normalizeText(expected, targetLanguage);
     
-    // Chinese: convert characters to pinyin for proper matching (same logic as calculateMatchPercentage)
+    // Chinese: direct character comparison for highlighting
     if (targetLanguage === 'CH') {
       console.log(`🔍 CHINESE HIGHLIGHTING: spoken="${cleanSpoken}", expected="${cleanExpected}"`);
       
-      // Check if spoken contains Chinese characters
-      const hasChineseChars = /[\u4e00-\u9fff]/.test(cleanSpoken);
+      // Check if both contain Chinese characters
+      const spokenHasChinese = /[\u4e00-\u9fff]/.test(cleanSpoken);
+      const expectedHasChinese = /[\u4e00-\u9fff]/.test(cleanExpected);
       
-      if (hasChineseChars) {
-        // Simple character to pinyin conversion - essential characters for taxi dialogue
-        const charToPinyin: Record<string, string> = {
-          '我': 'wo', '的': 'de', '名': 'ming', '字': 'zi', '是': 'shi', '戴': 'dai', '夫': 'fu',
-          '谢': 'xie', '出': 'chu', '租': 'zu', '车': 'che', '司': 'si', '机': 'ji',
-          '这': 'zhe', '些': 'xie', '都': 'dou', '对': 'dui', '了': 'le',
-          '就': 'jiu', '去': 'qu', '试': 'shi'
-        };
+      if (spokenHasChinese && expectedHasChinese) {
+        // Both are Chinese - compare character by character
+        const spokenChars = Array.from(cleanSpoken).filter(c => /[\u4e00-\u9fff]/.test(c));
+        const spokenSet = new Set(spokenChars);
+        const expectedChars = Array.from(cleanExpected).filter(c => /[\u4e00-\u9fff]/.test(c));
         
-        // Convert each character to pinyin
-        const spokenPinyin = Array.from(cleanSpoken)
-          .map(char => charToPinyin[char] || char)
-          .join(' ')
-          .toLowerCase();
+        console.log(`🔍 HIGHLIGHTING CHARACTER COMPARISON:`);
+        console.log(`  - Spoken chars: [${spokenChars.join(', ')}]`);
+        console.log(`  - Expected chars: [${expectedChars.join(', ')}]`);
         
-        console.log(`🔍 CONVERTED FOR HIGHLIGHTING: "${cleanSpoken}" → "${spokenPinyin}"`);
-        
-        // Remove tone marks from expected
-        const normalizedExpected = cleanExpected.replace(/[ǎǐǒǔǚāīōūǖáíóúǘàìòùǜèéē]/g, (match) => {
-          const toneMap: Record<string, string> = {
-            'ā': 'a', 'á': 'a', 'ǎ': 'a', 'à': 'a',
-            'ī': 'i', 'í': 'i', 'ǐ': 'i', 'ì': 'i',
-            'ō': 'o', 'ó': 'o', 'ǒ': 'o', 'ò': 'o',
-            'ū': 'u', 'ú': 'u', 'ǔ': 'u', 'ù': 'u',
-            'ǖ': 'u', 'ǘ': 'u', 'ǚ': 'u', 'ǜ': 'u',
-            'è': 'e', 'é': 'e', 'ē': 'e'
-          };
-          return toneMap[match] || match;
+        const matchedChars = expectedChars.filter(char => {
+          const isMatch = spokenSet.has(char);
+          console.log(`  - "${char}" in spoken? ${isMatch}`);
+          return isMatch;
         });
         
-        console.log(`🔍 TONE MARK REMOVAL: "${cleanExpected}" → "${normalizedExpected}"`);
-        
-        // Compare pinyin words
-        const spokenWords = spokenPinyin.split(/\s+/).filter(w => w.length > 0);
-        const expectedWords = normalizedExpected.split(/\s+/).filter(w => w.length > 0);
-        
-        console.log(`🔍 WORD COMPARISON:`);
-        console.log(`  - Spoken words: [${spokenWords.join(', ')}]`);
-        console.log(`  - Expected words: [${expectedWords.join(', ')}]`);
-        
-        const matchedWords = [];
-        for (const expectedWord of expectedWords) {
-          const isMatch = spokenWords.includes(expectedWord);
-          console.log(`  - "${expectedWord}" in spoken? ${isMatch}`);
-          if (isMatch) {
-            matchedWords.push(expectedWord);
-          }
-        }
-        
-        console.log(`🔍 HIGHLIGHTING RESULT: ${matchedWords.length} matched words:`, matchedWords);
-        return matchedWords;
+        console.log(`🔍 HIGHLIGHTING RESULT: ${matchedChars.length} matched chars:`, matchedChars);
+        return matchedChars;
       }
       
-      // If no Chinese characters, treat as pinyin input (fallback)
-      // Remove tone marks for comparison
-      const removeToneMarks = (text: string): string => {
-        return text.replace(/[ǎǐǒǔǚāīōūǖáíóúǘàìòùǜèéē]/g, (match) => {
-          const toneMap: Record<string, string> = {
-            'ā': 'a', 'á': 'a', 'ǎ': 'a', 'à': 'a',
-            'ī': 'i', 'í': 'i', 'ǐ': 'i', 'ì': 'i',
-            'ō': 'o', 'ó': 'o', 'ǒ': 'o', 'ò': 'o',
-            'ū': 'u', 'ú': 'u', 'ǔ': 'u', 'ù': 'u',
-            'ǖ': 'u', 'ǘ': 'u', 'ǚ': 'u', 'ǜ': 'u',
-            'è': 'e', 'é': 'e', 'ē': 'e'
-          };
-          return toneMap[match] || match;
-        });
-      };
-      
-      const normalizedSpoken = removeToneMarks(cleanSpoken);
-      const normalizedExpected = removeToneMarks(cleanExpected);
-      
-      const spokenWords = normalizedSpoken.split(/\s+/).filter((w: string) => w.length > 0);
-      const expectedWords = normalizedExpected.split(/\s+/).filter((w: string) => w.length > 0);
-      
-      const matchedWords = [];
-      for (const expectedWord of expectedWords) {
-        if (spokenWords.includes(expectedWord)) {
-          matchedWords.push(expectedWord);
-        }
-      }
-      
-      return matchedWords;
+      // If not both Chinese, can't highlight
+      console.warn('⚠️ Cannot highlight: spoken and expected must both be Chinese characters');
+      return [];
     }
 
     // For character-based languages (Japanese, Arabic), return character matches
@@ -1811,31 +1758,59 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
       
       console.log('🔊 DIALOGUE playAudio called with:', { text, targetLanguage });
       
-      // Use AI pronunciation for Chinese
-      if (targetLanguage === 'CH') {
-        console.log('✅ DIALOGUE Detected Chinese language - using AI pronunciation');
-        console.log('🔊 DIALOGUE Text to speak:', text);
-        setIsNpcSpeaking(true);
-        if (typeof onNpcSpeakStart === 'function') onNpcSpeakStart();
-        
-        try {
-          console.log('🔊 DIALOGUE Calling speakWithAI...');
-          await speakWithAI(text, targetLanguage);
-          console.log('✅ DIALOGUE AI pronunciation completed successfully');
-        } catch (error) {
-          console.error('❌ DIALOGUE AI pronunciation failed, falling back to browser:', error);
-          // Fall back to browser speech if AI fails
-          performBrowserSpeech(text);
+      // Use enhanced pronunciation for Chinese, Arabic, Turkish
+      const enhancedLanguages = ['CH', 'ar', 'tr'];
+      if (enhancedLanguages.includes(targetLanguage)) {
+        // For Chinese, check if text contains actual Chinese characters (not pinyin)
+        if (targetLanguage === 'CH') {
+          const hasChineseCharacters = /[\u4e00-\u9fff]/.test(text);
+          console.log('🔊 DIALOGUE Has Chinese characters:', hasChineseCharacters, 'Text:', text);
+          
+          if (!hasChineseCharacters) {
+            console.warn('⚠️ DIALOGUE Text is pinyin, not Chinese characters. Skipping enhanced pronunciation.');
+            console.warn('⚠️ Your database ch_text column should contain Chinese characters (对不起), not pinyin (duì bù qǐ)');
+            // Fall through to browser speech
+          } else {
+            console.log(`✅ DIALOGUE Using enhanced pronunciation for ${targetLanguage}`);
+            setIsNpcSpeaking(true);
+            if (typeof onNpcSpeakStart === 'function') onNpcSpeakStart();
+            
+            try {
+              await speakWithAI(text, targetLanguage);
+              console.log('✅ DIALOGUE Enhanced pronunciation completed');
+            } catch (error) {
+              console.error('❌ DIALOGUE Enhanced pronunciation failed, falling back:', error);
+              performBrowserSpeech(text);
+              return;
+            }
+            
+            setIsNpcSpeaking(false);
+            if (typeof onNpcSpeakEnd === 'function') onNpcSpeakEnd();
+            return;
+          }
+        } else {
+          // For Arabic and Turkish, always use enhanced pronunciation
+          console.log(`✅ DIALOGUE Using enhanced pronunciation for ${targetLanguage}`);
+          setIsNpcSpeaking(true);
+          if (typeof onNpcSpeakStart === 'function') onNpcSpeakStart();
+          
+          try {
+            await speakWithAI(text, targetLanguage);
+            console.log('✅ DIALOGUE Enhanced pronunciation completed');
+          } catch (error) {
+            console.error('❌ DIALOGUE Enhanced pronunciation failed, falling back:', error);
+            performBrowserSpeech(text);
+            return;
+          }
+          
+          setIsNpcSpeaking(false);
+          if (typeof onNpcSpeakEnd === 'function') onNpcSpeakEnd();
           return;
         }
-        
-        setIsNpcSpeaking(false);
-        if (typeof onNpcSpeakEnd === 'function') onNpcSpeakEnd();
-        return;
       }
       
-      console.log('🔊 DIALOGUE Not Chinese, using browser speech. Language:', targetLanguage);
-      // Use browser speech for other languages
+      console.log('🔊 DIALOGUE Using browser speech. Language:', targetLanguage);
+      // Use browser speech for other languages (or pinyin)
       performBrowserSpeech(text);
       
     } catch (error) {

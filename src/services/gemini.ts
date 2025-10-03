@@ -433,65 +433,82 @@ export const generateWordExplanation = async (params: GenerateWordExplanationPar
 };
 
 /**
- * Generate improved Chinese pronunciation using optimized browser TTS
- * Currently only for Chinese language
+ * Generate improved pronunciation using optimized browser TTS
+ * Supports: Chinese, Arabic, Turkish (no API calls - just better voice selection)
  */
 export const speakWithAI = async (text: string, languageCode: SupportedLanguage): Promise<void> => {
-  if (languageCode !== 'CH') {
-    console.error('❌ AI pronunciation is only available for Chinese language');
-    throw new Error('AI pronunciation is only available for Chinese language');
+  const supportedLanguages = ['CH', 'ar', 'tr'];
+  if (!supportedLanguages.includes(languageCode)) {
+    console.error('❌ Enhanced pronunciation only available for Chinese, Arabic, Turkish');
+    throw new Error('Enhanced pronunciation only available for Chinese, Arabic, Turkish');
   }
 
-  console.log('🔊 AI PRONUNCIATION: Starting for text:', text);
-  logger.info('Generating AI pronunciation', { text, languageCode });
+  console.log('🔊 ENHANCED PRONUNCIATION: Starting for text:', text, 'Language:', languageCode);
+  logger.info('Generating enhanced pronunciation', { text, languageCode });
 
   return new Promise((resolve, reject) => {
     try {
       // Get all available voices
       const voices = window.speechSynthesis.getVoices();
       
-      console.log('🔊 AI PRONUNCIATION: Available voices:', voices.length);
+      console.log('🔊 ENHANCED PRONUNCIATION: Available voices:', voices.length);
       
-      // Find the best Chinese voice (prioritize newer, more natural voices)
-      const chineseVoices = voices.filter(voice => {
-        const lang = voice.lang.toLowerCase();
-        const name = voice.name.toLowerCase();
-        return lang.includes('zh') || lang.includes('cmn') || name.includes('chinese');
-      });
+      // Define language-specific filters
+      const languageFilters: Record<string, (voice: SpeechSynthesisVoice) => boolean> = {
+        'CH': (voice) => {
+          const lang = voice.lang.toLowerCase();
+          const name = voice.name.toLowerCase();
+          return lang.includes('zh') || lang.includes('cmn') || name.includes('chinese');
+        },
+        'ar': (voice) => {
+          const lang = voice.lang.toLowerCase();
+          const name = voice.name.toLowerCase();
+          return lang.startsWith('ar') || name.includes('arabic');
+        },
+        'tr': (voice) => {
+          const lang = voice.lang.toLowerCase();
+          const name = voice.name.toLowerCase();
+          return lang.startsWith('tr') || name.includes('turkish');
+        }
+      };
       
-      console.log('🔊 AI PRONUNCIATION: Chinese voices found:', chineseVoices.length);
-      chineseVoices.forEach(v => console.log(`  - ${v.name} (${v.lang})`));
+      // Find voices for target language
+      const targetVoices = voices.filter(languageFilters[languageCode]);
       
-      // Prioritize voices by quality
+      console.log(`🔊 ENHANCED PRONUNCIATION: ${languageCode} voices found:`, targetVoices.length);
+      targetVoices.forEach(v => console.log(`  - ${v.name} (${v.lang})`));
+      
+      // Prioritize voices by quality (language-specific)
       let selectedVoice = null;
       
-      // 1. Look for Premium/Natural voices (Microsoft, Google Premium)
-      const premiumVoice = chineseVoices.find(v => 
+      // 1. Look for Premium/Natural voices (Microsoft Neural, Google Premium)
+      const premiumVoice = targetVoices.find(v => 
         v.name.includes('Premium') || 
         v.name.includes('Neural') ||
         v.name.includes('Natural') ||
-        v.name.includes('Xiaoxiao') ||
-        v.name.includes('Yunxi') ||
-        v.name.includes('Xiaoyi')
+        v.name.includes('Wavenet')
       );
       
-      // 2. Look for standard Chinese voices with zh-CN
-      const standardVoice = chineseVoices.find(v => 
-        v.lang.startsWith('zh-CN') || v.lang.startsWith('cmn-CN')
-      );
+      // 2. Look for standard voices with proper language code
+      const standardVoice = targetVoices.find(v => {
+        if (languageCode === 'CH') return v.lang.startsWith('zh-CN');
+        if (languageCode === 'ar') return v.lang.startsWith('ar-SA') || v.lang.startsWith('ar-');
+        if (languageCode === 'tr') return v.lang.startsWith('tr-TR');
+        return false;
+      });
       
-      // 3. Any Chinese voice
-      const anyChineseVoice = chineseVoices[0];
+      // 3. Any voice for the target language
+      const anyTargetVoice = targetVoices[0];
       
-      selectedVoice = premiumVoice || standardVoice || anyChineseVoice;
+      selectedVoice = premiumVoice || standardVoice || anyTargetVoice;
       
       if (!selectedVoice) {
-        console.error('❌ AI PRONUNCIATION: No Chinese voice found');
-        reject(new Error('No Chinese voice available'));
+        console.error(`❌ ENHANCED PRONUNCIATION: No ${languageCode} voice found`);
+        reject(new Error(`No ${languageCode} voice available`));
         return;
       }
       
-      console.log('✅ AI PRONUNCIATION: Selected voice:', selectedVoice.name, `(${selectedVoice.lang})`);
+      console.log('✅ ENHANCED PRONUNCIATION: Selected voice:', selectedVoice.name, `(${selectedVoice.lang})`);
       
       // Cancel any ongoing speech
       window.speechSynthesis.cancel();
@@ -506,36 +523,37 @@ export const speakWithAI = async (text: string, languageCode: SupportedLanguage)
       utterance.pitch = 1.0;    // Natural pitch
       utterance.volume = 1.0;   // Full volume
       
-      console.log('🔊 AI PRONUNCIATION: Settings:', {
+      console.log('🔊 ENHANCED PRONUNCIATION: Settings:', {
         voice: selectedVoice.name,
         lang: utterance.lang,
         rate: utterance.rate,
-        pitch: utterance.pitch
+        pitch: utterance.pitch,
+        language: languageCode
       });
       
       // Set up event handlers
       utterance.onstart = () => {
-        console.log('🔊 AI PRONUNCIATION: Playback started');
+        console.log('🔊 ENHANCED PRONUNCIATION: Playback started');
       };
       
       utterance.onend = () => {
-        console.log('✅ AI PRONUNCIATION: Playback completed');
-        logger.info('AI pronunciation played successfully', { text, languageCode, voice: selectedVoice.name });
+        console.log('✅ ENHANCED PRONUNCIATION: Playback completed');
+        logger.info('Enhanced pronunciation played successfully', { text, languageCode, voice: selectedVoice.name });
         resolve();
       };
       
       utterance.onerror = (event) => {
-        console.error('❌ AI PRONUNCIATION: Playback error', event);
+        console.error('❌ ENHANCED PRONUNCIATION: Playback error', event);
         reject(new Error(`Speech synthesis error: ${event.error}`));
       };
       
       // Start speaking
-      console.log('🔊 AI PRONUNCIATION: Starting playback...');
+      console.log('🔊 ENHANCED PRONUNCIATION: Starting playback...');
       window.speechSynthesis.speak(utterance);
       
     } catch (error) {
-      console.error('❌ AI PRONUNCIATION: Failed completely', error);
-      logger.error('Failed to generate AI pronunciation', { error, text, languageCode });
+      console.error('❌ ENHANCED PRONUNCIATION: Failed completely', error);
+      logger.error('Failed to generate enhanced pronunciation', { error, text, languageCode });
       reject(error);
     }
   });
