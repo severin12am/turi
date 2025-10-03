@@ -433,7 +433,7 @@ export const generateWordExplanation = async (params: GenerateWordExplanationPar
 };
 
 /**
- * Generate AI-powered pronunciation using an accessible TTS service
+ * Generate AI-powered pronunciation using Google Translate TTS
  * Currently only for Chinese language
  */
 export const speakWithAI = async (text: string, languageCode: SupportedLanguage): Promise<void> => {
@@ -446,16 +446,16 @@ export const speakWithAI = async (text: string, languageCode: SupportedLanguage)
   logger.info('Generating AI pronunciation', { text, languageCode });
 
   try {
-    // Use Microsoft Edge TTS API (free, no auth needed, works without VPN)
-    const voiceName = 'zh-CN-XiaoxiaoNeural'; // Natural Chinese female voice
-    const url = `https://tts.voicerss.org/?key=free&hl=zh-cn&c=MP3&f=16khz_16bit_mono&src=${encodeURIComponent(text)}`;
+    // Use Google Translate TTS (free, no auth, works globally, excellent Chinese voice)
+    const url = `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=zh-CN&q=${encodeURIComponent(text)}`;
     
-    console.log('🔊 AI PRONUNCIATION: Fetching audio from TTS service...');
+    console.log('🔊 AI PRONUNCIATION: Fetching audio from Google Translate TTS...');
+    console.log('🔊 AI PRONUNCIATION: URL:', url);
     
     const response = await fetch(url);
     
     if (!response.ok) {
-      console.error('❌ AI PRONUNCIATION: API request failed', response.status);
+      console.error('❌ AI PRONUNCIATION: API request failed', response.status, response.statusText);
       throw new Error(`TTS API request failed: ${response.status}`);
     }
 
@@ -470,6 +470,9 @@ export const speakWithAI = async (text: string, languageCode: SupportedLanguage)
     console.log('🔊 AI PRONUNCIATION: Audio blob size:', audioBlob.size, 'bytes');
     const audioUrl = URL.createObjectURL(audioBlob);
     const audio = new Audio(audioUrl);
+    
+    // Set audio properties for better playback
+    audio.volume = 1.0;
     
     console.log('🔊 AI PRONUNCIATION: Playing audio...');
     
