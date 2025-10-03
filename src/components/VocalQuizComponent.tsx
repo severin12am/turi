@@ -1283,12 +1283,16 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
     // Stop speech recognition temporarily while playing audio
     stopListening();
     
+    console.log('🔊 QUIZ playAudio called with:', { wordToPlay, targetLanguage });
+    
     // Use AI pronunciation for Chinese
     if (targetLanguage === 'CH') {
       try {
-        console.log('🔊 QUIZ Using AI pronunciation for Chinese');
+        console.log('✅ QUIZ Detected Chinese language - using AI pronunciation');
+        console.log('🔊 QUIZ Word to speak:', wordToPlay);
+        console.log('🔊 QUIZ Calling speakWithAI...');
         await speakWithAI(wordToPlay, targetLanguage);
-        console.log('🔊 QUIZ AI pronunciation completed');
+        console.log('✅ QUIZ AI pronunciation completed successfully');
         
         // After speech completes, we can resume recognition if needed
         if (isCorrect === null) {
@@ -1297,10 +1301,12 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
         }
         return;
       } catch (error) {
-        console.error('🔊 QUIZ AI pronunciation failed, falling back to browser:', error);
+        console.error('❌ QUIZ AI pronunciation failed, falling back to browser:', error);
         // Fall through to browser speech
       }
     }
+    
+    console.log('🔊 QUIZ Not Chinese, using browser speech. Language:', targetLanguage);
     
     // Browser speech synthesis for other languages or fallback
     try {

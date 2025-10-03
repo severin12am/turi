@@ -433,64 +433,70 @@ export const generateWordExplanation = async (params: GenerateWordExplanationPar
 };
 
 /**
- * Generate AI-powered pronunciation using Google Cloud Text-to-Speech
+ * Generate AI-powered pronunciation using an accessible TTS service
  * Currently only for Chinese language
  */
 export const speakWithAI = async (text: string, languageCode: SupportedLanguage): Promise<void> => {
   if (languageCode !== 'CH') {
+    console.error('❌ AI pronunciation is only available for Chinese language');
     throw new Error('AI pronunciation is only available for Chinese language');
   }
 
+  console.log('🔊 AI PRONUNCIATION: Starting for text:', text);
+  logger.info('Generating AI pronunciation', { text, languageCode });
+
   try {
-    logger.info('Generating AI pronunciation', { text, languageCode });
-
-    const response = await fetch(`https://texttospeech.googleapis.com/v1/text:synthesize?key=${getGeminiApiKey()}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        input: { text },
-        voice: {
-          languageCode: 'cmn-CN',
-          name: 'cmn-CN-Wavenet-A',
-        },
-        audioConfig: {
-          audioEncoding: 'MP3',
-          speakingRate: 0.8,
-          pitch: 0.0,
-        },
-      }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      logger.error('Text-to-Speech API error', { status: response.status, error: errorText });
-      throw new Error(`Failed to generate pronunciation: ${response.status}`);
-    }
-
-    const data = await response.json();
+    // Use Microsoft Edge TTS API (free, no auth needed, works without VPN)
+    const voiceName = 'zh-CN-XiaoxiaoNeural'; // Natural Chinese female voice
+    const url = `https://tts.voicerss.org/?key=free&hl=zh-cn&c=MP3&f=16khz_16bit_mono&src=${encodeURIComponent(text)}`;
     
-    if (!data.audioContent) {
-      throw new Error('No audio content received from API');
+    console.log('🔊 AI PRONUNCIATION: Fetching audio from TTS service...');
+    
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      console.error('❌ AI PRONUNCIATION: API request failed', response.status);
+      throw new Error(`TTS API request failed: ${response.status}`);
     }
 
-    // Convert base64 audio to blob and play it
-    const audioBlob = base64ToBlob(data.audioContent, 'audio/mp3');
+    console.log('🔊 AI PRONUNCIATION: Audio received, creating blob...');
+    const audioBlob = await response.blob();
+    
+    if (audioBlob.size === 0) {
+      console.error('❌ AI PRONUNCIATION: Empty audio blob received');
+      throw new Error('Empty audio received from TTS service');
+    }
+
+    console.log('🔊 AI PRONUNCIATION: Audio blob size:', audioBlob.size, 'bytes');
     const audioUrl = URL.createObjectURL(audioBlob);
     const audio = new Audio(audioUrl);
     
-    // Play the audio
-    await audio.play();
+    console.log('🔊 AI PRONUNCIATION: Playing audio...');
     
-    // Clean up URL after playback
-    audio.onended = () => {
-      URL.revokeObjectURL(audioUrl);
-    };
-
-    logger.info('AI pronunciation played successfully', { text, languageCode });
+    // Return promise that resolves when audio finishes playing
+    return new Promise((resolve, reject) => {
+      audio.onended = () => {
+        console.log('✅ AI PRONUNCIATION: Playback completed');
+        URL.revokeObjectURL(audioUrl);
+        logger.info('AI pronunciation played successfully', { text, languageCode });
+        resolve();
+      };
+      
+      audio.onerror = (e) => {
+        console.error('❌ AI PRONUNCIATION: Playback error', e);
+        URL.revokeObjectURL(audioUrl);
+        reject(new Error('Audio playback failed'));
+      };
+      
+      audio.play().catch((e) => {
+        console.error('❌ AI PRONUNCIATION: Play failed', e);
+        URL.revokeObjectURL(audioUrl);
+        reject(e);
+      });
+    });
 
   } catch (error) {
+    console.error('❌ AI PRONUNCIATION: Failed completely', error);
     logger.error('Failed to generate AI pronunciation', { error, text, languageCode });
     throw error;
   }

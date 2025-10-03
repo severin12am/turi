@@ -1809,17 +1809,21 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
         return;
       }
       
+      console.log('🔊 DIALOGUE playAudio called with:', { text, targetLanguage });
+      
       // Use AI pronunciation for Chinese
       if (targetLanguage === 'CH') {
-        console.log('🔊 DIALOGUE Using AI pronunciation for Chinese');
+        console.log('✅ DIALOGUE Detected Chinese language - using AI pronunciation');
+        console.log('🔊 DIALOGUE Text to speak:', text);
         setIsNpcSpeaking(true);
         if (typeof onNpcSpeakStart === 'function') onNpcSpeakStart();
         
         try {
+          console.log('🔊 DIALOGUE Calling speakWithAI...');
           await speakWithAI(text, targetLanguage);
-          console.log('🔊 DIALOGUE AI pronunciation completed');
+          console.log('✅ DIALOGUE AI pronunciation completed successfully');
         } catch (error) {
-          console.error('🔊 DIALOGUE AI pronunciation failed, falling back to browser:', error);
+          console.error('❌ DIALOGUE AI pronunciation failed, falling back to browser:', error);
           // Fall back to browser speech if AI fails
           performBrowserSpeech(text);
           return;
@@ -1830,11 +1834,12 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
         return;
       }
       
+      console.log('🔊 DIALOGUE Not Chinese, using browser speech. Language:', targetLanguage);
       // Use browser speech for other languages
       performBrowserSpeech(text);
       
     } catch (error) {
-      console.error('🔊 DIALOGUE playAudio error:', error);
+      console.error('❌ DIALOGUE playAudio error:', error);
       setIsNpcSpeaking(false);
       if (typeof onNpcSpeakEnd === 'function') onNpcSpeakEnd();
       logger.error('Failed to play audio', { error });
