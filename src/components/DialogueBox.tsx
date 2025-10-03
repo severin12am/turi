@@ -11,7 +11,7 @@ import { getTranslation } from '../constants/translations';
 import { AIDialogueStep } from '../services/gemini';
 // New imports for enhanced word interaction
 import WordExplanationModal from './WordExplanationModal';
-import { generateWordExplanation, WordExplanationData } from '../services/gemini';
+import { generateWordExplanation, WordExplanationData, speakWithAI } from '../services/gemini';
 
 // Map supported languages to their speech recognition codes
 const getRecognitionLanguage = (lang: SupportedLanguage): string => {
@@ -1802,110 +1802,141 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
   /**
    * Play audio for NPC phrases
    */
-  const playAudio = (text: string) => {
+  const playAudio = async (text: string) => {
     try {
       if (!text || text.trim() === '') {
         console.error('🔊 DIALOGUE playAudio: Empty text provided');
         return;
       }
       
-      // Check if speech synthesis is available
-      if (!window.speechSynthesis) {
-        console.error('🔊 DIALOGUE Speech synthesis not available');
+      // Use AI pronunciation for Chinese
+      if (targetLanguage === 'CH') {
+        console.log('🔊 DIALOGUE Using AI pronunciation for Chinese');
+        setIsNpcSpeaking(true);
+        if (typeof onNpcSpeakStart === 'function') onNpcSpeakStart();
+        
+        try {
+          await speakWithAI(text, targetLanguage);
+          console.log('🔊 DIALOGUE AI pronunciation completed');
+        } catch (error) {
+          console.error('🔊 DIALOGUE AI pronunciation failed, falling back to browser:', error);
+          // Fall back to browser speech if AI fails
+          performBrowserSpeech(text);
+          return;
+        }
+        
+        setIsNpcSpeaking(false);
+        if (typeof onNpcSpeakEnd === 'function') onNpcSpeakEnd();
         return;
       }
       
-      // Function to actually play the audio once voices are ready
-      const performSpeech = () => {
-        const voices = window.speechSynthesis.getVoices() || [];
-        const targetLangCode = getRecognitionLanguage(targetLanguage);
-        
-        console.log('🔊 DIALOGUE playAudio DEBUG:', {
-          text,
-          targetLanguage,
-          targetLangCode,
-          voicesAvailable: voices.length,
-          allVoices: voices.map(v => ({ name: v.name, lang: v.lang }))
-        });
-        
-        // Cancel any existing speech
-        window.speechSynthesis.cancel();
-        
-        // Create the utterance
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = targetLangCode;
-        
-        // Try to find an appropriate voice for the target language
-        const matchingVoices = voices.filter(voice => 
-          voice.lang.toLowerCase().startsWith(targetLanguage.toLowerCase()) ||
-          voice.lang.toLowerCase().startsWith(targetLangCode.split('-')[0])
-        );
-        
-        if (matchingVoices.length > 0) {
-          utterance.voice = matchingVoices[0];
-          console.log('🔊 DIALOGUE Selected voice:', matchingVoices[0].name, matchingVoices[0].lang);
-        } else {
-          console.warn('🔊 DIALOGUE No matching voice found for', targetLanguage, 'using default voice');
-        }
-        
-        // Set speech rate and pitch for better clarity
-        utterance.rate = 0.8; // Slightly slower for language learning
-        utterance.pitch = 1.0;
-        utterance.volume = 1.0;
-        
-        // Add error handling
-        utterance.onerror = (event) => {
-          console.error('🔊 DIALOGUE Speech synthesis error:', event);
-          setIsNpcSpeaking(false);
-          if (typeof onNpcSpeakEnd === 'function') onNpcSpeakEnd();
-        };
-        
-        // Set up event handlers
-        utterance.onstart = () => {
-          console.log('🔊 DIALOGUE Speech synthesis started');
-          setIsNpcSpeaking(true);
-          if (typeof onNpcSpeakStart === 'function') onNpcSpeakStart();
-        };
-        
-        utterance.onend = () => {
-          console.log('🔊 DIALOGUE Speech synthesis ended successfully');
-          setIsNpcSpeaking(false);
-          if (typeof onNpcSpeakEnd === 'function') onNpcSpeakEnd();
-        };
-        
-        // Start speaking
-        console.log('🔊 DIALOGUE Starting speech synthesis...');
-        window.speechSynthesis.speak(utterance);
-        logger.info('Playing audio', { text, language: utterance.lang });
-      };
-      
-      // Check if voices are already loaded
-      const voices = window.speechSynthesis.getVoices();
-      if (voices.length > 0) {
-        // Voices are ready, play immediately
-        performSpeech();
-      } else {
-        // Voices not loaded yet, wait for them
-        console.log('🔊 DIALOGUE Waiting for voices to load...');
-        
-        const handleVoicesChanged = () => {
-          console.log('🔊 DIALOGUE Voices loaded, attempting speech');
-          window.speechSynthesis.removeEventListener('voiceschanged', handleVoicesChanged);
-          performSpeech();
-        };
-        
-        window.speechSynthesis.addEventListener('voiceschanged', handleVoicesChanged);
-        
-        // Fallback: try after a delay even if voiceschanged doesn't fire
-        setTimeout(() => {
-          window.speechSynthesis.removeEventListener('voiceschanged', handleVoicesChanged);
-          performSpeech();
-        }, 1000);
-      }
+      // Use browser speech for other languages
+      performBrowserSpeech(text);
       
     } catch (error) {
-      console.error('🔊 DIALOGUE Failed to play audio:', error);
+      console.error('🔊 DIALOGUE playAudio error:', error);
+      setIsNpcSpeaking(false);
+      if (typeof onNpcSpeakEnd === 'function') onNpcSpeakEnd();
       logger.error('Failed to play audio', { error });
+    }
+  };
+
+  /**
+   * Perform browser-based speech synthesis
+   */
+  const performBrowserSpeech = (text: string) => {
+    // Check if speech synthesis is available
+    if (!window.speechSynthesis) {
+      console.error('🔊 DIALOGUE Speech synthesis not available');
+      return;
+    }
+    
+    // Function to actually play the audio once voices are ready
+    const performSpeech = () => {
+      const voices = window.speechSynthesis.getVoices() || [];
+      const targetLangCode = getRecognitionLanguage(targetLanguage);
+      
+      console.log('🔊 DIALOGUE playAudio DEBUG:', {
+        text,
+        targetLanguage,
+        targetLangCode,
+        voicesAvailable: voices.length,
+        allVoices: voices.map(v => ({ name: v.name, lang: v.lang }))
+      });
+      
+      // Cancel any existing speech
+      window.speechSynthesis.cancel();
+      
+      // Create the utterance
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = targetLangCode;
+      
+      // Try to find an appropriate voice for the target language
+      const matchingVoices = voices.filter(voice => 
+        voice.lang.toLowerCase().startsWith(targetLanguage.toLowerCase()) ||
+        voice.lang.toLowerCase().startsWith(targetLangCode.split('-')[0])
+      );
+      
+      if (matchingVoices.length > 0) {
+        utterance.voice = matchingVoices[0];
+        console.log('🔊 DIALOGUE Selected voice:', matchingVoices[0].name, matchingVoices[0].lang);
+      } else {
+        console.warn('🔊 DIALOGUE No matching voice found for', targetLanguage, 'using default voice');
+      }
+      
+      // Set speech rate and pitch for better clarity
+      utterance.rate = 0.8; // Slightly slower for language learning
+      utterance.pitch = 1.0;
+      utterance.volume = 1.0;
+      
+      // Add error handling
+      utterance.onerror = (event) => {
+        console.error('🔊 DIALOGUE Speech synthesis error:', event);
+        setIsNpcSpeaking(false);
+        if (typeof onNpcSpeakEnd === 'function') onNpcSpeakEnd();
+      };
+      
+      // Set up event handlers
+      utterance.onstart = () => {
+        console.log('🔊 DIALOGUE Speech synthesis started');
+        setIsNpcSpeaking(true);
+        if (typeof onNpcSpeakStart === 'function') onNpcSpeakStart();
+      };
+      
+      utterance.onend = () => {
+        console.log('🔊 DIALOGUE Speech synthesis ended successfully');
+        setIsNpcSpeaking(false);
+        if (typeof onNpcSpeakEnd === 'function') onNpcSpeakEnd();
+      };
+      
+      // Start speaking
+      console.log('🔊 DIALOGUE Starting speech synthesis...');
+      window.speechSynthesis.speak(utterance);
+      logger.info('Playing audio', { text, language: utterance.lang });
+    };
+    
+    // Check if voices are already loaded
+    const voices = window.speechSynthesis.getVoices();
+    if (voices.length > 0) {
+      // Voices are ready, play immediately
+      performSpeech();
+    } else {
+      // Voices not loaded yet, wait for them
+      console.log('🔊 DIALOGUE Waiting for voices to load...');
+      
+      const handleVoicesChanged = () => {
+        console.log('🔊 DIALOGUE Voices loaded, attempting speech');
+        window.speechSynthesis.removeEventListener('voiceschanged', handleVoicesChanged);
+        performSpeech();
+      };
+      
+      window.speechSynthesis.addEventListener('voiceschanged', handleVoicesChanged);
+      
+      // Fallback: try after a delay even if voiceschanged doesn't fire
+      setTimeout(() => {
+        window.speechSynthesis.removeEventListener('voiceschanged', handleVoicesChanged);
+        performSpeech();
+      }, 1000);
     }
   };
 

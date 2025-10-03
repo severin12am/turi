@@ -7,6 +7,7 @@ import { supabase } from '../services/supabase';
 import { useStore } from '../store';
 import { logger } from '../services/logger';
 import { trackCompletedDialogue, saveAnonymousProgress } from '../services/auth';
+import { speakWithAI } from '../services/gemini';
 
 // Add WebSpeechAPI type definitions
 declare global {
@@ -1214,7 +1215,7 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
   };
   
   // Play pronunciation of the current word
-  const playAudio = () => {
+  const playAudio = async () => {
     if (!currentWord || !displayWord) {
       console.error('Cannot play audio - currentWord or displayWord is missing');
       return;
@@ -1242,23 +1243,13 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
     const targetColumn = getLanguageColumn(targetLanguage);
     let wordToPlay = currentWord[targetColumn] || currentWord.entry_in_en;
     
-    // Get available voices and check for target language support
-    const voices = window.speechSynthesis?.getVoices() || [];
-    const targetLangVoices = voices.filter(voice => 
-      voice.lang.startsWith(targetLanguage.toLowerCase()) || 
-      (targetLanguage === 'ar' && (voice.lang.startsWith('ar') || voice.name.toLowerCase().includes('arabic')))
-    );
-    
     // Debug logging to see what's happening
     console.log('🔊 QUIZ DEBUG playAudio:', {
       targetLanguage,
       targetColumn,
       currentWord: currentWord,
       wordToPlay,
-      availableColumns: Object.keys(currentWord).filter(key => key.startsWith('entry_in_')),
-      voicesAvailable: voices.length,
-      targetLangVoicesFound: targetLangVoices.length,
-      targetLangVoices: targetLangVoices.map(v => ({ name: v.name, lang: v.lang }))
+      availableColumns: Object.keys(currentWord).filter(key => key.startsWith('entry_in_'))
     });
     
     // Check if we have a valid word to play
@@ -1292,8 +1283,34 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
     // Stop speech recognition temporarily while playing audio
     stopListening();
     
+    // Use AI pronunciation for Chinese
+    if (targetLanguage === 'CH') {
+      try {
+        console.log('🔊 QUIZ Using AI pronunciation for Chinese');
+        await speakWithAI(wordToPlay, targetLanguage);
+        console.log('🔊 QUIZ AI pronunciation completed');
+        
+        // After speech completes, we can resume recognition if needed
+        if (isCorrect === null) {
+          userStoppedListening.current = false;
+          startListening();
+        }
+        return;
+      } catch (error) {
+        console.error('🔊 QUIZ AI pronunciation failed, falling back to browser:', error);
+        // Fall through to browser speech
+      }
+    }
+    
+    // Browser speech synthesis for other languages or fallback
     try {
       console.log(`🔊 Playing ${targetLanguage} audio for word:`, wordToPlay);
+      
+      const voices = window.speechSynthesis?.getVoices() || [];
+      const targetLangVoices = voices.filter(voice => 
+        voice.lang.startsWith(targetLanguage.toLowerCase()) || 
+        (targetLanguage === 'ar' && (voice.lang.startsWith('ar') || voice.name.toLowerCase().includes('arabic')))
+      );
       
       // Use a direct approach that works more reliably across browsers
       const utterance = new SpeechSynthesisUtterance(wordToPlay);

@@ -432,6 +432,90 @@ export const generateWordExplanation = async (params: GenerateWordExplanationPar
   throw lastError || new Error('AI model is currently unavailable. Please try again later.');
 };
 
+/**
+ * Generate AI-powered pronunciation using Google Cloud Text-to-Speech
+ * Currently only for Chinese language
+ */
+export const speakWithAI = async (text: string, languageCode: SupportedLanguage): Promise<void> => {
+  if (languageCode !== 'CH') {
+    throw new Error('AI pronunciation is only available for Chinese language');
+  }
+
+  try {
+    logger.info('Generating AI pronunciation', { text, languageCode });
+
+    const response = await fetch(`https://texttospeech.googleapis.com/v1/text:synthesize?key=${getGeminiApiKey()}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        input: { text },
+        voice: {
+          languageCode: 'cmn-CN',
+          name: 'cmn-CN-Wavenet-A',
+        },
+        audioConfig: {
+          audioEncoding: 'MP3',
+          speakingRate: 0.8,
+          pitch: 0.0,
+        },
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      logger.error('Text-to-Speech API error', { status: response.status, error: errorText });
+      throw new Error(`Failed to generate pronunciation: ${response.status}`);
+    }
+
+    const data = await response.json();
+    
+    if (!data.audioContent) {
+      throw new Error('No audio content received from API');
+    }
+
+    // Convert base64 audio to blob and play it
+    const audioBlob = base64ToBlob(data.audioContent, 'audio/mp3');
+    const audioUrl = URL.createObjectURL(audioBlob);
+    const audio = new Audio(audioUrl);
+    
+    // Play the audio
+    await audio.play();
+    
+    // Clean up URL after playback
+    audio.onended = () => {
+      URL.revokeObjectURL(audioUrl);
+    };
+
+    logger.info('AI pronunciation played successfully', { text, languageCode });
+
+  } catch (error) {
+    logger.error('Failed to generate AI pronunciation', { error, text, languageCode });
+    throw error;
+  }
+};
+
+// Helper function to convert base64 to blob
+function base64ToBlob(base64: string, contentType: string): Blob {
+  const byteCharacters = atob(base64);
+  const byteArrays = [];
+
+  for (let offset = 0; offset < byteCharacters.length; offset += 512) {
+    const slice = byteCharacters.slice(offset, offset + 512);
+    const byteNumbers = new Array(slice.length);
+    
+    for (let i = 0; i < slice.length; i++) {
+      byteNumbers[i] = slice.charCodeAt(i);
+    }
+    
+    const byteArray = new Uint8Array(byteNumbers);
+    byteArrays.push(byteArray);
+  }
+
+  return new Blob(byteArrays, { type: contentType });
+}
+
 // Helper function to get language names
 function getLanguageName(code: SupportedLanguage): string {
   const languageNames: Record<SupportedLanguage, string> = {
