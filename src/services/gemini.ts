@@ -433,7 +433,7 @@ export const generateWordExplanation = async (params: GenerateWordExplanationPar
 };
 
 /**
- * Generate AI-powered pronunciation using Google Translate TTS
+ * Generate improved Chinese pronunciation using optimized browser TTS
  * Currently only for Chinese language
  */
 export const speakWithAI = async (text: string, languageCode: SupportedLanguage): Promise<void> => {
@@ -445,64 +445,100 @@ export const speakWithAI = async (text: string, languageCode: SupportedLanguage)
   console.log('🔊 AI PRONUNCIATION: Starting for text:', text);
   logger.info('Generating AI pronunciation', { text, languageCode });
 
-  try {
-    // Use Google Translate TTS (free, no auth, works globally, excellent Chinese voice)
-    const url = `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=zh-CN&q=${encodeURIComponent(text)}`;
-    
-    console.log('🔊 AI PRONUNCIATION: Fetching audio from Google Translate TTS...');
-    console.log('🔊 AI PRONUNCIATION: URL:', url);
-    
-    const response = await fetch(url);
-    
-    if (!response.ok) {
-      console.error('❌ AI PRONUNCIATION: API request failed', response.status, response.statusText);
-      throw new Error(`TTS API request failed: ${response.status}`);
-    }
-
-    console.log('🔊 AI PRONUNCIATION: Audio received, creating blob...');
-    const audioBlob = await response.blob();
-    
-    if (audioBlob.size === 0) {
-      console.error('❌ AI PRONUNCIATION: Empty audio blob received');
-      throw new Error('Empty audio received from TTS service');
-    }
-
-    console.log('🔊 AI PRONUNCIATION: Audio blob size:', audioBlob.size, 'bytes');
-    const audioUrl = URL.createObjectURL(audioBlob);
-    const audio = new Audio(audioUrl);
-    
-    // Set audio properties for better playback
-    audio.volume = 1.0;
-    
-    console.log('🔊 AI PRONUNCIATION: Playing audio...');
-    
-    // Return promise that resolves when audio finishes playing
-    return new Promise((resolve, reject) => {
-      audio.onended = () => {
+  return new Promise((resolve, reject) => {
+    try {
+      // Get all available voices
+      const voices = window.speechSynthesis.getVoices();
+      
+      console.log('🔊 AI PRONUNCIATION: Available voices:', voices.length);
+      
+      // Find the best Chinese voice (prioritize newer, more natural voices)
+      const chineseVoices = voices.filter(voice => {
+        const lang = voice.lang.toLowerCase();
+        const name = voice.name.toLowerCase();
+        return lang.includes('zh') || lang.includes('cmn') || name.includes('chinese');
+      });
+      
+      console.log('🔊 AI PRONUNCIATION: Chinese voices found:', chineseVoices.length);
+      chineseVoices.forEach(v => console.log(`  - ${v.name} (${v.lang})`));
+      
+      // Prioritize voices by quality
+      let selectedVoice = null;
+      
+      // 1. Look for Premium/Natural voices (Microsoft, Google Premium)
+      const premiumVoice = chineseVoices.find(v => 
+        v.name.includes('Premium') || 
+        v.name.includes('Neural') ||
+        v.name.includes('Natural') ||
+        v.name.includes('Xiaoxiao') ||
+        v.name.includes('Yunxi') ||
+        v.name.includes('Xiaoyi')
+      );
+      
+      // 2. Look for standard Chinese voices with zh-CN
+      const standardVoice = chineseVoices.find(v => 
+        v.lang.startsWith('zh-CN') || v.lang.startsWith('cmn-CN')
+      );
+      
+      // 3. Any Chinese voice
+      const anyChineseVoice = chineseVoices[0];
+      
+      selectedVoice = premiumVoice || standardVoice || anyChineseVoice;
+      
+      if (!selectedVoice) {
+        console.error('❌ AI PRONUNCIATION: No Chinese voice found');
+        reject(new Error('No Chinese voice available'));
+        return;
+      }
+      
+      console.log('✅ AI PRONUNCIATION: Selected voice:', selectedVoice.name, `(${selectedVoice.lang})`);
+      
+      // Cancel any ongoing speech
+      window.speechSynthesis.cancel();
+      
+      // Create utterance with optimized settings
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.voice = selectedVoice;
+      utterance.lang = selectedVoice.lang;
+      
+      // Optimize for clarity and naturalness
+      utterance.rate = 0.75;    // Slower for learning (0.75 instead of default 1.0)
+      utterance.pitch = 1.0;    // Natural pitch
+      utterance.volume = 1.0;   // Full volume
+      
+      console.log('🔊 AI PRONUNCIATION: Settings:', {
+        voice: selectedVoice.name,
+        lang: utterance.lang,
+        rate: utterance.rate,
+        pitch: utterance.pitch
+      });
+      
+      // Set up event handlers
+      utterance.onstart = () => {
+        console.log('🔊 AI PRONUNCIATION: Playback started');
+      };
+      
+      utterance.onend = () => {
         console.log('✅ AI PRONUNCIATION: Playback completed');
-        URL.revokeObjectURL(audioUrl);
-        logger.info('AI pronunciation played successfully', { text, languageCode });
+        logger.info('AI pronunciation played successfully', { text, languageCode, voice: selectedVoice.name });
         resolve();
       };
       
-      audio.onerror = (e) => {
-        console.error('❌ AI PRONUNCIATION: Playback error', e);
-        URL.revokeObjectURL(audioUrl);
-        reject(new Error('Audio playback failed'));
+      utterance.onerror = (event) => {
+        console.error('❌ AI PRONUNCIATION: Playback error', event);
+        reject(new Error(`Speech synthesis error: ${event.error}`));
       };
       
-      audio.play().catch((e) => {
-        console.error('❌ AI PRONUNCIATION: Play failed', e);
-        URL.revokeObjectURL(audioUrl);
-        reject(e);
-      });
-    });
-
-  } catch (error) {
-    console.error('❌ AI PRONUNCIATION: Failed completely', error);
-    logger.error('Failed to generate AI pronunciation', { error, text, languageCode });
-    throw error;
-  }
+      // Start speaking
+      console.log('🔊 AI PRONUNCIATION: Starting playback...');
+      window.speechSynthesis.speak(utterance);
+      
+    } catch (error) {
+      console.error('❌ AI PRONUNCIATION: Failed completely', error);
+      logger.error('Failed to generate AI pronunciation', { error, text, languageCode });
+      reject(error);
+    }
+  });
 };
 
 // Helper function to convert base64 to blob
