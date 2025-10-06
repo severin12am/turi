@@ -33,7 +33,7 @@ The Turi Language Learning App now includes an AI-powered dialogue generation fe
 
 ### Gemini API Configuration
 - **Models**: Fallback system trying `gemini-1.5-flash`, `gemini-1.5-pro`, `gemini-pro`, `gemini-1.0-pro`
-- **API Key**: `AIzaSyB7VePKV2OSzDO-2LhFjyLTQckrK7VRW_4`
+- **API Key**: `AIzaSyBFUHj66DhBhB2LunfXaKMrhHMrdOP0go4`
 - **Safety Settings**: Enabled for content filtering
 - **Rate Limiting**: 10 requests per minute
 - **Fallback**: Automatic model switching if one fails
