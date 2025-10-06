@@ -12,14 +12,14 @@ const getGeminiApiKey = (): string => {
 };
 
 // Try different model names in order of preference
+// Updated based on Google's new naming convention (Sept 2025)
+// Note: Some models may have daily quota limits that reset at midnight UTC
 const GEMINI_MODELS = [
-  'gemini-2.5-flash',
-  'gemini-2.5-pro',
-  'gemini-2.0-flash',
-  'gemini-1.5-flash-latest',
-  'gemini-1.5-pro-latest',
-  'gemini-1.5-flash-002',
-  'gemini-1.5-pro-002'
+  'gemini-1.5-flash',              // Try legacy model first (most compatible)
+  'gemini-1.5-pro',                // Legacy pro model
+  'gemini-flash-latest',           // Alias for latest Gemini 2.5 Flash (may have quota limits)
+  'gemini-flash-lite-latest',      // Alias for latest Gemini 2.5 Flash Lite
+  'gemini-1.5-flash-8b'            // Smaller, faster model
 ];
 
 const getGeminiApiUrl = (modelName: string) => 
@@ -195,13 +195,20 @@ Example format (MUST start with NPC):
           continue;
         }
         
-        // For other errors, provide specific messages
+        // If quota exceeded (429), try next model instead of throwing
         if (response.status === 429) {
-          throw new Error('Too many requests. Please wait a moment before trying again.');
-        } else if (response.status === 403) {
-          throw new Error('API access denied. Please check your connection and try again.');
+          lastError = new Error('Quota exceeded for this model');
+          logger.info(`Model ${modelName} quota exceeded, trying next model...`);
+          continue;
+        }
+        
+        // For other errors, try next model
+        if (response.status === 403) {
+          lastError = new Error('API access denied');
+          continue;
         } else {
-          throw new Error(`AI service error (${response.status}). Please try again later.`);
+          lastError = new Error(`AI service error (${response.status})`);
+          continue;
         }
       }
 
@@ -357,13 +364,20 @@ export const generateWordExplanation = async (params: GenerateWordExplanationPar
           continue;
         }
         
-        // For other errors, provide specific messages
+        // If quota exceeded (429), try next model instead of throwing
         if (response.status === 429) {
-          throw new Error('Too many requests. Please wait a moment before trying again.');
-        } else if (response.status === 403) {
-          throw new Error('API access denied. Please check your connection and try again.');
+          lastError = new Error('Quota exceeded for this model');
+          logger.info(`Model ${modelName} quota exceeded, trying next model...`);
+          continue;
+        }
+        
+        // For other errors, try next model
+        if (response.status === 403) {
+          lastError = new Error('API access denied');
+          continue;
         } else {
-          throw new Error(`AI service error (${response.status}). Please try again later.`);
+          lastError = new Error(`AI service error (${response.status})`);
+          continue;
         }
       }
 
