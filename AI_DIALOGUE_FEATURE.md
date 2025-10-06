@@ -32,8 +32,8 @@ The Turi Language Learning App now includes an AI-powered dialogue generation fe
 ## API Integration
 
 ### Gemini API Configuration
-- **Models**: Fallback system trying `gemini-1.5-flash`, `gemini-1.5-pro`, `gemini-pro`, `gemini-1.0-pro`
-- **API Key**: `AIzaSyBFUHj66DhBhB2LunfXaKMrhHMrdOP0go4`
+- **Models**: Fallback system trying `gemini-1.5-flash`, `gemini-1.5-pro`, `gemini-flash-latest`, `gemini-flash-lite-latest`, `gemini-1.5-flash-8b`
+- **API Key**: Stored securely in `.env` file as `VITE_GOOGLE_GEMINI_API_KEY` (not committed to repository)
 - **Safety Settings**: Enabled for content filtering
 - **Rate Limiting**: 10 requests per minute
 - **Fallback**: Automatic model switching if one fails
@@ -91,10 +91,14 @@ The AI receives structured prompts that include:
 - Ensure vocabulary words are properly fetched for each dialogue
 - Test with different language pairs
 - Handle edge cases gracefully
+- **Never commit the `.env` file with API keys to version control**
+- Keep API keys secure and rotate them regularly
 
 ## Security Considerations
 
-- API key is client-side (consider server-side proxy for production)
+- API key stored in `.env` file (not committed to repository)
+- Add `.env` to `.gitignore` to prevent accidental commits
+- Consider server-side proxy for production to hide API keys
 - Rate limiting prevents abuse
 - Content filtering enabled via Gemini safety settings
 - No user data stored in AI dialogue generation process
@@ -123,6 +127,11 @@ To test the AI dialogue feature:
 - Solution: Wait 1 minute before trying again
 - Rate limit: 10 requests per minute
 
+**"Quota exceeded"**
+- Daily API quota limit reached
+- Solution: Wait until quota resets (midnight UTC) or use a different API key
+- Each model has separate quota limits
+
 **"Failed to parse AI response"**
 - AI returned invalid JSON format
 - Solution: Try again with simpler preferences
@@ -135,11 +144,22 @@ To test the AI dialogue feature:
 
 ### Model Fallback System
 The system automatically tries these models in order:
-1. `gemini-1.5-flash` (fastest, most current)
-2. `gemini-1.5-pro` (more capable)
-3. `gemini-pro` (legacy)
-4. `gemini-1.0-pro` (fallback)
+1. `gemini-1.5-flash` (legacy model, most compatible)
+2. `gemini-1.5-pro` (legacy pro model)
+3. `gemini-flash-latest` (latest Gemini 2.5 Flash, may have quota limits)
+4. `gemini-flash-lite-latest` (latest Gemini 2.5 Flash Lite, faster)
+5. `gemini-1.5-flash-8b` (smaller, faster model)
 
-If all models fail, users are directed to use the original dialogue.
+If all models fail or quotas are exceeded, users are directed to use the original dialogue.
+
+## Environment Setup
+
+To use the AI dialogue feature, create a `.env` file in the project root:
+
+```env
+VITE_GOOGLE_GEMINI_API_KEY=your_api_key_here
+```
+
+Get your API key from [Google AI Studio](https://ai.google.dev/aistudio).
 
 The feature integrates seamlessly with the existing learning flow while providing enhanced customization options for language learners. 
