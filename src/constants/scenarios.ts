@@ -1,6 +1,6 @@
 /**
- * Scenario names for the language learning app
- * 30 scenarios covering various real-world situations
+ * Scenario definitions for language learning
+ * Each scenario contains 10 dialogues
  */
 
 export const SCENARIO_NAMES: Record<number, string> = {
@@ -36,28 +36,15 @@ export const SCENARIO_NAMES: Record<number, string> = {
   30: "Farewells and reflective conversations"
 };
 
+export const DIALOGUES_PER_SCENARIO = 10;
 export const TOTAL_SCENARIOS = 30;
 
-/**
- * Number of dialogues in each scenario
- * Default is 10 dialogues per scenario
- */
-export const DIALOGUES_PER_SCENARIO = 10;
-
-/**
- * Get scenario name by number
- */
 export const getScenarioName = (scenarioNumber: number): string => {
   return SCENARIO_NAMES[scenarioNumber] || `Scenario ${scenarioNumber}`;
 };
 
-/**
- * Get all scenario names as array of objects
- */
-export const getAllScenarios = () => {
-  return Object.entries(SCENARIO_NAMES).map(([number, name]) => ({
-    number: parseInt(number),
-    name
-  }));
+export const getScenarioProgress = (scenarioDialogueProgress: number): string => {
+  const completed = scenarioDialogueProgress || 0;
+  return `${completed} / ${DIALOGUES_PER_SCENARIO} dialogues finished`;
 };
 

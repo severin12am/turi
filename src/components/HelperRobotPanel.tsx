@@ -8,7 +8,7 @@ import { LogOut } from 'lucide-react';
 import AppPanel from './AppPanel';
 import { PanelBackdrop } from './AppPanel';
 import { PanelTitle, PanelButton, PanelInput } from './PanelElements';
-import { SCENARIO_NAMES, TOTAL_SCENARIOS, DIALOGUES_PER_SCENARIO, getAllScenarios } from '../constants/scenarios';
+import { SCENARIO_NAMES, DIALOGUES_PER_SCENARIO, TOTAL_SCENARIOS, getScenarioName, getScenarioProgress } from '../constants/scenarios';
 
 interface HelperRobotPanelProps {
   onClose: () => void;
@@ -526,18 +526,20 @@ const HelperRobotPanel: React.FC<HelperRobotPanelProps> = ({ onClose }) => {
               <div className="mt-4">
                 {languagePairs.map(pair => {
                   if (pair.mother_language === motherLanguage && pair.target_language === targetLanguage) {
-                    const completedScenarios = pair.scenario_progress || 0;
+                    const currentScenario = pair.scenario_progress || 0;
+                    // Number of completed scenarios is current - 1 (if current > 0)
+                    const scenariosCompleted = currentScenario > 0 ? currentScenario - 1 : 0;
                     
                     return (
                       <div key={pair.id}>
                         <div className="flex justify-between text-sm text-white/60 mb-1">
                           <span>Scenarios completed</span>
-                          <span>{completedScenarios} / {TOTAL_SCENARIOS}</span>
+                          <span>{scenariosCompleted} / {TOTAL_SCENARIOS}</span>
                         </div>
                         <div className="w-full bg-white/10 rounded-full h-2">
                           <div 
-                            className="bg-gradient-to-r from-pink-500 to-rose-500 h-2 rounded-full"
-                            style={{ width: `${(completedScenarios / TOTAL_SCENARIOS) * 100}%` }}
+                            className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full" 
+                            style={{ width: `${(scenariosCompleted / TOTAL_SCENARIOS) * 100}%` }}
                           ></div>
                         </div>
                       </div>
@@ -552,92 +554,58 @@ const HelperRobotPanel: React.FC<HelperRobotPanelProps> = ({ onClose }) => {
             {showScenarios && (
               <div className="mb-6">
                 <div className="max-h-[60vh] overflow-y-auto bg-white/5 rounded-2xl p-4">
-                  <div className="grid grid-cols-1 gap-3">
-                    {getAllScenarios().map(scenario => {
-                      // Get current scenario progress
+                  <div className="space-y-3">
+                    {Array.from({ length: TOTAL_SCENARIOS }, (_, i) => i + 1).map(scenarioNum => {
                       const currentPair = languagePairs.find(
                         pair => pair.mother_language === motherLanguage && pair.target_language === targetLanguage
                       );
-                      const completedScenarios = currentPair?.scenario_progress || 0;
-                      const currentScenarioDialogue = currentPair?.scenario_dialogue_progress || 0;
                       
-                      // scenario_progress = number of fully completed scenarios
-                      // If scenario_progress = 0, we're on scenario 1 (none completed)
-                      // If scenario_progress = 1, scenario 1 is complete, we're on scenario 2
-                      // If scenario_progress = 2, scenarios 1-2 complete, we're on scenario 3
+                      // scenario_progress represents the CURRENT scenario being worked on
+                      const userScenarioProgress = currentPair?.scenario_progress || 0;
+                      const currentScenarioDialogues = scenarioNum === userScenarioProgress
+                        ? currentPair?.scenario_dialogue_progress || 0 
+                        : 0;
                       
-                      // Current scenario number (the one user is working on)
-                      const currentScenarioNumber = completedScenarios + 1;
-                      
-                      // A scenario is completed if its number is less than or equal to completedScenarios
-                      const isCompleted = scenario.number <= completedScenarios;
-                      
-                      // This is the current scenario in progress (not yet completed)
-                      const isCurrentScenario = scenario.number === currentScenarioNumber;
-                      
-                      // Future scenarios (locked)
-                      const isLocked = scenario.number > currentScenarioNumber;
+                      const isUnlocked = scenarioNum <= userScenarioProgress;
+                      const isCompleted = scenarioNum < userScenarioProgress; // Strictly less than
+                      const isCurrent = scenarioNum === userScenarioProgress;
                       
                       return (
-                        <div 
-                          key={scenario.number}
+                        <div
+                          key={scenarioNum}
                           className={`p-4 rounded-xl transition-all ${
                             isCompleted
                               ? 'bg-green-900/20 border border-green-500/30'
-                              : isCurrentScenario
-                              ? 'bg-blue-900/20 border border-blue-500/30'
-                              : 'bg-white/5 border border-white/10 opacity-60'
+                              : isCurrent
+                              ? 'bg-purple-900/20 border border-purple-500/30'
+                              : 'bg-white/5 border border-white/10 opacity-50'
                           }`}
                         >
-                          <div className="flex items-start gap-3">
-                            {/* Scenario Number */}
-                            <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-bold ${
-                              isCompleted 
-                                ? 'bg-green-500 text-white'
-                                : isCurrentScenario
-                                ? 'bg-blue-500 text-white'
-                                : 'bg-white/10 text-white/40'
-                            }`}>
-                              {scenario.number}
-                            </div>
-                            
-                            {/* Scenario Name and Progress */}
+                          <div className="flex items-start justify-between">
                             <div className="flex-1">
-                              <div className={`text-base font-medium ${
-                                isCompleted ? 'text-green-400' : isCurrentScenario ? 'text-blue-400' : 'text-white/60'
-                              }`}>
-                                {scenario.name}
+                              <div className="flex items-center gap-2 mb-2">
+                                <span className="text-lg font-bold text-white">
+                                  Scenario {scenarioNum}
+                                </span>
+                                {!isUnlocked && (
+                                  <span className="text-yellow-400 text-sm">🔒</span>
+                                )}
+                                {isCompleted && (
+                                  <span className="text-green-400 text-sm">✓</span>
+                                )}
                               </div>
-                              
-                              {/* Completed scenario */}
+                              <p className={`text-sm ${isUnlocked ? 'text-white/80' : 'text-white/40'}`}>
+                                {getScenarioName(scenarioNum)}
+                              </p>
+                              {isCurrent && (
+                                <p className="text-xs text-purple-400 mt-2">
+                                  {currentScenarioDialogues} / {DIALOGUES_PER_SCENARIO} dialogues finished
+                                </p>
+                              )}
                               {isCompleted && (
-                                <div className="text-xs text-green-400/70 mt-1">
-                                  ✓ Completed
-                                </div>
-                              )}
-                              
-                              {/* Current scenario in progress */}
-                              {isCurrentScenario && (
-                                <div className="mt-2">
-                                  <div className="flex justify-between text-xs text-blue-400/70 mb-1">
-                                    <span>📖 In Progress</span>
-                                    <span>{currentScenarioDialogue} / {DIALOGUES_PER_SCENARIO}</span>
-                                  </div>
-                                  {/* Mini progress bar for dialogues within scenario */}
-                                  <div className="w-full bg-white/10 rounded-full h-1.5">
-                                    <div 
-                                      className="bg-gradient-to-r from-blue-500 to-cyan-500 h-1.5 rounded-full transition-all duration-300"
-                                      style={{ width: `${(currentScenarioDialogue / DIALOGUES_PER_SCENARIO) * 100}%` }}
-                                    ></div>
-                                  </div>
-                                </div>
-                              )}
-                              
-                              {/* Locked scenario */}
-                              {isLocked && (
-                                <div className="text-xs text-white/40 mt-1">
-                                  🔒 Locked
-                                </div>
+                                <p className="text-xs text-green-400 mt-2">
+                                  {DIALOGUES_PER_SCENARIO} / {DIALOGUES_PER_SCENARIO} dialogues finished
+                                </p>
                               )}
                             </div>
                           </div>
