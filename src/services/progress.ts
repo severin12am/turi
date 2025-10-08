@@ -327,6 +327,161 @@ export const getUserLearningStats = async (userId: string, targetLanguage: Suppo
 };
 
 /**
+ * Track a completed scenario dialogue and update user progress
+ */
+export const trackCompletedScenarioDialogue = async (
+  userId: string, 
+  characterId: number, 
+  scenarioNumber: number,
+  dialogueId: number, 
+  score: number
+) => {
+  try {
+    logger.info('Tracking scenario dialogue completion', { userId, characterId, scenarioNumber, dialogueId, score });
+    
+    // Validate input parameters
+    if (!Number.isInteger(characterId) || characterId < 1) {
+      throw new SecurityError('Invalid character ID', 'INVALID_PARAMETER');
+    }
+    
+    if (!Number.isInteger(dialogueId) || dialogueId < 1) {
+      throw new SecurityError('Invalid dialogue ID', 'INVALID_PARAMETER');
+    }
+    
+    if (typeof score !== 'number' || score < 0 || score > 100) {
+      throw new SecurityError('Invalid score', 'INVALID_PARAMETER');
+    }
+    
+    // Get the target language from current user with security validation
+    const userResult = await secureQuery(
+      'get_user_for_scenario_tracking',
+      userId,
+      async () => {
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select('target_language')
+          .eq('id', userId)
+          .single();
+        
+        return { data: userData, error: userError };
+      }
+    );
+    
+    const { data: userData, error: userError } = userResult;
+      
+    // Handle case when user record doesn't exist
+    let targetLanguage: SupportedLanguage = 'en'; // Default to English
+    
+    if (userError) {
+      // If no user found, try to get target language from store
+      const { targetLanguage: storeTargetLanguage } = useStore.getState();
+      if (storeTargetLanguage) {
+        targetLanguage = storeTargetLanguage;
+        logger.warn('User record not found in database, using target language from store', { 
+          userId,
+          targetLanguage 
+        });
+      }
+    } else {
+      targetLanguage = userData?.target_language as SupportedLanguage || 'en';
+    }
+    
+    // Get current language level with security validation
+    const levelResult = await secureQuery(
+      'get_language_level_for_scenario_tracking',
+      userId,
+      async () => {
+        const { data: languageLevel, error: levelError } = await supabase
+          .from('language_levels')
+          .select('*')
+          .eq('user_id', userId)
+          .eq('target_language', targetLanguage)
+          .single();
+        
+        return { data: languageLevel, error: levelError };
+      }
+    );
+    
+    const { data: languageLevel, error: levelError } = levelResult;
+    
+    if (levelError && levelError.code !== 'PGRST116') {
+      logger.error('Error fetching language level for tracking scenario completion', { error: levelError });
+      throw levelError;
+    }
+    
+    // Calculate scenario progress (similar to level for regular dialogues)
+    const scenarioProgress = scenarioNumber; // For now, just use the scenario number
+    
+    if (languageLevel) {
+      // Update existing language level with security validation
+      await secureQuery(
+        'update_language_level_scenario_completion',
+        userId,
+        async () => {
+          const { data, error } = await supabase
+            .from('language_levels')
+            .update({
+              scenario_dialogue_progress: Math.max(dialogueId, languageLevel.scenario_dialogue_progress || 0),
+              scenario_progress: scenarioProgress
+            })
+            .eq('user_id', userId)
+            .eq('target_language', targetLanguage)
+            .select();
+          
+          return { data, error };
+        }
+      );
+      
+      logger.info('Language level updated from scenario dialogue completion', { 
+        userId, 
+        scenarioNumber,
+        dialogueId,
+        scenarioProgress
+      });
+    } else {
+      // Create new language level record with security validation
+      await secureQuery(
+        'create_language_level_scenario_completion',
+        userId,
+        async () => {
+          const { data, error } = await supabase
+            .from('language_levels')
+            .insert([{
+              user_id: userId,
+              target_language: targetLanguage,
+              mother_language: targetLanguage === 'en' ? 'ru' : 'en',
+              scenario_dialogue_progress: dialogueId,
+              scenario_progress: scenarioProgress,
+              level: 1,
+              word_progress: 0
+            }])
+            .select();
+          
+          return { data, error };
+        }
+      );
+      
+      logger.info('Created language level from scenario dialogue completion', { 
+        userId, 
+        scenarioNumber,
+        dialogueId,
+        scenarioProgress
+      });
+    }
+    
+    logger.info('Scenario dialogue completion tracked successfully', { dialogueId, scenarioNumber, characterId });
+    return true;
+  } catch (error) {
+    if (error instanceof SecurityError) {
+      logger.warn('Security check failed in trackCompletedScenarioDialogue', { error: error.message });
+      throw error;
+    }
+    logger.error('Error in trackCompletedScenarioDialogue', { error });
+    throw error;
+  }
+};
+
+/**
  * Track a completed dialogue and update user progress
  */
 export const trackCompletedDialogue = async (

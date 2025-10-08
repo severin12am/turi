@@ -19,6 +19,7 @@ interface DialogueSelectionPanelProps {
   characterId: number;
   onDialogueSelect: (dialogueId: number) => void;
   onAIDialogueSelect: (dialogueId: number, aiDialogue: AIDialogueStep[]) => void;
+  onScenarioClick?: (scenarioNumber: number) => void;
   onClose: () => void;
 }
 
@@ -32,6 +33,7 @@ const DialogueSelectionPanel: React.FC<DialogueSelectionPanelProps> = ({
   characterId,
   onDialogueSelect,
   onAIDialogueSelect,
+  onScenarioClick,
   onClose
 }) => {
   const [availableDialogues, setAvailableDialogues] = useState<number[]>([]);
@@ -408,7 +410,32 @@ const DialogueSelectionPanel: React.FC<DialogueSelectionPanelProps> = ({
                 <p className="text-white/70">{getTranslation(motherLanguage, 'loading')}</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              <>
+                {/* Scenarios Section */}
+                {onScenarioClick && characterId === 1 && (
+                  <div className="mb-6">
+                    <h3 className="text-white text-lg font-semibold mb-3">Scenarios</h3>
+                    <button
+                      onClick={() => onScenarioClick(1)}
+                      className="w-full text-left relative rounded-xl p-4 bg-gradient-to-r from-purple-600/20 to-pink-600/20 hover:from-purple-600/30 hover:to-pink-600/30 border border-purple-500/30 hover:border-purple-500/50 transition-all duration-300"
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-white font-medium text-lg">Scenario 1: Greetings and Introductions</span>
+                        <div className="flex items-center text-purple-300 bg-purple-900/30 px-3 py-1 rounded-lg text-xs">
+                          <PlayCircle size={14} className="mr-1" />
+                          <span>Special</span>
+                        </div>
+                      </div>
+                      <p className="text-white/70 text-sm">
+                        Practice real-world conversation scenarios
+                      </p>
+                    </button>
+                  </div>
+                )}
+                
+                {/* Regular Dialogues Section */}
+                <h3 className="text-white text-lg font-semibold mb-3">Regular Dialogues</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                 {availableDialogues.map((dialogueId) => {
                   const isCompleted = isDialogueCompleted(dialogueId);
                   const isUnlocked = isDialogueUnlocked(dialogueId);
@@ -467,7 +494,8 @@ const DialogueSelectionPanel: React.FC<DialogueSelectionPanelProps> = ({
                     </div>
                   );
                 })}
-              </div>
+                </div>
+              </>
             )}
             
             {/* Debug buttons - leave these for now */}

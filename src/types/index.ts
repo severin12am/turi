@@ -18,6 +18,8 @@ export interface LanguageLevel {
   dialogue_number?: number;
   word_progress: number;
   email: string;
+  scenario_progress?: number;
+  scenario_dialogue_progress?: number;
 }
 
 export interface Character {

@@ -10,6 +10,7 @@ import { supabase } from '../services/supabase';
 import type { Character as CharacterType } from '../types';
 import DialogueBox from '../components/DialogueBox';
 import DialogueSelectionPanel from '../components/DialogueSelectionPanel';
+import ScenarioSelectionPanel from '../components/ScenarioSelectionPanel';
 import { AIDialogueStep } from '../services/gemini';
 import MobileControls from '../components/MobileControls';
 
@@ -301,6 +302,11 @@ const CityScene: React.FC = () => {
   const [showDialogueSelection, setShowDialogueSelection] = useState(false);
   const [selectedDialogueId, setSelectedDialogueId] = useState<number>(1);
   const [aiDialogue, setAiDialogue] = useState<AIDialogueStep[] | null>(null);
+  
+  // Add state for scenario selection
+  const [showScenarioSelection, setShowScenarioSelection] = useState(false);
+  const [selectedScenarioNumber, setSelectedScenarioNumber] = useState<number>(1);
+  const [isScenarioDialogue, setIsScenarioDialogue] = useState(false);
   
   // Mobile controls state
   const [mobileMovement, setMobileMovement] = useState({ x: 0, z: 0 });
@@ -1646,8 +1652,40 @@ const CityScene: React.FC = () => {
   const handleCloseDialogue = () => {
     setIsDialogueActive(false);
     setAiDialogue(null); // Clear AI dialogue when closing
+    setIsScenarioDialogue(false); // Clear scenario flag
     logger.info('Dialogue closed');
     // Show dialogue selection again after dialogue is closed
+    if (isScenarioDialogue) {
+      setShowScenarioSelection(true);
+    } else {
+      setShowDialogueSelection(true);
+    }
+  };
+  
+  // Handle scenario button click (opens scenario selection)
+  const handleScenarioClick = (scenarioNumber: number) => {
+    console.log('Scenario clicked:', scenarioNumber);
+    setSelectedScenarioNumber(scenarioNumber);
+    setShowDialogueSelection(false);
+    setShowScenarioSelection(true);
+  };
+  
+  // Handle scenario dialogue selection
+  const handleScenarioDialogueSelect = (dialogueId: number, scenarioNumber: number) => {
+    console.log('Scenario dialogue selected:', dialogueId, 'for scenario:', scenarioNumber, 'character:', activeCharacterId);
+    setIsScenarioDialogue(true);
+    setSelectedScenarioNumber(scenarioNumber);
+    setSelectedDialogueId(dialogueId);
+    setAiDialogue(null); // Clear any AI dialogue
+    setIsDialogueActive(true);
+    setShowScenarioSelection(false);
+    logger.info('Scenario dialogue activated', { characterId: activeCharacterId, scenarioNumber, dialogueId });
+  };
+  
+  // Handle scenario selection panel back button
+  const handleScenarioBack = () => {
+    console.log('Back from scenario selection');
+    setShowScenarioSelection(false);
     setShowDialogueSelection(true);
   };
   
@@ -2043,6 +2081,8 @@ const CityScene: React.FC = () => {
           onNpcSpeakEnd={() => setIsNpcSpeaking(false)}
           dialogueId={selectedDialogueId}
           aiDialogue={aiDialogue}
+          isScenario={isScenarioDialogue}
+          scenarioNumber={selectedScenarioNumber}
         />
       )}
       
@@ -2051,7 +2091,18 @@ const CityScene: React.FC = () => {
           characterId={activeCharacterId}
           onDialogueSelect={handleDialogueSelect}
           onAIDialogueSelect={handleAIDialogueSelect}
+          onScenarioClick={handleScenarioClick}
           onClose={handleDialogueSelectionClose}
+        />
+      )}
+      
+      {showScenarioSelection && !isDialogueActive && (
+        <ScenarioSelectionPanel
+          characterId={activeCharacterId}
+          scenarioNumber={selectedScenarioNumber}
+          scenarioName="Scenario 1: Greetings and Introductions"
+          onScenarioDialogueSelect={handleScenarioDialogueSelect}
+          onBack={handleScenarioBack}
         />
       )}
       

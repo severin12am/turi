@@ -149,6 +149,8 @@ interface DialogueBoxProps {
   onNpcSpeakEnd?: () => void;
   dialogueId?: number; // New prop for dialogue ID
   aiDialogue?: AIDialogueStep[] | null; // AI-generated dialogue
+  isScenario?: boolean; // Flag to indicate if this is a scenario dialogue
+  scenarioNumber?: number; // Which scenario (1, 2, 3, etc.)
 }
 
 /**
@@ -213,6 +215,8 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
   onNpcSpeakEnd,
   dialogueId = 1, // Default to dialogue ID 1 if not provided
   aiDialogue = null, // AI-generated dialogue
+  isScenario = false, // Default to false (regular dialogue)
+  scenarioNumber = 1, // Default to scenario 1
 }) => {
   // State variables for dialogue management
   const [dialogues, setDialogues] = useState<DialoguePhrase[]>([]); // Raw dialogue data from database
@@ -253,6 +257,21 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
   // Add state for quiz management
   const [showQuiz, setShowQuiz] = useState(false);
   const [currentDialogueId, setCurrentDialogueId] = useState<number>(dialogueId);
+  const [dialogueComplete, setDialogueComplete] = useState(false);
+  const [isPlayingFullDialogue, setIsPlayingFullDialogue] = useState(false);
+  
+  // Playback speed control
+  const [playbackSpeed, setPlaybackSpeed] = useState<number>(1.0);
+  const speedOptions = [0.6, 0.8, 1.0, 1.2, 1.4, 2.0];
+  
+  // Text visibility control - 6 modes
+  type VisibilityMode = 'all' | 'phrase-trans' | 'phrase-transl' | 'phrase-only' | 'translation-only' | 'none';
+  const [visibilityMode, setVisibilityMode] = useState<VisibilityMode>('all');
+  const visibilityModes: VisibilityMode[] = ['all', 'phrase-trans', 'phrase-transl', 'phrase-only', 'translation-only', 'none'];
+  const [completedInHideMode, setCompletedInHideMode] = useState(false);
+  
+  // Ref to track immediate visibility mode value (to avoid closure issues)
+  const visibilityModeRef = useRef<VisibilityMode>('all');
   
   // Add state to track if NPC is speaking
   const [isNpcSpeaking, setIsNpcSpeaking] = useState(false);
@@ -267,6 +286,12 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
   const [explanationData, setExplanationData] = useState<WordExplanationData | null>(null);
   const [isLoadingExplanation, setIsLoadingExplanation] = useState(false);
   const [explanationError, setExplanationError] = useState<string | null>(null);
+  
+  // State for audio recording functionality
+  const [userRecordings, setUserRecordings] = useState<Map<number, Blob>>(new Map());
+  const [audioStream, setAudioStream] = useState<MediaStream | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const isPlayingFullDialogueRef = useRef<boolean>(false);
   
   // Get store methods
   const setIsDialogueOpen = useStore(state => state.setIsDialogueOpen);
@@ -310,6 +335,56 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
       console.log('%c QUIZ STATE IS TRUE! ', 'background: #222; color: #bada55; font-size: 20px');
     }
   }, [showQuiz, currentDialogueId]);
+  
+  // Auto-start recording when a new user phrase appears
+  useEffect(() => {
+    const currentUserPhrase = conversationHistory.find(
+      entry => entry.speaker === 'User' && 
+               entry.step === currentStep && 
+               !entry.isCompleted
+    );
+    
+    if (currentUserPhrase) {
+      // Check if we're not already recording for this step
+      const isAlreadyRecording = mediaRecorderRef.current?.state === 'recording';
+      
+      if (!isAlreadyRecording) {
+        console.log(`🎙️ Starting recording for step ${currentStep}`);
+        startRecording(currentStep);
+      }
+    }
+  }, [conversationHistory, currentStep]);
+  
+  // Cleanup recordings and streams on component unmount
+  useEffect(() => {
+    return () => {
+      // Stop any active recording
+      if (mediaRecorderRef.current?.state === 'recording') {
+        try {
+          mediaRecorderRef.current.stop();
+          console.log('Stopped recording on component unmount');
+        } catch (e) {
+          console.error('Error stopping recording on unmount:', e);
+        }
+      }
+      
+      // Stop all audio stream tracks
+      if (audioStream) {
+        audioStream.getTracks().forEach(track => {
+          track.stop();
+          console.log('Stopped audio track on component unmount');
+        });
+      }
+      
+      // Stop full dialogue playback
+      if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+      
+      // Clean up blob URLs (though they'll be garbage collected anyway)
+      console.log(`Cleaned up ${userRecordings.size} user recordings on component unmount`);
+    };
+  }, []);
   
   // Debug log to verify component rendering with quiz state
   console.log(`DEBUG: RENDERING DIALOGUE BOX, showQuiz = ${showQuiz} currentDialogueId = ${currentDialogueId}`);
@@ -1281,7 +1356,8 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
         }
         
         // Original database fetching logic
-        const sourceTable = `phrases_${characterId}`;
+        // Choose table based on whether this is a scenario dialogue
+        const sourceTable = isScenario ? `scenario_${characterId}` : `phrases_${characterId}`;
             
         const { data, error } = await supabase
           .from(sourceTable)
@@ -1865,7 +1941,7 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
       }
       
       // Set speech rate and pitch for better clarity
-      utterance.rate = 0.8; // Slightly slower for language learning
+      utterance.rate = playbackSpeed; // Use dynamic playback speed
       utterance.pitch = 1.0;
       utterance.volume = 1.0;
       
@@ -1920,6 +1996,340 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
     }
   };
 
+  /**
+   * Start recording user's audio
+   */
+  const startRecording = async (step: number) => {
+    try {
+      // Check if MediaRecorder is supported
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        console.warn('Audio recording not supported in this browser');
+        return;
+      }
+
+      // Request microphone access
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      setAudioStream(stream);
+      
+      // Create MediaRecorder instance
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm') 
+        ? 'audio/webm' 
+        : MediaRecorder.isTypeSupported('audio/mp4')
+          ? 'audio/mp4'
+          : 'audio/wav';
+      
+      const recorder = new MediaRecorder(stream, { mimeType });
+      
+      const audioChunks: Blob[] = [];
+      
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunks.push(event.data);
+        }
+      };
+      
+      recorder.onstop = () => {
+        const audioBlob = new Blob(audioChunks, { type: recorder.mimeType });
+        
+        // Store recording for this step (replacing any previous recording)
+        setUserRecordings(prev => {
+          const newMap = new Map(prev);
+          newMap.set(step, audioBlob);
+          return newMap;
+        });
+        
+        console.log(`Recording saved for step ${step}, size: ${audioBlob.size} bytes`);
+        logger.info('User recording saved', { step, size: audioBlob.size });
+        
+        // Clean up the stream
+        stream.getTracks().forEach(track => track.stop());
+        setAudioStream(null);
+      };
+      
+      recorder.start();
+      mediaRecorderRef.current = recorder;
+      
+      console.log(`Started recording for step ${step}`);
+      logger.info('Started audio recording', { step });
+    } catch (error) {
+      console.error('Error starting recording:', error);
+      logger.error('Failed to start audio recording', { error, step });
+    }
+  };
+
+  /**
+   * Stop recording user's audio
+   */
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
+      console.log('Stopped recording');
+      logger.info('Stopped audio recording');
+    }
+  };
+
+  /**
+   * Play back user's recorded audio for a specific step
+   */
+  const playUserRecording = (step: number) => {
+    const recording = userRecordings.get(step);
+    
+    if (!recording) {
+      console.log(`No recording found for step ${step}`);
+      return;
+    }
+    
+    const audioUrl = URL.createObjectURL(recording);
+    const audio = new Audio(audioUrl);
+    
+    // Set playback speed
+    audio.playbackRate = playbackSpeed;
+    
+    audio.onended = () => {
+      URL.revokeObjectURL(audioUrl);
+    };
+    
+    audio.onerror = (error) => {
+      console.error('Error playing user recording:', error);
+      logger.error('Failed to play user recording', { error, step });
+      URL.revokeObjectURL(audioUrl);
+    };
+    
+    audio.play().catch(error => {
+      console.error('Error playing user recording:', error);
+      logger.error('Failed to play user recording', { error, step });
+    });
+    
+    console.log(`Playing user recording for step ${step} at ${playbackSpeed}x speed`);
+    logger.info('Playing user recording', { step, speed: playbackSpeed });
+  };
+
+  /**
+   * Handle click on "Continue to Quiz" button
+   */
+  const handleContinueToQuiz = () => {
+    console.log("🎮 User clicked Continue to Quiz button");
+    showQuizAfterDialogue(currentDialogueId);
+  };
+
+  /**
+   * Toggle playback speed through available options
+   */
+  const togglePlaybackSpeed = () => {
+    const currentIndex = speedOptions.indexOf(playbackSpeed);
+    const nextIndex = (currentIndex + 1) % speedOptions.length;
+    const newSpeed = speedOptions[nextIndex];
+    setPlaybackSpeed(newSpeed);
+    console.log(`🎚️ Playback speed changed to ${newSpeed}x`);
+    logger.info('Playback speed changed', { speed: newSpeed });
+  };
+
+  /**
+   * Get icon for current playback speed
+   */
+  const getSpeedIcon = (speed: number): string => {
+    if (speed <= 0.6) return '🐢'; // Slow
+    if (speed <= 0.8) return '🚶'; // Walking
+    if (speed === 1.0) return '▶️'; // Normal
+    if (speed <= 1.2) return '🏃'; // Running
+    if (speed <= 1.4) return '⚡'; // Fast
+    return '🚀'; // Very fast (2x)
+  };
+
+  /**
+   * Toggle text visibility mode
+   */
+  const toggleVisibilityMode = () => {
+    const currentIndex = visibilityModes.indexOf(visibilityMode);
+    const nextIndex = (currentIndex + 1) % visibilityModes.length;
+    const newMode = visibilityModes[nextIndex];
+    setVisibilityMode(newMode);
+    visibilityModeRef.current = newMode; // Update ref immediately for closures
+    console.log(`👁️ Visibility mode changed: ${visibilityMode} → ${newMode}`);
+    console.log(`   Is Hide mode now? ${newMode === 'none'}`);
+    console.log(`   Ref updated to: ${visibilityModeRef.current}`);
+    console.log(`   Current completedInHideMode flag: ${completedInHideMode}`);
+    logger.info('Visibility mode changed', { mode: newMode, previousMode: visibilityMode });
+  };
+
+  /**
+   * Get icon and label for current visibility mode
+   */
+  const getVisibilityIcon = (mode: VisibilityMode): string => {
+    switch (mode) {
+      case 'all': return '📖'; // Book - all visible
+      case 'phrase-trans': return '📝'; // Note - phrase + transcription
+      case 'phrase-transl': return '🔤'; // Letters - phrase + translation
+      case 'phrase-only': return '👁️'; // Eye - phrase only
+      case 'translation-only': return '🌍'; // Globe - translation only
+      case 'none': return '🙈'; // See no evil - nothing visible
+      default: return '📖';
+    }
+  };
+
+  const getVisibilityLabel = (mode: VisibilityMode): string => {
+    switch (mode) {
+      case 'all': return 'All';
+      case 'phrase-trans': return 'P+T';
+      case 'phrase-transl': return 'P+Tr';
+      case 'phrase-only': return 'P';
+      case 'translation-only': return 'Tr';
+      case 'none': return 'Hide';
+      default: return 'All';
+    }
+  };
+
+  /**
+   * Play the entire dialogue from start to finish
+   * Plays NPC phrases using TTS and user recordings
+   */
+  const playFullDialogue = async () => {
+    if (isPlayingFullDialogueRef.current) {
+      console.log("Already playing full dialogue, ignoring");
+      return;
+    }
+
+    console.log("🎬 Starting full dialogue playback");
+    setIsPlayingFullDialogue(true);
+    isPlayingFullDialogueRef.current = true;
+
+    try {
+      // Get all completed entries in order
+      const completedEntries = conversationHistory
+        .filter(entry => entry.isCompleted || entry.speaker === 'NPC')
+        .sort((a, b) => a.step - b.step);
+
+      console.log(`Playing ${completedEntries.length} dialogue entries`);
+
+      for (let i = 0; i < completedEntries.length; i++) {
+        const entry = completedEntries[i];
+        
+        // Check if user stopped playback using ref (immediate value)
+        if (!isPlayingFullDialogueRef.current) {
+          console.log("Playback stopped by user");
+          break;
+        }
+
+        console.log(`Playing step ${entry.step}: ${entry.speaker} - "${entry.phrase}"`);
+
+        if (entry.speaker === 'NPC') {
+          // Play NPC phrase using text-to-speech
+          await playAudioWithPromise(entry.phrase);
+          
+          // Check again after async operation
+          if (!isPlayingFullDialogueRef.current) break;
+          
+          // Add a small pause after NPC speaks
+          await new Promise(resolve => setTimeout(resolve, 500));
+        } else if (entry.speaker === 'User') {
+          // Play user's recording if available
+          const recording = userRecordings.get(entry.step);
+          
+          if (recording) {
+            await playRecordingWithPromise(recording);
+            
+            // Check again after async operation
+            if (!isPlayingFullDialogueRef.current) break;
+            
+            // Add a small pause after user recording
+            await new Promise(resolve => setTimeout(resolve, 500));
+          } else {
+            console.log(`No recording found for user step ${entry.step}, skipping`);
+            // Still add a pause to maintain rhythm
+            await new Promise(resolve => setTimeout(resolve, 300));
+          }
+        }
+
+        // Add a brief pause between entries
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
+
+      console.log("✅ Full dialogue playback complete");
+    } catch (error) {
+      console.error("Error during full dialogue playback:", error);
+      logger.error('Full dialogue playback failed', { error });
+    } finally {
+      setIsPlayingFullDialogue(false);
+      isPlayingFullDialogueRef.current = false;
+    }
+  };
+
+  /**
+   * Stop full dialogue playback
+   */
+  const stopFullDialogue = () => {
+    console.log("⏹️ Stopping full dialogue playback");
+    setIsPlayingFullDialogue(false);
+    isPlayingFullDialogueRef.current = false;
+    
+    // Stop any active speech synthesis
+    if (window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
+  };
+
+  /**
+   * Play audio using TTS and return a promise that resolves when done
+   */
+  const playAudioWithPromise = (text: string): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      if (!window.speechSynthesis) {
+        console.warn("Speech synthesis not supported");
+        resolve();
+        return;
+      }
+
+      // Cancel any ongoing speech
+      window.speechSynthesis.cancel();
+
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = getRecognitionLanguage(targetLanguage);
+      utterance.rate = playbackSpeed; // Use dynamic playback speed
+      utterance.pitch = 1.0;
+
+      utterance.onend = () => {
+        resolve();
+      };
+
+      utterance.onerror = (event) => {
+        console.error("Speech synthesis error:", event);
+        resolve(); // Resolve anyway to continue playback
+      };
+
+      window.speechSynthesis.speak(utterance);
+    });
+  };
+
+  /**
+   * Play a recording blob and return a promise that resolves when done
+   */
+  const playRecordingWithPromise = (recording: Blob): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      const audioUrl = URL.createObjectURL(recording);
+      const audio = new Audio(audioUrl);
+      
+      // Set playback speed
+      audio.playbackRate = playbackSpeed;
+
+      audio.onended = () => {
+        URL.revokeObjectURL(audioUrl);
+        resolve();
+      };
+
+      audio.onerror = (error) => {
+        console.error("Error playing recording:", error);
+        URL.revokeObjectURL(audioUrl);
+        resolve(); // Resolve anyway to continue playback
+      };
+
+      audio.play().catch(error => {
+        console.error("Error starting recording playback:", error);
+        URL.revokeObjectURL(audioUrl);
+        resolve();
+      });
+    });
+  };
+
   // Simplified return button handler that resets to the clicked step
   const handleGoBack = (entry: ConversationEntry) => {
     console.log("RETURN: Resetting to step", entry.step, "with phrase", entry.phrase);
@@ -1930,6 +2340,42 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
       setIsListening(false);
     } catch (e) {
       console.error("Error stopping recognition during return:", e);
+    }
+    
+    // Stop any active recording
+    if (mediaRecorderRef.current?.state === 'recording') {
+      stopRecording();
+    }
+    
+    // Stop any active audio stream
+    if (audioStream) {
+      audioStream.getTracks().forEach(track => track.stop());
+      setAudioStream(null);
+    }
+    
+    // Clear recordings for steps after the one we're going back to
+    setUserRecordings(prev => {
+      const newMap = new Map(prev);
+      // Keep only recordings for steps <= entry.step
+      Array.from(newMap.keys()).forEach(step => {
+        if (step > entry.step) {
+          newMap.delete(step);
+          console.log(`Deleted recording for step ${step}`);
+        }
+      });
+      return newMap;
+    });
+    
+    // Reset dialogue complete state since we're going back
+    console.log("🔙 Going back - resetting completion flags");
+    console.log("   dialogueComplete: true → false");
+    console.log("   completedInHideMode:", completedInHideMode, "→ false");
+    setDialogueComplete(false);
+    setCompletedInHideMode(false);
+    
+    // Stop full dialogue playback if active
+    if (isPlayingFullDialogue) {
+      stopFullDialogue();
     }
     
     // Cancel any speech synthesis that might be in progress
@@ -2583,6 +3029,9 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
       console.error("Error stopping recognition:", e);
     }
     
+    // Stop audio recording
+    stopRecording();
+    
     // Set listening to false
     setIsListening(false);
     
@@ -2609,7 +3058,7 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
       { isLastStep, allSteps: currentDialogues.map(d => d.dialogue_step) });
     
     if (isLastStep) {
-      console.log("🏁🏁🏁 FINAL STEP REACHED, DIALOGUE COMPLETE - SHOULD SHOW QUIZ NOW");
+      console.log("🏁🏁🏁 FINAL STEP REACHED, DIALOGUE COMPLETE - READY FOR QUIZ");
       
       // Update conversation history with the completed phrase
       setConversationHistory(updatedHistory);
@@ -2618,11 +3067,29 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
       const dialogueId = currentDialogues[0]?.dialogue_id || 1;
       console.log("📚 FINAL DIALOGUE ID:", dialogueId);
       
-      // Show quiz - CRITICAL SECTION
-      console.log("🎮 INITIATING QUIZ DISPLAY FROM FINAL STEP");
-      setTimeout(() => {
-        showQuizAfterDialogue(dialogueId);
-      }, 300);
+      // Set dialogue as complete and store the dialogue ID
+      console.log("✅ Marking dialogue as complete, showing button");
+      setCurrentDialogueId(dialogueId);
+      setDialogueComplete(true);
+      
+      // Check if completed in "Hide" mode (none)
+      // Use ref to get immediate value (avoid closure issues)
+      const currentVisibilityMode = visibilityModeRef.current;
+      console.log("🔍 Checking completion mode:", {
+        visibilityModeState: visibilityMode,
+        visibilityModeRef: currentVisibilityMode,
+        isHideMode: currentVisibilityMode === 'none',
+        willSetCompletedInHideMode: currentVisibilityMode === 'none'
+      });
+      
+      if (currentVisibilityMode === 'none') {
+        setCompletedInHideMode(true);
+        console.log("🎯 Dialogue completed in Hide mode - user can proceed to quiz!");
+        console.log("✅ completedInHideMode flag set to TRUE");
+      } else {
+        console.log("⚠️ Dialogue completed but not in Hide mode - user must complete in Hide mode to proceed");
+        console.log("❌ Current mode:", currentVisibilityMode, "- Required: none (Hide)");
+      }
 
       // Reset processing flag after a delay to ensure we don't block further actions
       setTimeout(() => {
@@ -3106,6 +3573,8 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
         characterId={characterId}  // Pass characterId to VocalQuizComponent
         onComplete={handleQuizComplete}
         onClose={handleQuizClose}
+        isScenario={isScenario}
+        scenarioNumber={scenarioNumber}
       />
     );
   }
@@ -3147,33 +3616,42 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
             >
               <div className={`dialogue-entry ${entry.speaker.toLowerCase()}`} data-step={entry.step}> 
                 <div className="dialogue-content">
-                  <div 
-                    className="dialogue-phrase" 
-                    dir={targetLanguage === 'ar' ? 'rtl' : 'ltr'}
-                    lang={targetLanguage}
-                  >
-                    {isCurrentUserPhrase ? 
-                      renderHighlightedPhrase(entry.phrase, highlightedWords) : 
-                      renderHighlightedPhrase(entry.phrase, []) // Use the same function for consistency, with empty highlights
-                    }
-                    {isCurrentUserPhrase && isListening && (
-                      <span className="listening-indicator">🎤</span>
-                    )}
-                  </div>
-                  <div 
-                    className="dialogue-transcription"
-                    dir={motherLanguage === 'ar' ? 'rtl' : 'ltr'}
-                    lang={motherLanguage}
-                  >
-                    [{entry.transcription}]
-                  </div>
-                  <div 
-                    className="dialogue-translation"
-                    dir={motherLanguage === 'ar' ? 'rtl' : 'ltr'}
-                    lang={motherLanguage}
-                  >
-                    {entry.translation}
-                  </div>
+                  {/* Phrase - shown in all modes except 'none' and 'translation-only' */}
+                  {visibilityMode !== 'none' && visibilityMode !== 'translation-only' && (
+                    <div 
+                      className="dialogue-phrase" 
+                      dir={targetLanguage === 'ar' ? 'rtl' : 'ltr'}
+                      lang={targetLanguage}
+                    >
+                      {isCurrentUserPhrase ? 
+                        renderHighlightedPhrase(entry.phrase, highlightedWords) : 
+                        renderHighlightedPhrase(entry.phrase, []) // Use the same function for consistency, with empty highlights
+                      }
+                      {isCurrentUserPhrase && isListening && (
+                        <span className="listening-indicator">🎤</span>
+                      )}
+                    </div>
+                  )}
+                  {/* Transcription - shown in 'all' and 'phrase-trans' modes */}
+                  {(visibilityMode === 'all' || visibilityMode === 'phrase-trans') && (
+                    <div 
+                      className="dialogue-transcription"
+                      dir={motherLanguage === 'ar' ? 'rtl' : 'ltr'}
+                      lang={motherLanguage}
+                    >
+                      [{entry.transcription}]
+                    </div>
+                  )}
+                  {/* Translation - shown in 'all', 'phrase-transl', and 'translation-only' modes */}
+                  {(visibilityMode === 'all' || visibilityMode === 'phrase-transl' || visibilityMode === 'translation-only') && (
+                    <div 
+                      className="dialogue-translation"
+                      dir={motherLanguage === 'ar' ? 'rtl' : 'ltr'}
+                      lang={motherLanguage}
+                    >
+                      {entry.translation}
+                    </div>
+                  )}
                   
                   {isCurrentUserPhrase && (
                     <div className="recognition-status">
@@ -3233,11 +3711,203 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
                   >
                     🔊
                   </button>
+                  {/* Replay button for user's own recording */}
+                  {entry.speaker === 'User' && entry.isCompleted && userRecordings.has(entry.step) && (
+                    <button 
+                      className="replay-user-button"
+                      onClick={() => playUserRecording(entry.step)}
+                      title="Replay your recording"
+                      style={{
+                        fontSize: '18px',
+                        padding: '5px 10px',
+                        backgroundColor: '#3b82f6',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        marginLeft: '5px'
+                      }}
+                    >
+                      🎙️
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
           );
         })}
+        
+        {/* Continue to Quiz button - shown when dialogue is complete */}
+        {dialogueComplete && !showQuiz && (
+          <div style={{
+            marginTop: '20px',
+            padding: '20px',
+            textAlign: 'center',
+            borderTop: '2px solid rgba(255, 255, 255, 0.2)'
+          }}>
+            {(() => {
+              console.log("📊 Completion Screen State:", {
+                dialogueComplete,
+                completedInHideMode,
+                visibilityMode,
+                buttonEnabled: completedInHideMode
+              });
+              return null;
+            })()}
+            <div style={{
+              marginBottom: '15px',
+              fontSize: '18px',
+              fontWeight: 'bold',
+              color: completedInHideMode ? '#4ade80' : '#fbbf24'
+            }}>
+              {completedInHideMode ? (
+                <>🎉 Great job! You've completed the dialogue!</>
+              ) : (
+                <>⚠️ Almost there! Complete in Hide mode (🙈) to proceed</>
+              )}
+            </div>
+            
+            {!completedInHideMode && (
+              <div style={{
+                marginBottom: '15px',
+                padding: '15px',
+                backgroundColor: 'rgba(251, 191, 36, 0.2)',
+                border: '2px solid rgba(251, 191, 36, 0.4)',
+                borderRadius: '8px',
+                fontSize: '15px',
+                color: 'rgba(255, 255, 255, 0.9)',
+                lineHeight: '1.6'
+              }}>
+                <div style={{ marginBottom: '8px', fontWeight: 'bold' }}>
+                  📚 Memory Challenge Required!
+                </div>
+                <div style={{ fontSize: '14px' }}>
+                  To prove you've mastered this dialogue:
+                </div>
+                <ol style={{ 
+                  textAlign: 'left', 
+                  display: 'inline-block',
+                  margin: '10px 0',
+                  paddingLeft: '20px'
+                }}>
+                  <li>Click the visibility button below (currently: <strong>{getVisibilityLabel(visibilityMode)}</strong>)</li>
+                  <li>Switch to <strong>🙈 Hide</strong> mode</li>
+                  <li>Click ↩ button to reset dialogue</li>
+                  <li>Complete the entire dialogue from memory!</li>
+                </ol>
+              </div>
+            )}
+            
+            <div style={{
+              display: 'flex',
+              gap: '15px',
+              justifyContent: 'center',
+              alignItems: 'center',
+              flexWrap: 'wrap'
+            }}>
+              {/* Replay Full Dialogue Button */}
+              <button
+                onClick={isPlayingFullDialogue ? stopFullDialogue : playFullDialogue}
+                disabled={isPlayingFullDialogue && false} // Never actually disabled, just changes behavior
+                style={{
+                  padding: '15px 35px',
+                  fontSize: '18px',
+                  fontWeight: 'bold',
+                  backgroundColor: isPlayingFullDialogue ? '#ef4444' : '#3b82f6',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '12px',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                  boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+                onMouseEnter={(e) => {
+                  if (isPlayingFullDialogue) {
+                    e.currentTarget.style.backgroundColor = '#dc2626';
+                  } else {
+                    e.currentTarget.style.backgroundColor = '#2563eb';
+                  }
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 6px 8px rgba(0, 0, 0, 0.4)';
+                }}
+                onMouseLeave={(e) => {
+                  if (isPlayingFullDialogue) {
+                    e.currentTarget.style.backgroundColor = '#ef4444';
+                  } else {
+                    e.currentTarget.style.backgroundColor = '#3b82f6';
+                  }
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.3)';
+                }}
+              >
+                {isPlayingFullDialogue ? (
+                  <>
+                    <span style={{ fontSize: '20px' }}>⏹️</span>
+                    Stop Playback
+                  </>
+                ) : (
+                  <>
+                    <span style={{ fontSize: '20px' }}>🎭</span>
+                    Replay Full Dialogue
+                  </>
+                )}
+              </button>
+              
+              {/* Continue to Quiz Button */}
+              <button
+                onClick={handleContinueToQuiz}
+                disabled={!completedInHideMode}
+                style={{
+                  padding: '15px 40px',
+                  fontSize: '18px',
+                  fontWeight: 'bold',
+                  backgroundColor: completedInHideMode ? '#10b981' : '#6b7280',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '12px',
+                  cursor: completedInHideMode ? 'pointer' : 'not-allowed',
+                  transition: 'all 0.3s ease',
+                  boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3)',
+                  opacity: completedInHideMode ? 1 : 0.5
+                }}
+                onMouseEnter={(e) => {
+                  if (completedInHideMode) {
+                    e.currentTarget.style.backgroundColor = '#059669';
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 6px 8px rgba(0, 0, 0, 0.4)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (completedInHideMode) {
+                    e.currentTarget.style.backgroundColor = '#10b981';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.3)';
+                  }
+                }}
+              >
+                {completedInHideMode ? (
+                  <>Continue to Quiz →</>
+                ) : (
+                  <>🔒 Complete in Hide Mode First</>
+                )}
+              </button>
+            </div>
+            
+            <div style={{
+              marginTop: '12px',
+              fontSize: '14px',
+              color: 'rgba(255, 255, 255, 0.6)'
+            }}>
+              {completedInHideMode ? (
+                <>Review your dialogue or replay the full conversation before continuing</>
+              ) : (
+                <>Switch to Hide mode (🙈) and complete the dialogue from memory to unlock the quiz</>
+              )}
+            </div>
+          </div>
+        )}
         
         {/* Debug controls in development */}
         {process.env.NODE_ENV === 'development' && (
@@ -3246,7 +3916,8 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
             padding: '10px', 
             borderTop: '1px solid #333',
             display: 'flex',
-            gap: '10px'
+            gap: '10px',
+            flexWrap: 'wrap'
           }}>
             <button 
               style={{
@@ -3291,6 +3962,46 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
               }}
             >
               Clear Hover Buttons
+            </button>
+            <button 
+              style={{
+                padding: '8px 15px',
+                backgroundColor: '#2563eb',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontSize: '14px',
+                fontWeight: 'bold'
+              }}
+              onClick={togglePlaybackSpeed}
+              title={`Current speed: ${playbackSpeed}x. Click to change.`}
+            >
+              <span style={{ fontSize: '18px' }}>{getSpeedIcon(playbackSpeed)}</span>
+              <span>{playbackSpeed}x</span>
+            </button>
+            <button 
+              style={{
+                padding: '8px 15px',
+                backgroundColor: '#7c3aed',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontSize: '14px',
+                fontWeight: 'bold'
+              }}
+              onClick={toggleVisibilityMode}
+              title={`Text visibility: ${getVisibilityLabel(visibilityMode)}. Click to change.`}
+            >
+              <span style={{ fontSize: '18px' }}>{getVisibilityIcon(visibilityMode)}</span>
+              <span>{getVisibilityLabel(visibilityMode)}</span>
             </button>
           </div>
         )}

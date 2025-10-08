@@ -7,6 +7,7 @@ import { supabase } from '../services/supabase';
 import { useStore } from '../store';
 import { logger } from '../services/logger';
 import { trackCompletedDialogue, saveAnonymousProgress } from '../services/auth';
+import { trackCompletedScenarioDialogue } from '../services/progress';
 import { speakWithAI } from '../services/gemini';
 
 // Add WebSpeechAPI type definitions
@@ -42,6 +43,8 @@ interface VocalQuizProps {
   onComplete: (passed: boolean) => void;
   onClose: () => void;
   characterId?: number;
+  isScenario?: boolean;
+  scenarioNumber?: number;
 }
 
 import type { SupportedLanguage } from '../constants/translations';
@@ -141,7 +144,9 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
   dialogueId,
   onComplete,
   onClose,
-  characterId = 1
+  characterId = 1,
+  isScenario = false,
+  scenarioNumber = 1
 }) => {
   // Get languages from store
   const { motherLanguage, targetLanguage, user, setIsQuizActive, setIsMovementDisabled } = useStore();
@@ -1514,9 +1519,13 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
           console.log("VocalQuizComponent - Quiz contains", wordCount, "words for dialogue", dialogueId);
           
           // Track dialogue completion (this already handles word progress correctly)
-          await trackCompletedDialogue(user.id, characterId, dialogueId, passPercentage);
-          
-          console.log("VocalQuizComponent - Dialogue completion tracked for dialogue:", dialogueId, "with word count:", wordCount);
+          if (isScenario) {
+            await trackCompletedScenarioDialogue(user.id, characterId, scenarioNumber, dialogueId, passPercentage);
+            console.log("VocalQuizComponent - Scenario dialogue completion tracked for scenario:", scenarioNumber, "dialogue:", dialogueId);
+          } else {
+            await trackCompletedDialogue(user.id, characterId, dialogueId, passPercentage);
+            console.log("VocalQuizComponent - Dialogue completion tracked for dialogue:", dialogueId, "with word count:", wordCount);
+          }
           
           // Track which words/expressions the user has learned
           const learnedWords = quizWords
