@@ -13,9 +13,12 @@ if (!supabaseUrl || !supabaseKey) {
   throw new Error('Missing Supabase configuration. Please check your environment variables.');
 }
 
-// Log warning if using fallback credentials (development only)
-if (import.meta.env.DEV && supabaseUrl === 'https://fjvltffpcafcbbpwzyml.supabase.co') {
-  console.warn('⚠️ Using fallback Supabase credentials. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your .env file.');
+// Log warning if using fallback credentials
+if (supabaseUrl === 'https://fjvltffpcafcbbpwzyml.supabase.co') {
+  console.warn('⚠️ Using fallback Supabase credentials. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your environment variables.');
+  if (!import.meta.env.DEV) {
+    console.error('🚨 PRODUCTION ERROR: Environment variables not set! The app will not work correctly.');
+  }
 }
 
 export const supabase = createClient(supabaseUrl, supabaseKey, {

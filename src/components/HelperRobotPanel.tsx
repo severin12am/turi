@@ -8,6 +8,7 @@ import { LogOut } from 'lucide-react';
 import AppPanel from './AppPanel';
 import { PanelBackdrop } from './AppPanel';
 import { PanelTitle, PanelButton, PanelInput } from './PanelElements';
+import { SCENARIO_NAMES, TOTAL_SCENARIOS, getAllScenarios } from '../constants/scenarios';
 
 interface HelperRobotPanelProps {
   onClose: () => void;
@@ -41,6 +42,8 @@ interface LanguagePair {
   level: number;
   word_progress: number;
   dialogue_number?: number;
+  scenario_progress?: number;
+  scenario_dialogue_progress?: number;
   user_id?: string;
 }
 
@@ -48,6 +51,7 @@ const HelperRobotPanel: React.FC<HelperRobotPanelProps> = ({ onClose }) => {
   const { user, isLoggedIn, motherLanguage, targetLanguage, setLanguages, resetState, logout } = useStore();
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [showVocabulary, setShowVocabulary] = useState<boolean>(false);
+  const [showScenarios, setShowScenarios] = useState<boolean>(false);
   const [allWords, setAllWords] = useState<Word[]>([]);
   const [learnedWords, setLearnedWords] = useState<Word[]>([]);
   const [languagePairs, setLanguagePairs] = useState<LanguagePair[]>([]);
@@ -227,6 +231,10 @@ const HelperRobotPanel: React.FC<HelperRobotPanelProps> = ({ onClose }) => {
   
   const toggleVocabulary = () => {
     setShowVocabulary(!showVocabulary);
+  };
+  
+  const toggleScenarios = () => {
+    setShowScenarios(!showScenarios);
   };
   
   // Filter words based on search term
@@ -505,6 +513,108 @@ const HelperRobotPanel: React.FC<HelperRobotPanelProps> = ({ onClose }) => {
                       No words found
                     </div>
                   )}
+                </div>
+              </div>
+            )}
+            
+            {/* 4. Scenarios Progress */}
+            <div className="bg-white/5 rounded-2xl p-5 mb-6 cursor-pointer hover:bg-white/10 transition-colors" onClick={toggleScenarios}>
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="text-xl font-medium text-white/90">Scenarios Progress</h3>
+                <span className="text-blue-400 text-sm">{showScenarios ? 'Hide Details' : 'Show Details'}</span>
+              </div>
+              <div className="mt-4">
+                {languagePairs.map(pair => {
+                  if (pair.mother_language === motherLanguage && pair.target_language === targetLanguage) {
+                    const completedScenarios = pair.scenario_progress || 0;
+                    
+                    return (
+                      <div key={pair.id}>
+                        <div className="flex justify-between text-sm text-white/60 mb-1">
+                          <span>Scenarios completed</span>
+                          <span>{completedScenarios} / {TOTAL_SCENARIOS}</span>
+                        </div>
+                        <div className="w-full bg-white/10 rounded-full h-2">
+                          <div 
+                            className="bg-gradient-to-r from-pink-500 to-rose-500 h-2 rounded-full"
+                            style={{ width: `${(completedScenarios / TOTAL_SCENARIOS) * 100}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    );
+                  }
+                  return null;
+                })}
+              </div>
+            </div>
+            
+            {/* Scenarios list (shown when toggled) */}
+            {showScenarios && (
+              <div className="mb-6">
+                <div className="max-h-[60vh] overflow-y-auto bg-white/5 rounded-2xl p-4">
+                  <div className="grid grid-cols-1 gap-3">
+                    {getAllScenarios().map(scenario => {
+                      // Get current scenario progress
+                      const currentPair = languagePairs.find(
+                        pair => pair.mother_language === motherLanguage && pair.target_language === targetLanguage
+                      );
+                      const completedScenarios = currentPair?.scenario_progress || 0;
+                      const currentScenarioDialogue = currentPair?.scenario_dialogue_progress || 0;
+                      
+                      // scenario_progress = number of fully completed scenarios
+                      // If scenario_progress = 0, no scenarios complete yet (working on scenario 1)
+                      // If scenario_progress = 1, scenario 1 complete (working on scenario 2)
+                      const isCompleted = scenario.number <= completedScenarios;
+                      
+                      // Check if this is the current scenario in progress (not yet completed)
+                      const isCurrentScenario = scenario.number === (completedScenarios + 1) && currentScenarioDialogue > 0;
+                      
+                      return (
+                        <div 
+                          key={scenario.number}
+                          className={`p-4 rounded-xl transition-all ${
+                            isCompleted
+                              ? 'bg-green-900/20 border border-green-500/30'
+                              : isCurrentScenario
+                              ? 'bg-blue-900/20 border border-blue-500/30'
+                              : 'bg-white/5 border border-white/10'
+                          }`}
+                        >
+                          <div className="flex items-start gap-3">
+                            {/* Scenario Number */}
+                            <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-bold ${
+                              isCompleted 
+                                ? 'bg-green-500 text-white'
+                                : isCurrentScenario
+                                ? 'bg-blue-500 text-white'
+                                : 'bg-white/10 text-white/60'
+                            }`}>
+                              {scenario.number}
+                            </div>
+                            
+                            {/* Scenario Name */}
+                            <div className="flex-1">
+                              <div className={`text-base font-medium ${
+                                isCompleted ? 'text-green-400' : isCurrentScenario ? 'text-blue-400' : 'text-white'
+                              }`}>
+                                {scenario.name}
+                              </div>
+                              {isCompleted && (
+                                <div className="text-xs text-green-400/70 mt-1">
+                                  ✓ Completed
+                                </div>
+                              )}
+                              {isCurrentScenario && (
+                                <div className="text-xs text-blue-400/70 mt-1">
+                                  📖 In Progress ({currentScenarioDialogue} dialogues completed)
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
             )}
