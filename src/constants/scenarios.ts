@@ -39,6 +39,12 @@ export const SCENARIO_NAMES: Record<number, string> = {
 export const TOTAL_SCENARIOS = 30;
 
 /**
+ * Number of dialogues in each scenario
+ * Default is 10 dialogues per scenario
+ */
+export const DIALOGUES_PER_SCENARIO = 10;
+
+/**
  * Get scenario name by number
  */
 export const getScenarioName = (scenarioNumber: number): string => {

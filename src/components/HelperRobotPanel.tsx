@@ -8,7 +8,7 @@ import { LogOut } from 'lucide-react';
 import AppPanel from './AppPanel';
 import { PanelBackdrop } from './AppPanel';
 import { PanelTitle, PanelButton, PanelInput } from './PanelElements';
-import { SCENARIO_NAMES, TOTAL_SCENARIOS, getAllScenarios } from '../constants/scenarios';
+import { SCENARIO_NAMES, TOTAL_SCENARIOS, DIALOGUES_PER_SCENARIO, getAllScenarios } from '../constants/scenarios';
 
 interface HelperRobotPanelProps {
   onClose: () => void;
@@ -562,12 +562,21 @@ const HelperRobotPanel: React.FC<HelperRobotPanelProps> = ({ onClose }) => {
                       const currentScenarioDialogue = currentPair?.scenario_dialogue_progress || 0;
                       
                       // scenario_progress = number of fully completed scenarios
-                      // If scenario_progress = 0, no scenarios complete yet (working on scenario 1)
-                      // If scenario_progress = 1, scenario 1 complete (working on scenario 2)
+                      // If scenario_progress = 0, we're on scenario 1 (none completed)
+                      // If scenario_progress = 1, scenario 1 is complete, we're on scenario 2
+                      // If scenario_progress = 2, scenarios 1-2 complete, we're on scenario 3
+                      
+                      // Current scenario number (the one user is working on)
+                      const currentScenarioNumber = completedScenarios + 1;
+                      
+                      // A scenario is completed if its number is less than or equal to completedScenarios
                       const isCompleted = scenario.number <= completedScenarios;
                       
-                      // Check if this is the current scenario in progress (not yet completed)
-                      const isCurrentScenario = scenario.number === (completedScenarios + 1) && currentScenarioDialogue > 0;
+                      // This is the current scenario in progress (not yet completed)
+                      const isCurrentScenario = scenario.number === currentScenarioNumber;
+                      
+                      // Future scenarios (locked)
+                      const isLocked = scenario.number > currentScenarioNumber;
                       
                       return (
                         <div 
@@ -577,7 +586,7 @@ const HelperRobotPanel: React.FC<HelperRobotPanelProps> = ({ onClose }) => {
                               ? 'bg-green-900/20 border border-green-500/30'
                               : isCurrentScenario
                               ? 'bg-blue-900/20 border border-blue-500/30'
-                              : 'bg-white/5 border border-white/10'
+                              : 'bg-white/5 border border-white/10 opacity-60'
                           }`}
                         >
                           <div className="flex items-start gap-3">
@@ -587,26 +596,47 @@ const HelperRobotPanel: React.FC<HelperRobotPanelProps> = ({ onClose }) => {
                                 ? 'bg-green-500 text-white'
                                 : isCurrentScenario
                                 ? 'bg-blue-500 text-white'
-                                : 'bg-white/10 text-white/60'
+                                : 'bg-white/10 text-white/40'
                             }`}>
                               {scenario.number}
                             </div>
                             
-                            {/* Scenario Name */}
+                            {/* Scenario Name and Progress */}
                             <div className="flex-1">
                               <div className={`text-base font-medium ${
-                                isCompleted ? 'text-green-400' : isCurrentScenario ? 'text-blue-400' : 'text-white'
+                                isCompleted ? 'text-green-400' : isCurrentScenario ? 'text-blue-400' : 'text-white/60'
                               }`}>
                                 {scenario.name}
                               </div>
+                              
+                              {/* Completed scenario */}
                               {isCompleted && (
                                 <div className="text-xs text-green-400/70 mt-1">
                                   ✓ Completed
                                 </div>
                               )}
+                              
+                              {/* Current scenario in progress */}
                               {isCurrentScenario && (
-                                <div className="text-xs text-blue-400/70 mt-1">
-                                  📖 In Progress ({currentScenarioDialogue} dialogues completed)
+                                <div className="mt-2">
+                                  <div className="flex justify-between text-xs text-blue-400/70 mb-1">
+                                    <span>📖 In Progress</span>
+                                    <span>{currentScenarioDialogue} / {DIALOGUES_PER_SCENARIO}</span>
+                                  </div>
+                                  {/* Mini progress bar for dialogues within scenario */}
+                                  <div className="w-full bg-white/10 rounded-full h-1.5">
+                                    <div 
+                                      className="bg-gradient-to-r from-blue-500 to-cyan-500 h-1.5 rounded-full transition-all duration-300"
+                                      style={{ width: `${(currentScenarioDialogue / DIALOGUES_PER_SCENARIO) * 100}%` }}
+                                    ></div>
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {/* Locked scenario */}
+                              {isLocked && (
+                                <div className="text-xs text-white/40 mt-1">
+                                  🔒 Locked
                                 </div>
                               )}
                             </div>
