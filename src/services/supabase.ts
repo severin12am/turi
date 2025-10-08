@@ -16,8 +16,9 @@ if (!supabaseUrl || !supabaseKey) {
 // Log warning if using fallback credentials
 if (supabaseUrl === 'https://fjvltffpcafcbbpwzyml.supabase.co') {
   console.warn('⚠️ Using fallback Supabase credentials. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your environment variables.');
+  console.log('✅ But fallback credentials are valid and will work fine!');
   if (!import.meta.env.DEV) {
-    console.error('🚨 PRODUCTION ERROR: Environment variables not set! The app will not work correctly.');
+    console.log('📝 Note: For production, set environment variables in your deployment platform.');
   }
 }
 

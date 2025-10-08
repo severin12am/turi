@@ -75,14 +75,36 @@ function App() {
 
     const initializeAuth = async () => {
       try {
-        // Get initial session
-        const { data: { session }, error } = await supabase.auth.getSession();
+        console.log('🔐 Initializing authentication...');
+        
+        // Add timeout to prevent infinite loading
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Session check timeout')), 5000);
+        });
+        
+        // Get initial session with timeout
+        const sessionPromise = supabase.auth.getSession();
+        
+        let session, error;
+        try {
+          const result = await Promise.race([sessionPromise, timeoutPromise]) as any;
+          session = result.data?.session;
+          error = result.error;
+        } catch (timeoutError) {
+          console.warn('⚠️ Session check timed out, continuing without session');
+          logger.warn('Session check timed out', { error: timeoutError });
+          setIsLoading(false);
+          return;
+        }
         
         if (error) {
+          console.error('❌ Error getting initial session:', error);
           logger.error('Error getting initial session', { error });
           setIsLoading(false);
           return;
         }
+        
+        console.log('✅ Session check complete:', session ? 'Has session' : 'No session');
 
         if (session?.user && mounted) {
           await handleAuthSession(session);
@@ -635,7 +657,11 @@ function App() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-900 text-white">
-        <div className="text-xl font-semibold">Loading...</div>
+        <div className="text-center">
+          <div className="text-xl font-semibold mb-4">Loading...</div>
+          <div className="text-sm text-gray-400">Initializing authentication</div>
+          <div className="text-xs text-gray-500 mt-2">Check console for details</div>
+        </div>
       </div>
     );
   }

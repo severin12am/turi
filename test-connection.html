@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Supabase Connection Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        .result {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            background: #2a2a2a;
+        }
+        .success { border-left: 4px solid #4ade80; }
+        .error { border-left: 4px solid #ef4444; }
+        .warning { border-left: 4px solid #fbbf24; }
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #2563eb; }
+        pre {
+            background: #0a0a0a;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔌 Supabase Connection Test</h1>
+    <p>Testing connection to: <code>https://fjvltffpcafcbbpwzyml.supabase.co</code></p>
+    
+    <div>
+        <button onclick="testConnection()">Test Connection</button>
+        <button onclick="testAuth()">Test Auth</button>
+        <button onclick="testDatabase()">Test Database Query</button>
+        <button onclick="clearResults()">Clear</button>
+    </div>
+    
+    <div id="results"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const SUPABASE_URL = 'https://fjvltffpcafcbbpwzyml.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZqdmx0ZmZwY2FmY2JicHd6eW1sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI0MjUxNTQsImV4cCI6MjA1ODAwMTE1NH0.uuhJLxTJL26r2jfD9Cb5IMKYaScDNsJeHYJue4pfWRk';
+
+        const { createClient } = supabase;
+        const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        function addResult(message, type = 'info', data = null) {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `result ${type}`;
+            div.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong>: ${message}`;
+            if (data) {
+                div.innerHTML += `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+            }
+            results.insertBefore(div, results.firstChild);
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+
+        async function testConnection() {
+            addResult('Testing basic connectivity...', 'warning');
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/`, {
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY
+                    }
+                });
+                
+                if (response.ok) {
+                    addResult('✅ Connection successful! Supabase is reachable.', 'success');
+                } else {
+                    addResult(`❌ Connection failed with status: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                addResult(`❌ Connection error: ${error.message}`, 'error', error);
+            }
+        }
+
+        async function testAuth() {
+            addResult('Testing authentication system...', 'warning');
+            try {
+                const { data, error } = await client.auth.getSession();
+                
+                if (error) {
+                    addResult(`⚠️ Auth check returned error (this is OK if no session)`, 'warning', error);
+                } else {
+                    addResult('✅ Auth system is working!', 'success', {
+                        hasSession: !!data.session,
+                        sessionDetails: data.session ? 'Session exists' : 'No active session'
+                    });
+                }
+            } catch (error) {
+                addResult(`❌ Auth error: ${error.message}`, 'error', error);
+            }
+        }
+
+        async function testDatabase() {
+            addResult('Testing database query (fetching from users table)...', 'warning');
+            try {
+                const { data, error } = await client
+                    .from('users')
+                    .select('id')
+                    .limit(1);
+                
+                if (error) {
+                    if (error.code === 'PGRST116') {
+                        addResult('✅ Database is accessible! (No users found, but connection works)', 'success');
+                    } else if (error.message.includes('relation') && error.message.includes('does not exist')) {
+                        addResult('⚠️ Database connected but "users" table does not exist', 'warning', error);
+                    } else if (error.message.includes('row-level security') || error.code === 'PGRST301') {
+                        addResult('⚠️ RLS is blocking query. This might be the issue!', 'error', error);
+                    } else {
+                        addResult(`❌ Database query failed: ${error.message}`, 'error', error);
+                    }
+                } else {
+                    addResult('✅ Database query successful!', 'success', {
+                        recordsFound: data ? data.length : 0,
+                        data: data
+                    });
+                }
+            } catch (error) {
+                addResult(`❌ Database error: ${error.message}`, 'error', error);
+            }
+        }
+
+        // Auto-run tests on load
+        window.addEventListener('load', () => {
+            addResult('Connection tester loaded. Click buttons to test.', 'success');
+        });
+    </script>
+</body>
+</html>
+
