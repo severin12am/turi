@@ -35,15 +35,20 @@
 **Issue**: Supabase credentials were hardcoded in source code
 ```typescript
 // BEFORE (INSECURE)
-const supabaseUrl = 'https://fjvltffpcafcbbpwzyml.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...';
+const supabaseUrl = 'https://your-project-id.supabase.co';
+const supabaseKey = 'your_hardcoded_key_here';
 ```
 
 **Solution Applied**:
 ```typescript
 // AFTER (SECURE)
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'fallback_url';
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'fallback_key';
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+// Validate that env vars are set
+if (!supabaseUrl || !supabaseKey) {
+  throw new Error('Missing Supabase configuration. Please set environment variables.');
+}
 ```
 
 **Status**: ✅ **FIXED** - All files now use environment variables
