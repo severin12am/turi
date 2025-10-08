@@ -64,7 +64,7 @@ export const SECURITY_CONFIG = {
 
   // Content Security Policy
   CSP: {
-    ALLOWED_ORIGINS: [], // Set dynamically from environment variables
+    ALLOWED_ORIGINS: ['https://fjvltffpcafcbbpwzyml.supabase.co'],
     ALLOWED_SCRIPTS: ['self', 'unsafe-inline'], // Be more restrictive in production
     ALLOWED_STYLES: ['self', 'unsafe-inline'],
   },

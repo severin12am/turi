@@ -19,8 +19,8 @@ You need to set these environment variables in your deployment platform:
 
 ### 1. Supabase Configuration (REQUIRED)
 ```
-VITE_SUPABASE_URL=https://your-project-id.supabase.co
-VITE_SUPABASE_ANON_KEY=your_supabase_anon_key_here
+VITE_SUPABASE_URL=https://fjvltffpcafcbbpwzyml.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZqdmx0ZmZwY2FmY2JicHd6eW1sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI0MjUxNTQsImV4cCI6MjA1ODAwMTE1NH0.uuhJLxTJL26r2jfD9Cb5IMKYaScDNsJeHYJue4pfWRk
 ```
 
 ### 2. Google Gemini API (Optional - for AI features)
@@ -38,11 +38,11 @@ VITE_GOOGLE_GEMINI_API_KEY=your_actual_gemini_api_key_here
 2. **Navigate to**: Settings → Environment Variables
 3. **Add each variable**:
    - Name: `VITE_SUPABASE_URL`
-   - Value: `https://your-project-id.supabase.co` (from your Supabase dashboard)
+   - Value: `https://fjvltffpcafcbbpwzyml.supabase.co`
    - Click "Add"
    
    - Name: `VITE_SUPABASE_ANON_KEY`
-   - Value: (your anon/public key from Supabase dashboard)
+   - Value: (the long JWT token above)
    - Click "Add"
 
 4. **Redeploy**:
@@ -57,11 +57,11 @@ VITE_GOOGLE_GEMINI_API_KEY=your_actual_gemini_api_key_here
 2. **Navigate to**: Site settings → Environment variables
 3. **Click "Add a variable"**:
    - Key: `VITE_SUPABASE_URL`
-   - Value: `https://your-project-id.supabase.co` (from your Supabase dashboard)
+   - Value: `https://fjvltffpcafcbbpwzyml.supabase.co`
    - Save
 
    - Key: `VITE_SUPABASE_ANON_KEY`
-   - Value: (your anon/public key from Supabase dashboard)
+   - Value: (the long JWT token above)
    - Save
 
 4. **Trigger a redeploy**:
@@ -76,10 +76,10 @@ If you're using GitHub Actions for deployment, add secrets:
 2. **Navigate to**: Settings → Secrets and variables → Actions
 3. **Click "New repository secret"**:
    - Name: `VITE_SUPABASE_URL`
-   - Secret: `https://your-project-id.supabase.co` (from your Supabase dashboard)
+   - Secret: `https://fjvltffpcafcbbpwzyml.supabase.co`
    
    - Name: `VITE_SUPABASE_ANON_KEY`
-   - Secret: (your anon/public key from Supabase dashboard)
+   - Secret: (the JWT token)
 
 4. **Update your workflow** (if needed) to pass these as env vars during build
 
@@ -89,10 +89,10 @@ If you're using GitHub Actions for deployment, add secrets:
 2. **Navigate to**: Settings → Environment variables
 3. **Add variables** for Production:
    - Variable name: `VITE_SUPABASE_URL`
-   - Value: `https://your-project-id.supabase.co` (from your Supabase dashboard)
+   - Value: `https://fjvltffpcafcbbpwzyml.supabase.co`
    
    - Variable name: `VITE_SUPABASE_ANON_KEY`
-   - Value: (your anon/public key from Supabase dashboard)
+   - Value: (the JWT token)
 
 4. **Retry deployment** or push a new commit
 
@@ -112,9 +112,9 @@ For local development, create a `.env` file in the project root:
 
 ```bash
 # .env file (DO NOT COMMIT THIS)
-VITE_SUPABASE_URL=https://your-project-id.supabase.co
-VITE_SUPABASE_ANON_KEY=your_supabase_anon_key_here
-VITE_GOOGLE_GEMINI_API_KEY=your_gemini_api_key_here
+VITE_SUPABASE_URL=https://fjvltffpcafcbbpwzyml.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZqdmx0ZmZwY2FmY2JicHd6eW1sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI0MjUxNTQsImV4cCI6MjA1ODAwMTE1NH0.uuhJLxTJL26r2jfD9Cb5IMKYaScDNsJeHYJue4pfWRk
+VITE_GOOGLE_GEMINI_API_KEY=your_api_key_here
 ```
 
 **Note**: The `.env` file is in `.gitignore` and should NEVER be committed to git.
@@ -161,10 +161,11 @@ When you set env vars and rebuild:
 ```bash
 # During build, Vite does this replacement:
 import.meta.env.VITE_SUPABASE_URL 
-  → 'https://your-project-id.supabase.co'
+  → 'https://fjvltffpcafcbbpwzyml.supabase.co'
 
-# The env var must be set during build time
-# Vite replaces these at build time, not runtime
+# Instead of using the fallback:
+import.meta.env.VITE_SUPABASE_URL || 'fallback-url'
+  → 'fallback-url' (when env var is not set)
 ```
 
 ---

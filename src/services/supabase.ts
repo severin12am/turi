@@ -5,12 +5,20 @@ import { logger } from './logger';
 import { secureQuery, validateAndSanitizeUserInput, SecurityError } from './security';
 
 // Get Supabase configuration from environment variables
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://fjvltffpcafcbbpwzyml.supabase.co';
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZqdmx0ZmZwY2FmY2JicHd6eW1sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI0MjUxNTQsImV4cCI6MjA1ODAwMTE1NH0.uuhJLxTJL26r2jfD9Cb5IMKYaScDNsJeHYJue4pfWRk';
 
 // Validate environment configuration
 if (!supabaseUrl || !supabaseKey) {
-  throw new Error('Missing Supabase configuration. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your .env file.');
+  throw new Error('Missing Supabase configuration. Please check your environment variables.');
+}
+
+// Log warning if using fallback credentials
+if (supabaseUrl === 'https://fjvltffpcafcbbpwzyml.supabase.co') {
+  console.warn('⚠️ Using fallback Supabase credentials. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your environment variables.');
+  if (!import.meta.env.DEV) {
+    console.error('🚨 PRODUCTION ERROR: Environment variables not set! The app will not work correctly.');
+  }
 }
 
 export const supabase = createClient(supabaseUrl, supabaseKey, {
