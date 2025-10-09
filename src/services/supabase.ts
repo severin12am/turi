@@ -10,7 +10,7 @@ import { secureQuery, validateAndSanitizeUserInput, SecurityError } from './secu
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://fjvltffpcafcbbpwzyml.supabase.co';
 const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || 
                     import.meta.env.VITE_SUPABASE_ANON_KEY || // Backward compatibility
-                    'sb_publishable_1xJsmAztvoDl8Qgz1B9mFg_g_qWGYrT'; // Your publishable key (post-migration)
+                    'sb_publishable_1xJsmAztvoDl8Qgz1B9mFg_g_qWGYrT'; // Your NEW publishable key (works after JWT rotation)
 
 // Validate environment configuration
 if (!supabaseUrl || !supabaseKey) {
