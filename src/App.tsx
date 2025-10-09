@@ -65,7 +65,6 @@ function App() {
 
   useEffect(() => {
     initializeModels();
-    console.log("🔧 App: Initializing 3D models");
   }, []);
 
   // Proper Supabase session management
@@ -450,15 +449,12 @@ function App() {
   };
 
   const handleLoginClickRobot = () => {
-    console.log("🔧 App: Login button clicked from robot");
     setShowLogin(true);
     // Clear robot instructions to hide the language selection panel
     setRobotInstructions({});
   };
 
   const handleRobotClick = () => {
-    console.log("🔧 App: Helper robot clicked handler called");
-    
     // Simply toggle the panel visibility when the robot is clicked
     setShowHelperRobotPanel(prev => !prev);
     logger.info(`Helper robot clicked - ${showHelperRobotPanel ? 'hiding' : 'showing'} panel`);
@@ -468,25 +464,8 @@ function App() {
     setShowHelperRobotPanel(false);
   };
 
-  // Add debug effect for detecting clicks
-  useEffect(() => {
-    const handleGlobalClick = (e: MouseEvent) => {
-      const elements = document.elementsFromPoint(e.clientX, e.clientY);
-      const classes = elements.map(el => el.className).join(', ');
-      console.log(`🔍 Global click at (${e.clientX}, ${e.clientY}) - Elements:`, classes);
-    };
-    
-    if (process.env.NODE_ENV === 'development') {
-      window.addEventListener('click', handleGlobalClick);
-      console.log("🔧 Added global click debug handler");
-    }
-    
-    return () => {
-      if (process.env.NODE_ENV === 'development') {
-        window.removeEventListener('click', handleGlobalClick);
-      }
-    };
-  }, []);
+  // Global click debugging removed to reduce console spam
+  // Re-enable only when debugging specific click issues
 
   // Development helper for session debugging
   useEffect(() => {
@@ -524,61 +503,46 @@ function App() {
     }
   }, [isLoggedIn]);
 
-  // Add an effect to ensure the helper robot is always visible
+  // Ensure helper robot visibility is managed
   useEffect(() => {
     const ensureHelperRobotVisible = () => {
-      console.log("🔧 Ensuring helper robot is visible");
-      
       // Ensure the helper robot container is properly displayed
       const robotContainer = document.querySelector('.helper-robot-container');
       if (robotContainer) {
-        // Make sure it's visible
         (robotContainer as HTMLElement).style.display = 'block';
         (robotContainer as HTMLElement).style.opacity = '1';
-        
-        console.log("🔧 Helper robot container found and visibility enforced");
-      } else {
-        console.log("⚠️ Helper robot container not found in DOM");
       }
     };
     
-    // Run immediately
+    // Run immediately and after a short delay
     ensureHelperRobotVisible();
-    
-    // Also run after a short delay to catch any delayed rendering issues
     const timeoutId = setTimeout(ensureHelperRobotVisible, 500);
     
     return () => clearTimeout(timeoutId);
-  }, [isLoggedIn]); // Re-run this when login state changes
+  }, [isLoggedIn]);
 
   // Update robot instructions based on application state
   useEffect(() => {
     // If user is not logged in and hasn't selected a language, show first-time instructions
     if (!isLoggedIn && !isLanguageSelected) {
-      console.log("🔧 Setting helper robot instructions for first-time user");
       setRobotInstructions({
-        mode: "language_selection"  // This enables the animated language selection panel
+        mode: "language_selection"
       });
-      // Reset helper robot panel visibility to ensure no panel conflict
       setShowHelperRobotPanel(false);
     } 
     // If user is logged in, show returning user instructions
     else if (isLoggedIn) {
-      console.log("🔧 Setting helper robot instructions for logged-in user");
       setRobotInstructions({
         mode: "logged_in",
         message: "Click me to see your progress!"
       });
-      // We no longer force panel visibility here - it's handled by the dedicated effect
     }
     // If language is selected but not logged in
     else if (isLanguageSelected && !isLoggedIn) {
-      console.log("🔧 Setting helper robot instructions for language-selected user");
       setRobotInstructions({
         mode: "language_selected",
         message: "Click me to create an account!"
       });
-      // Reset helper robot panel visibility
       setShowHelperRobotPanel(false);
     }
   }, [isLoggedIn, isLanguageSelected]);
@@ -666,16 +630,8 @@ function App() {
     );
   }
 
-  // Debug panel state
-  console.log("🔧 App state:", {
-    isLoggedIn,
-    showHelperRobotPanel,
-    isHelperRobotOpen,
-    panelInstructions,
-    robotInstructions,
-    isLanguageSelected,
-    showLogin
-  });
+  // App state logging removed to reduce console spam
+  // Enable when debugging specific state issues
 
   return (
     <div className="relative min-h-screen bg-gray-900">
@@ -722,7 +678,6 @@ function App() {
                 onLogin={handleLogin}
                 onCreateAccount={handleCreateAccount}
                 onClose={() => {
-                  console.log("Login form close clicked");
                   setShowLogin(false);
                   // Restore robot instructions to show language selection panel again
                   if (!isLoggedIn && !isLanguageSelected) {

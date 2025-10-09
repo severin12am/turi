@@ -13,8 +13,12 @@ Create a `.env` file in the root directory of the project with the following var
 VITE_GOOGLE_GEMINI_API_KEY=your_google_gemini_api_key_here
 
 # Supabase Configuration (Optional - fallback values exist)
-VITE_SUPABASE_URL=your_supabase_url_here
-VITE_SUPABASE_ANON_KEY=your_supabase_anon_key_here
+# Supabase Configuration (Updated October 2025 - New API Key Format)
+VITE_SUPABASE_URL=https://fjvltffpcafcbbpwzyml.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_1xJsmAztvoDl8Qgz1B9mFg_g_qWGYrT
+
+# Legacy format (backward compatibility, optional)
+# VITE_SUPABASE_ANON_KEY=your_old_jwt_key_here
 ```
 
 ## How to Set Up

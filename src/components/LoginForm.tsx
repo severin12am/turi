@@ -30,7 +30,6 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, onCreateAccount, onClose
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Login form submitted");
     setError('');
     setIsLoading(true);
     
@@ -62,12 +61,10 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, onCreateAccount, onClose
   };
   
   const handleCloseClick = () => {
-    console.log("Close button clicked in LoginForm");
     onClose();
   };
   
   const handleModeToggle = () => {
-    console.log("Toggling between login and signup mode");
     setIsLogin(!isLogin);
   };
   

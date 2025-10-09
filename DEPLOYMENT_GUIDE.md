@@ -15,13 +15,17 @@ This means your production app is trying to use hardcoded fallback values instea
 
 ## Required Environment Variables
 
+⚠️ **UPDATED OCTOBER 2025**: Supabase has migrated to new API key formats. See `SUPABASE_API_KEY_MIGRATION_2025.md` for full migration guide.
+
 You need to set these environment variables in your deployment platform:
 
 ### 1. Supabase Configuration (REQUIRED)
 ```
 VITE_SUPABASE_URL=https://fjvltffpcafcbbpwzyml.supabase.co
-VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZqdmx0ZmZwY2FmY2JicHd6eW1sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI0MjUxNTQsImV4cCI6MjA1ODAwMTE1NH0.uuhJLxTJL26r2jfD9Cb5IMKYaScDNsJeHYJue4pfWRk
+VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_1xJsmAztvoDl8Qgz1B9mFg_g_qWGYrT
 ```
+
+**Note:** Use the new `sb_publishable_*` format instead of legacy JWT keys (`eyJ...`). Old keys are being phased out by Supabase.
 
 ### 2. Google Gemini API (Optional - for AI features)
 ```
@@ -41,8 +45,8 @@ VITE_GOOGLE_GEMINI_API_KEY=your_actual_gemini_api_key_here
    - Value: `https://fjvltffpcafcbbpwzyml.supabase.co`
    - Click "Add"
    
-   - Name: `VITE_SUPABASE_ANON_KEY`
-   - Value: (the long JWT token above)
+   - Name: `VITE_SUPABASE_PUBLISHABLE_KEY`
+   - Value: `sb_publishable_1xJsmAztvoDl8Qgz1B9mFg_g_qWGYrT`
    - Click "Add"
 
 4. **Redeploy**:
@@ -60,8 +64,8 @@ VITE_GOOGLE_GEMINI_API_KEY=your_actual_gemini_api_key_here
    - Value: `https://fjvltffpcafcbbpwzyml.supabase.co`
    - Save
 
-   - Key: `VITE_SUPABASE_ANON_KEY`
-   - Value: (the long JWT token above)
+   - Key: `VITE_SUPABASE_PUBLISHABLE_KEY`
+   - Value: `sb_publishable_1xJsmAztvoDl8Qgz1B9mFg_g_qWGYrT`
    - Save
 
 4. **Trigger a redeploy**:
@@ -78,8 +82,8 @@ If you're using GitHub Actions for deployment, add secrets:
    - Name: `VITE_SUPABASE_URL`
    - Secret: `https://fjvltffpcafcbbpwzyml.supabase.co`
    
-   - Name: `VITE_SUPABASE_ANON_KEY`
-   - Secret: (the JWT token)
+   - Name: `VITE_SUPABASE_PUBLISHABLE_KEY`
+   - Secret: `sb_publishable_1xJsmAztvoDl8Qgz1B9mFg_g_qWGYrT`
 
 4. **Update your workflow** (if needed) to pass these as env vars during build
 
@@ -91,8 +95,8 @@ If you're using GitHub Actions for deployment, add secrets:
    - Variable name: `VITE_SUPABASE_URL`
    - Value: `https://fjvltffpcafcbbpwzyml.supabase.co`
    
-   - Variable name: `VITE_SUPABASE_ANON_KEY`
-   - Value: (the JWT token)
+   - Variable name: `VITE_SUPABASE_PUBLISHABLE_KEY`
+   - Value: `sb_publishable_1xJsmAztvoDl8Qgz1B9mFg_g_qWGYrT`
 
 4. **Retry deployment** or push a new commit
 
@@ -112,9 +116,13 @@ For local development, create a `.env` file in the project root:
 
 ```bash
 # .env file (DO NOT COMMIT THIS)
+# Updated October 2025 - New Supabase API Key Format
 VITE_SUPABASE_URL=https://fjvltffpcafcbbpwzyml.supabase.co
-VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZqdmx0ZmZwY2FmY2JicHd6eW1sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI0MjUxNTQsImV4cCI6MjA1ODAwMTE1NH0.uuhJLxTJL26r2jfD9Cb5IMKYaScDNsJeHYJue4pfWRk
+VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_1xJsmAztvoDl8Qgz1B9mFg_g_qWGYrT
 VITE_GOOGLE_GEMINI_API_KEY=your_api_key_here
+
+# Legacy format (backward compatibility)
+# VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 
 **Note**: The `.env` file is in `.gitignore` and should NEVER be committed to git.
@@ -180,8 +188,9 @@ import.meta.env.VITE_SUPABASE_URL || 'fallback-url'
 
 2. **Check variable names**:
    - Must be EXACTLY: `VITE_SUPABASE_URL` (not `SUPABASE_URL`)
-   - Must be EXACTLY: `VITE_SUPABASE_ANON_KEY` (not `SUPABASE_KEY`)
+   - Must be EXACTLY: `VITE_SUPABASE_PUBLISHABLE_KEY` (not `SUPABASE_KEY` or `VITE_SUPABASE_ANON_KEY`)
    - Vite only recognizes variables starting with `VITE_`
+   - **October 2025 Update**: Use `PUBLISHABLE_KEY` with `sb_publishable_*` format
 
 3. **Check build logs**:
    - Look for env var replacement messages
@@ -229,9 +238,10 @@ After you fix env vars, existing users may have corrupted auth state:
 ## Quick Fix Checklist
 
 - [ ] Set `VITE_SUPABASE_URL` in deployment platform
-- [ ] Set `VITE_SUPABASE_ANON_KEY` in deployment platform
+- [ ] Set `VITE_SUPABASE_PUBLISHABLE_KEY` in deployment platform (October 2025: new key format)
 - [ ] Clear deployment cache
 - [ ] Trigger new deployment
+- [ ] Verify console shows: "✅ Using new Supabase Publishable Key format"
 - [ ] Wait for build to complete
 - [ ] Check browser console on deployed site
 - [ ] Verify no "fallback credentials" warning

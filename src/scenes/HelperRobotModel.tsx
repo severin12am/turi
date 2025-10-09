@@ -28,29 +28,10 @@ const HelperRobotModel: React.FC<HelperRobotModelProps> = ({ path, onClick }) =>
           child.userData.clickable = true;
         }
       });
-      
-      // Log for debugging
-      console.log("🤖 Robot model ref initialized:", robotRef.current);
     }
     
-    // Log click handler for debugging
-    console.log("🤖 onClick handler provided:", !!onClick);
-    
     logger.info('Helper robot model loaded', { path });
-    
-    // Add click event to document for debugging
-    const debugClickHandler = (e: MouseEvent) => {
-      const x = e.clientX;
-      const y = e.clientY;
-      console.log(`🖱️ Document clicked at: ${x}, ${y}`);
-    };
-    
-    document.addEventListener('click', debugClickHandler);
-    
-    return () => {
-      document.removeEventListener('click', debugClickHandler);
-    };
-  }, [path, onClick]);
+  }, [path]);
   
   useFrame((state, delta) => {
     if (robotRef.current) {
@@ -82,7 +63,6 @@ const HelperRobotModel: React.FC<HelperRobotModelProps> = ({ path, onClick }) =>
   // Consolidated click handler that ensures the click event is properly triggered
   const handleInteraction = (e: ThreeEvent<MouseEvent>) => {
     e.stopPropagation();
-    console.log("🤖 Robot model interaction!");
     
     // Make sure the event doesn't bubble up
     if (e.object) {
@@ -91,20 +71,17 @@ const HelperRobotModel: React.FC<HelperRobotModelProps> = ({ path, onClick }) =>
     
     // Always execute the onClick handler if provided
     if (onClick) {
-      console.log("🤖 Calling onClick handler from model - DIRECT INTERACTION");
       logger.info('Helper robot 3D model clicked directly');
       onClick();
     }
   };
   
   const handlePointerOver = () => {
-    console.log("🤖 Robot model pointer OVER");
     setHovered(true);
     document.body.style.cursor = 'pointer';
   };
   
   const handlePointerOut = () => {
-    console.log("🤖 Robot model pointer OUT");
     setHovered(false);
     document.body.style.cursor = 'auto';
   };
