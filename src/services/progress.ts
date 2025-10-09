@@ -414,14 +414,24 @@ export const trackCompletedScenarioDialogue = async (
     
     if (languageLevel) {
       // Update existing language level with security validation
-      await secureQuery(
+      const updateResult = await secureQuery(
         'update_language_level_scenario_completion',
         userId,
         async () => {
+          const newScenarioDialogueProgress = Math.max(dialogueId, languageLevel.scenario_dialogue_progress || 0);
+          console.log('🔄 Updating scenario progress:', {
+            oldScenarioDialogueProgress: languageLevel.scenario_dialogue_progress,
+            newScenarioDialogueProgress,
+            oldScenarioProgress: languageLevel.scenario_progress,
+            newScenarioProgress: scenarioProgress,
+            dialogueId,
+            scenarioNumber
+          });
+          
           const { data, error } = await supabase
             .from('language_levels')
             .update({
-              scenario_dialogue_progress: Math.max(dialogueId, languageLevel.scenario_dialogue_progress || 0),
+              scenario_dialogue_progress: newScenarioDialogueProgress,
               scenario_progress: scenarioProgress
             })
             .eq('user_id', userId)
@@ -432,15 +442,44 @@ export const trackCompletedScenarioDialogue = async (
         }
       );
       
+      const { data: updateData, error: updateError } = updateResult;
+      
+      if (updateError) {
+        console.error('❌ Failed to update scenario progress:', updateError);
+        logger.error('Failed to update language level from scenario dialogue completion', { 
+          error: updateError,
+          userId, 
+          scenarioNumber,
+          dialogueId
+        });
+        throw new Error(`Failed to update scenario progress: ${updateError.message}`);
+      }
+      
+      if (!updateData || updateData.length === 0) {
+        console.error('❌ Update returned no data');
+        logger.error('Update returned no data', { userId, targetLanguage });
+        throw new Error('Update returned no data - possible RLS issue');
+      }
+      
+      console.log('✅ Scenario progress updated successfully:', updateData[0]);
       logger.info('Language level updated from scenario dialogue completion', { 
         userId, 
         scenarioNumber,
         dialogueId,
-        scenarioProgress
+        scenarioProgress,
+        updatedRecord: updateData[0]
       });
     } else {
       // Create new language level record with security validation
-      await secureQuery(
+      console.log('📝 Creating new language level record for scenario:', {
+        userId,
+        targetLanguage,
+        dialogueId,
+        scenarioNumber,
+        scenarioProgress
+      });
+      
+      const createResult = await secureQuery(
         'create_language_level_scenario_completion',
         userId,
         async () => {
@@ -461,11 +500,32 @@ export const trackCompletedScenarioDialogue = async (
         }
       );
       
+      const { data: createData, error: createError } = createResult;
+      
+      if (createError) {
+        console.error('❌ Failed to create language level:', createError);
+        logger.error('Failed to create language level from scenario dialogue completion', { 
+          error: createError,
+          userId, 
+          scenarioNumber,
+          dialogueId
+        });
+        throw new Error(`Failed to create scenario progress: ${createError.message}`);
+      }
+      
+      if (!createData || createData.length === 0) {
+        console.error('❌ Insert returned no data');
+        logger.error('Insert returned no data', { userId, targetLanguage });
+        throw new Error('Insert returned no data - possible RLS issue');
+      }
+      
+      console.log('✅ Language level created successfully:', createData[0]);
       logger.info('Created language level from scenario dialogue completion', { 
         userId, 
         scenarioNumber,
         dialogueId,
-        scenarioProgress
+        scenarioProgress,
+        createdRecord: createData[0]
       });
     }
     

@@ -9,6 +9,7 @@ import { logger } from '../services/logger';
 import { trackCompletedDialogue, saveAnonymousProgress } from '../services/auth';
 import { trackCompletedScenarioDialogue } from '../services/progress';
 import { speakWithAI } from '../services/gemini';
+import { fetchScenarioQuizWords } from '../services/scenarioQuiz';
 
 // Add WebSpeechAPI type definitions
 declare global {
@@ -189,10 +190,45 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
     const fetchQuizWords = async () => {
       try {
         setIsLoading(true);
-        logger.info('Fetching quiz words', { dialogueId: safeDialogueId, targetLanguage });
-        console.log('Fetching quiz words with dialogueId:', safeDialogueId, 'type:', typeof safeDialogueId);
+        logger.info('Fetching quiz words', { 
+          dialogueId: safeDialogueId, 
+          targetLanguage, 
+          isScenario, 
+          scenarioNumber 
+        });
+        console.log('Fetching quiz words with dialogueId:', safeDialogueId, 'isScenario:', isScenario);
         
-        // Get words for the current dialogue
+        // For scenarios, use the new quiz matching system
+        if (isScenario) {
+          console.log('📚 Fetching scenario quiz words from common words table');
+          const scenarioWords = await fetchScenarioQuizWords(
+            characterId,
+            safeDialogueId,
+            scenarioNumber,
+            targetLanguage,
+            motherLanguage
+          );
+          
+          if (!scenarioWords || scenarioWords.length === 0) {
+            logger.warn('No matching quiz words found for scenario', { 
+              characterId, 
+              dialogueId: safeDialogueId,
+              scenarioNumber 
+            });
+            console.warn('No quiz words matched from dialogue. This scenario might not have common words.');
+            // Set empty array - quiz will show message about completion without quiz
+            setQuizWords([]);
+            setIsLoading(false);
+            return;
+          }
+          
+          console.log('✅ Found', scenarioWords.length, 'quiz words for scenario');
+          setQuizWords(scenarioWords as VocalQuizWord[]);
+          setIsLoading(false);
+          return;
+        }
+        
+        // For regular dialogues, use words_quiz table as before
         const { data, error } = await supabase
           .from('words_quiz')
           .select('*')
@@ -255,10 +291,13 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
     };
     
     fetchQuizWords();
-  }, [safeDialogueId, targetLanguage]);
+  }, [safeDialogueId, targetLanguage, isScenario, scenarioNumber, characterId, motherLanguage]);
   
   // Get current word
   const currentWord = quizWords.length > 0 ? quizWords[currentWordIndex] : null;
+  
+  // Handle case where quiz has no words (scenarios might not have matching common words)
+  const hasQuizWords = quizWords.length > 0;
   
   // Get the word to display and the expected answer based on language direction
   const getCurrentWord = () => {
@@ -316,6 +355,29 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
       if (!finalMotherWord && currentWord.entry_in_en) {
         finalMotherWord = currentWord.entry_in_en;
         console.log('🔄 Using English fallback for mother word:', finalMotherWord);
+      }
+      
+      // If both are still empty, try to use ANY available language column
+      if (!finalTargetWord || !finalMotherWord) {
+        const availableWord = currentWord.entry_in_es || 
+                             currentWord.entry_in_ru || 
+                             currentWord.entry_in_fr || 
+                             currentWord.entry_in_de ||
+                             currentWord.spanish ||
+                             currentWord.english ||
+                             currentWord.russian ||
+                             '';
+        
+        if (availableWord) {
+          if (!finalTargetWord) {
+            finalTargetWord = availableWord;
+            console.log('🔄 Using available word as target:', finalTargetWord);
+          }
+          if (!finalMotherWord) {
+            finalMotherWord = `[${availableWord}] (translation missing - please populate quiz table)`;
+            console.warn('⚠️ Quiz table missing translations! Only Spanish words are populated.');
+          }
+        }
       }
 
       // User is learning the target language, so:
@@ -1727,18 +1789,94 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
     );
   }
   
-  // Error state
-  if (error || quizWords.length === 0) {
-    console.log('Showing error state:', { error, quizWordsLength: quizWords.length });
+  // Handle errors vs no quiz words for scenarios differently
+  if (error) {
+    console.log('Showing error state:', { error });
     return (
       <div className="fixed inset-0 flex items-center justify-center z-50">
         <div className="w-full max-w-md p-8 mx-4 shadow-2xl rounded-xl bg-slate-900/80 backdrop-blur-md border border-slate-700 text-white">
           <div className="flex flex-col items-center justify-center space-y-5">
             <div className="p-4 rounded-full bg-red-900/20 border border-red-800/30">
-            <XCircle className="w-12 h-12 text-red-500" />
+              <XCircle className="w-12 h-12 text-red-500" />
             </div>
             <p className="text-xl font-medium text-white text-center">
-              {error || "Turi couldn't find any quiz words for this dialogue"}
+              {error}
+            </p>
+            <button
+              onClick={onClose}
+              className="px-8 py-3 mt-3 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white rounded-lg transition-colors font-medium shadow-md"
+            >
+              {t('Go back', motherLanguage)}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
+  // For scenarios with no matching quiz words, complete without quiz
+  if (quizWords.length === 0 && isScenario) {
+    console.log('No quiz words for scenario - completing without quiz');
+    
+    // Immediately track completion
+    const handleScenarioNoQuizComplete = async () => {
+      try {
+        if (user?.id) {
+          await trackCompletedScenarioDialogue(
+            user.id, 
+            characterId, 
+            scenarioNumber, 
+            dialogueId, 
+            100 // Full score since no quiz
+          );
+          console.log("✅ Scenario completed without quiz (no matching common words)");
+        }
+        onComplete(true); // Pass true since no quiz = auto-pass
+      } catch (err) {
+        console.error('Error tracking scenario completion:', err);
+        onComplete(true); // Still complete even if tracking fails
+      }
+    };
+    
+    return (
+      <div className="fixed inset-0 flex items-center justify-center z-50">
+        <div className="w-full max-w-md p-8 mx-4 shadow-2xl rounded-xl bg-slate-900/80 backdrop-blur-md border border-slate-700 text-white">
+          <div className="flex flex-col items-center justify-center space-y-5">
+            <div className="p-4 rounded-full bg-green-900/20 border border-green-800/30">
+              <CheckCircle className="w-12 h-12 text-green-500" />
+            </div>
+            <p className="text-xl font-medium text-white text-center">
+              {t('Great work!', motherLanguage)}
+            </p>
+            <p className="text-sm text-slate-300 text-center">
+              This scenario dialogue completed successfully!
+              <br />
+              (No common words available for quiz)
+            </p>
+            <button
+              onClick={handleScenarioNoQuizComplete}
+              className="px-8 py-3 mt-3 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-500 hover:to-green-600 text-white rounded-lg transition-colors font-medium shadow-md"
+            >
+              {t('Continue', motherLanguage)} →
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
+  // For regular dialogues with no words, show error
+  if (quizWords.length === 0) {
+    console.log('Showing error state: no quiz words');
+    return (
+      <div className="fixed inset-0 flex items-center justify-center z-50">
+        <div className="w-full max-w-md p-8 mx-4 shadow-2xl rounded-xl bg-slate-900/80 backdrop-blur-md border border-slate-700 text-white">
+          <div className="flex flex-col items-center justify-center space-y-5">
+            <div className="p-4 rounded-full bg-red-900/20 border border-red-800/30">
+              <XCircle className="w-12 h-12 text-red-500" />
+            </div>
+            <p className="text-xl font-medium text-white text-center">
+              Turi couldn't find any quiz words for this dialogue
             </p>
             <button
               onClick={onClose}
