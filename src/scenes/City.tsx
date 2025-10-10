@@ -1652,14 +1652,21 @@ const CityScene: React.FC = () => {
   const handleCloseDialogue = () => {
     setIsDialogueActive(false);
     setAiDialogue(null); // Clear AI dialogue when closing
-    setIsScenarioDialogue(false); // Clear scenario flag
-    logger.info('Dialogue closed');
-    // Show dialogue selection again after dialogue is closed
-    if (isScenarioDialogue) {
+    
+    // Save the scenario flag BEFORE clearing it
+    const wasScenario = isScenarioDialogue;
+    
+    logger.info('Dialogue closed', { wasScenario });
+    
+    // Show appropriate dialogue selection panel based on what type of dialogue just closed
+    if (wasScenario) {
       setShowScenarioSelection(true);
     } else {
       setShowDialogueSelection(true);
     }
+    
+    // Clear scenario flag AFTER deciding which panel to show
+    setIsScenarioDialogue(false);
   };
   
   // Handle scenario button click (opens scenario selection)

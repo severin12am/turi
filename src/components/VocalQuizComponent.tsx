@@ -196,11 +196,17 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
           isScenario, 
           scenarioNumber 
         });
-        console.log('Fetching quiz words with dialogueId:', safeDialogueId, 'isScenario:', isScenario);
+        console.log('🔍 QUIZ SYSTEM CHECK:', {
+          dialogueId: safeDialogueId,
+          isScenario,
+          scenarioNumber,
+          characterId,
+          system: isScenario ? '✅ NEW (quiz table + stemming)' : '❌ LEGACY (words_quiz table)'
+        });
         
         // For scenarios, use the new quiz matching system
         if (isScenario) {
-          console.log('📚 Fetching scenario quiz words from common words table');
+          console.log('📚 Fetching scenario quiz words from common words table (with stemming)');
           const scenarioWords = await fetchScenarioQuizWords(
             characterId,
             safeDialogueId,
