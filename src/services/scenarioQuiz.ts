@@ -1,8 +1,6 @@
 import { supabase } from './supabase';
 import { logger } from './logger';
 import type { SupportedLanguage } from '../constants/translations';
-// @ts-ignore - natural doesn't have full TypeScript support
-import { PorterStemmerEs, PorterStemmerRu, PorterStemmer } from 'natural';
 
 /**
  * Interface for quiz words from the common words table
@@ -47,41 +45,10 @@ const getQuizColumnForLanguage = (language: SupportedLanguage): string => {
 };
 
 /**
- * Get the appropriate stemmer for a language
- */
-const getStemmer = (language: SupportedLanguage) => {
-  const stemmerMap: Record<string, any> = {
-    'es': PorterStemmerEs,
-    'ru': PorterStemmerRu,
-    'en': PorterStemmer,
-    // For other languages, default to English stemmer (basic)
-    'fr': PorterStemmer,
-    'de': PorterStemmer,
-    'it': PorterStemmer,
-    'pt': PorterStemmer,
-  };
-  
-  return stemmerMap[language] || PorterStemmer;
-};
-
-/**
- * Stem a word using the appropriate language stemmer
- */
-const stemWord = (word: string, language: SupportedLanguage): string => {
-  try {
-    const stemmer = getStemmer(language);
-    return stemmer.stem(word);
-  } catch (error) {
-    logger.warn('Stemming failed, using original word', { word, language, error });
-    return word;
-  }
-};
-
-/**
  * Extract individual words from dialogue text
  * Removes punctuation, converts to lowercase, removes duplicates
  */
-const extractWordsFromDialogue = (dialogueText: string, language: SupportedLanguage): string[] => {
+const extractWordsFromDialogue = (dialogueText: string): string[] => {
   // Remove punctuation and split into words
   const words = dialogueText
     .toLowerCase()
@@ -91,7 +58,7 @@ const extractWordsFromDialogue = (dialogueText: string, language: SupportedLangu
     .map(word => word.trim())
     .filter(word => word.length > 0);
   
-  // Return unique words (original forms, not stemmed yet)
+  // Return unique words
   return [...new Set(words)];
 };
 
@@ -153,7 +120,7 @@ export const fetchScenarioQuizWords = async (
     });
 
     // Step 3: Extract individual words from dialogue
-    const dialogueWords = extractWordsFromDialogue(allDialogueText, targetLanguage);
+    const dialogueWords = extractWordsFromDialogue(allDialogueText);
     logger.info('Extracted words from dialogue', { 
       uniqueWords: dialogueWords.length,
       sample: dialogueWords.slice(0, 10)
@@ -164,70 +131,25 @@ export const fetchScenarioQuizWords = async (
       return [];
     }
 
-    // Step 4: Stem the dialogue words for matching
-    const stemmedDialogueWords = dialogueWords.map(word => stemWord(word, targetLanguage));
-    const stemToOriginalMap = new Map<string, string>();
-    dialogueWords.forEach((word, index) => {
-      stemToOriginalMap.set(stemmedDialogueWords[index], word);
-    });
-    
-    logger.info('Stemmed dialogue words', {
-      original: dialogueWords.slice(0, 5),
-      stemmed: stemmedDialogueWords.slice(0, 5)
-    });
-
-    // Step 5: Fetch ALL quiz words (we'll match client-side with stemming)
+    // Step 4: Fetch matching words from quiz table (exact match)
     const quizColumn = getQuizColumnForLanguage(targetLanguage);
-    const { data: allQuizData, error: quizError } = await supabase
+    const { data: quizData, error: quizError } = await supabase
       .from('quiz')
       .select('*')
-      .not(quizColumn, 'is', null); // Only get rows with target language populated
+      .in(quizColumn, dialogueWords) // Match words from dialogue (exact)
+      .limit(5); // Limit to 5 words
 
     if (quizError) {
       logger.error('Error fetching from quiz table', { error: quizError });
       return [];
     }
 
-    if (!allQuizData || allQuizData.length === 0) {
-      logger.warn('Quiz table is empty or has no words in target language');
-      return [];
-    }
-
-    // Step 6: Stem quiz words and find matches
-    const matches: any[] = [];
-    const matchedStems = new Set<string>();
-    
-    for (const quizWord of allQuizData) {
-      const originalWord = quizWord[quizColumn];
-      if (!originalWord) continue;
-      
-      const stemmedQuizWord = stemWord(originalWord.toLowerCase(), targetLanguage);
-      
-      // Check if this stem matches any dialogue word stem
-      if (stemmedDialogueWords.includes(stemmedQuizWord) && !matchedStems.has(stemmedQuizWord)) {
-        matches.push(quizWord);
-        matchedStems.add(stemmedQuizWord);
-        
-        logger.info('Found match via stemming', {
-          dialogueWord: stemToOriginalMap.get(stemmedQuizWord),
-          quizWord: originalWord,
-          stem: stemmedQuizWord
-        });
-        
-        // Stop at 5 matches
-        if (matches.length >= 5) break;
-      }
-    }
-
-    if (matches.length === 0) {
-      logger.warn('No matching words found in quiz table after stemming', { 
-        dialogueWords: dialogueWords.slice(0, 10),
-        stemmedWords: stemmedDialogueWords.slice(0, 10)
+    if (!quizData || quizData.length === 0) {
+      logger.warn('No matching words found in quiz table', { 
+        dialogueWords: dialogueWords.slice(0, 10) 
       });
       return [];
     }
-    
-    const quizData = matches;
 
     // Step 7: Transform quiz table format to VocalQuizWord format
     const targetQuizColumn = quizColumn;

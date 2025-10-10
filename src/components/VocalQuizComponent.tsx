@@ -201,12 +201,12 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
           isScenario,
           scenarioNumber,
           characterId,
-          system: isScenario ? '✅ NEW (quiz table + stemming)' : '❌ LEGACY (words_quiz table)'
+          system: isScenario ? '✅ NEW (quiz table - exact matching)' : '❌ LEGACY (words_quiz table)'
         });
         
         // For scenarios, use the new quiz matching system
         if (isScenario) {
-          console.log('📚 Fetching scenario quiz words from common words table (with stemming)');
+          console.log('📚 Fetching scenario quiz words from common words table');
           const scenarioWords = await fetchScenarioQuizWords(
             characterId,
             safeDialogueId,
