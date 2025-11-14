@@ -526,7 +526,15 @@ const HelperRobotPanel: React.FC<HelperRobotPanelProps> = ({ onClose }) => {
               <div className="mt-4">
                 {languagePairs.map(pair => {
                   if (pair.mother_language === motherLanguage && pair.target_language === targetLanguage) {
-                    const currentScenario = pair.scenario_progress || 0;
+                    let currentScenario = pair.scenario_progress || 0;
+                    let currentDialogueProgress = pair.scenario_dialogue_progress || 0;
+                    
+                    // Handle edge case: if dialogue progress is >= 10 but scenario hasn't incremented yet
+                    if (currentDialogueProgress >= DIALOGUES_PER_SCENARIO && currentScenario > 0) {
+                      currentScenario = currentScenario + 1;
+                      currentDialogueProgress = 0;
+                    }
+                    
                     // Number of completed scenarios is current - 1 (if current > 0)
                     const scenariosCompleted = currentScenario > 0 ? currentScenario - 1 : 0;
                     
@@ -561,9 +569,17 @@ const HelperRobotPanel: React.FC<HelperRobotPanelProps> = ({ onClose }) => {
                       );
                       
                       // scenario_progress represents the CURRENT scenario being worked on
-                      const userScenarioProgress = currentPair?.scenario_progress || 0;
+                      let userScenarioProgress = currentPair?.scenario_progress || 0;
+                      let rawDialogueProgress = currentPair?.scenario_dialogue_progress || 0;
+                      
+                      // Handle edge case: if dialogue progress is >= 10 but scenario hasn't incremented yet
+                      if (rawDialogueProgress >= DIALOGUES_PER_SCENARIO && userScenarioProgress > 0) {
+                        userScenarioProgress = userScenarioProgress + 1;
+                        rawDialogueProgress = 0;
+                      }
+                      
                       const currentScenarioDialogues = scenarioNum === userScenarioProgress
-                        ? currentPair?.scenario_dialogue_progress || 0 
+                        ? rawDialogueProgress
                         : 0;
                       
                       const isUnlocked = scenarioNum <= userScenarioProgress;

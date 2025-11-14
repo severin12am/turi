@@ -9,6 +9,7 @@ import { PanelBackdrop } from './AppPanel';
 import { PanelTitle, PanelButton } from './PanelElements';
 import AIDialogueModal from './AIDialogueModal';
 import { AIDialogueStep } from '../services/gemini';
+import { getScenarioName, DIALOGUES_PER_SCENARIO } from '../constants/scenarios';
 
 
 
@@ -43,6 +44,8 @@ const DialogueSelectionPanel: React.FC<DialogueSelectionPanelProps> = ({
   const [showAIModal, setShowAIModal] = useState(false);
   const [selectedDialogueForAI, setSelectedDialogueForAI] = useState<number | null>(null);
   const [dialogueWords, setDialogueWords] = useState<Record<number, string[]>>({});
+  const [scenarioProgress, setScenarioProgress] = useState<number>(0);
+  const [scenarioDialogueProgress, setScenarioDialogueProgress] = useState<number>(0);
   
   const { user, motherLanguage, targetLanguage } = useStore();
   
@@ -129,12 +132,31 @@ const DialogueSelectionPanel: React.FC<DialogueSelectionPanelProps> = ({
             .from('language_levels')
             .select('*')
             .eq('user_id', user.id)
+            .eq('target_language', targetLanguage)
             .single();
           
           if (progressError) {
             logger.error('Error fetching language level', { error: progressError });
             setCompletedDialogues([]);
+            setScenarioProgress(0);
+            setScenarioDialogueProgress(0);
             return;
+          }
+          
+          // Set scenario progress
+          if (languageLevel) {
+            let currentScenarioProgress = languageLevel.scenario_progress || 0;
+            let currentDialogueProgress = languageLevel.scenario_dialogue_progress || 0;
+            
+            // Handle edge case: if dialogue progress is >= 10 but scenario hasn't incremented yet
+            // This can happen with old data before the fix
+            if (currentDialogueProgress >= DIALOGUES_PER_SCENARIO && currentScenarioProgress > 0) {
+              currentScenarioProgress = currentScenarioProgress + 1;
+              currentDialogueProgress = 0;
+            }
+            
+            setScenarioProgress(currentScenarioProgress);
+            setScenarioDialogueProgress(currentDialogueProgress);
           }
           
           // Use dialogue_number if available, otherwise fall back to word_progress
@@ -415,21 +437,60 @@ const DialogueSelectionPanel: React.FC<DialogueSelectionPanelProps> = ({
                 {onScenarioClick && characterId === 1 && (
                   <div className="mb-6">
                     <h3 className="text-white text-lg font-semibold mb-3">Scenarios</h3>
-                    <button
-                      onClick={() => onScenarioClick(1)}
-                      className="w-full text-left relative rounded-xl p-4 bg-gradient-to-r from-purple-600/20 to-pink-600/20 hover:from-purple-600/30 hover:to-pink-600/30 border border-purple-500/30 hover:border-purple-500/50 transition-all duration-300"
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-white font-medium text-lg">Scenario 1: Greetings and Introductions</span>
-                        <div className="flex items-center text-purple-300 bg-purple-900/30 px-3 py-1 rounded-lg text-xs">
-                          <PlayCircle size={14} className="mr-1" />
-                          <span>Special</span>
-                        </div>
-                      </div>
-                      <p className="text-white/70 text-sm">
-                        Practice real-world conversation scenarios
-                      </p>
-                    </button>
+                    <div className="space-y-3">
+                      {/* Show current and next scenario */}
+                      {[scenarioProgress || 1, (scenarioProgress || 1) + 1].map((scenarioNum) => {
+                        const isCompleted = scenarioNum < (scenarioProgress || 0);
+                        const isCurrent = scenarioNum === (scenarioProgress || 1);
+                        const isUnlocked = scenarioNum <= (scenarioProgress || 1);
+                        
+                        // Only show if unlocked (current or completed)
+                        if (!isUnlocked) return null;
+                        
+                        return (
+                          <button
+                            key={scenarioNum}
+                            onClick={() => onScenarioClick(scenarioNum)}
+                            className={`w-full text-left relative rounded-xl p-4 transition-all duration-300 ${
+                              isCompleted 
+                                ? 'bg-gradient-to-r from-green-600/20 to-emerald-600/20 hover:from-green-600/30 hover:to-emerald-600/30 border border-green-500/30 hover:border-green-500/50'
+                                : 'bg-gradient-to-r from-purple-600/20 to-pink-600/20 hover:from-purple-600/30 hover:to-pink-600/30 border border-purple-500/30 hover:border-purple-500/50'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-white font-medium text-lg">
+                                Scenario {scenarioNum}: {getScenarioName(scenarioNum)}
+                              </span>
+                              <div className={`flex items-center px-3 py-1 rounded-lg text-xs ${
+                                isCompleted 
+                                  ? 'text-green-300 bg-green-900/30'
+                                  : 'text-purple-300 bg-purple-900/30'
+                              }`}>
+                                {isCompleted ? (
+                                  <>
+                                    <Check size={14} className="mr-1" />
+                                    <span>Completed</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <PlayCircle size={14} className="mr-1" />
+                                    <span>{isCurrent ? 'Current' : 'Available'}</span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                            <p className="text-white/70 text-sm">
+                              {isCompleted 
+                                ? `${DIALOGUES_PER_SCENARIO} / ${DIALOGUES_PER_SCENARIO} dialogues completed`
+                                : isCurrent && scenarioDialogueProgress > 0
+                                  ? `${scenarioDialogueProgress} / ${DIALOGUES_PER_SCENARIO} dialogues completed`
+                                  : 'Practice real-world conversation scenarios'
+                              }
+                            </p>
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
                 

@@ -4,6 +4,7 @@ import type { LanguageLevel } from '../types';
 import type { SupportedLanguage } from '../constants/translations';
 import { useStore } from '../store';
 import { secureQuery, validateAndSanitizeUserInput, SecurityError } from './security';
+import { DIALOGUES_PER_SCENARIO } from '../constants/scenarios';
 
 /**
  * Ensure user is authenticated before making database requests
@@ -409,30 +410,65 @@ export const trackCompletedScenarioDialogue = async (
       throw levelError;
     }
     
-    // Calculate scenario progress (similar to level for regular dialogues)
-    const scenarioProgress = scenarioNumber; // For now, just use the scenario number
+    // Calculate scenario progress
+    // scenario_progress represents the CURRENT scenario the user is working on
+    // When a scenario is completed (all 10 dialogues), we move to the next scenario
     
     if (languageLevel) {
+      const currentScenarioProgress = languageLevel.scenario_progress || 0;
+      const currentDialogueProgress = languageLevel.scenario_dialogue_progress || 0;
+      
+      let newScenarioProgress = currentScenarioProgress;
+      let newScenarioDialogueProgress = currentDialogueProgress;
+      
+      // Only update if this is for the current scenario (don't downgrade if replaying old scenarios)
+      if (scenarioNumber >= currentScenarioProgress) {
+        if (scenarioNumber === currentScenarioProgress) {
+          // Update progress within current scenario
+          newScenarioDialogueProgress = Math.max(dialogueId, currentDialogueProgress);
+          
+          // If this dialogue completes the scenario, move to next scenario
+          if (newScenarioDialogueProgress >= DIALOGUES_PER_SCENARIO) {
+            newScenarioProgress = scenarioNumber + 1;
+            newScenarioDialogueProgress = 0; // Reset for next scenario
+          } else {
+            newScenarioProgress = scenarioNumber;
+          }
+        } else if (scenarioNumber > currentScenarioProgress) {
+          // User somehow jumped ahead to a future scenario
+          // Set to this scenario with current dialogue
+          newScenarioProgress = scenarioNumber;
+          newScenarioDialogueProgress = dialogueId;
+          
+          // If this dialogue completes the scenario, move to next scenario
+          if (newScenarioDialogueProgress >= DIALOGUES_PER_SCENARIO) {
+            newScenarioProgress = scenarioNumber + 1;
+            newScenarioDialogueProgress = 0; // Reset for next scenario
+          }
+        }
+      }
+      // If scenarioNumber < currentScenarioProgress, user is replaying old content - don't update
+      
+      console.log('🔄 Updating scenario progress:', {
+        oldScenarioDialogueProgress: currentDialogueProgress,
+        newScenarioDialogueProgress,
+        oldScenarioProgress: currentScenarioProgress,
+        newScenarioProgress,
+        dialogueId,
+        scenarioNumber,
+        completedScenario: newScenarioDialogueProgress === 0 && newScenarioProgress > scenarioNumber
+      });
+      
       // Update existing language level with security validation
       const updateResult = await secureQuery(
         'update_language_level_scenario_completion',
         userId,
         async () => {
-          const newScenarioDialogueProgress = Math.max(dialogueId, languageLevel.scenario_dialogue_progress || 0);
-          console.log('🔄 Updating scenario progress:', {
-            oldScenarioDialogueProgress: languageLevel.scenario_dialogue_progress,
-            newScenarioDialogueProgress,
-            oldScenarioProgress: languageLevel.scenario_progress,
-            newScenarioProgress: scenarioProgress,
-            dialogueId,
-            scenarioNumber
-          });
-          
           const { data, error } = await supabase
             .from('language_levels')
             .update({
               scenario_dialogue_progress: newScenarioDialogueProgress,
-              scenario_progress: scenarioProgress
+              scenario_progress: newScenarioProgress
             })
             .eq('user_id', userId)
             .eq('target_language', targetLanguage)
@@ -466,17 +502,28 @@ export const trackCompletedScenarioDialogue = async (
         userId, 
         scenarioNumber,
         dialogueId,
-        scenarioProgress,
+        newScenarioProgress,
         updatedRecord: updateData[0]
       });
     } else {
       // Create new language level record with security validation
+      // For a new record, determine initial progress
+      let initialScenarioProgress = scenarioNumber;
+      let initialScenarioDialogueProgress = dialogueId;
+      
+      // If completing the first scenario with dialogue 10, move to scenario 2
+      if (dialogueId >= DIALOGUES_PER_SCENARIO) {
+        initialScenarioProgress = scenarioNumber + 1;
+        initialScenarioDialogueProgress = 0;
+      }
+      
       console.log('📝 Creating new language level record for scenario:', {
         userId,
         targetLanguage,
         dialogueId,
         scenarioNumber,
-        scenarioProgress
+        initialScenarioProgress,
+        initialScenarioDialogueProgress
       });
       
       const createResult = await secureQuery(
@@ -489,8 +536,8 @@ export const trackCompletedScenarioDialogue = async (
               user_id: userId,
               target_language: targetLanguage,
               mother_language: targetLanguage === 'en' ? 'ru' : 'en',
-              scenario_dialogue_progress: dialogueId,
-              scenario_progress: scenarioProgress,
+              scenario_dialogue_progress: initialScenarioDialogueProgress,
+              scenario_progress: initialScenarioProgress,
               level: 1,
               word_progress: 0
             }])
