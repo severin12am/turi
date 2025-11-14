@@ -434,18 +434,19 @@ const DialogueSelectionPanel: React.FC<DialogueSelectionPanelProps> = ({
             ) : (
               <>
                 {/* Scenarios Section */}
-                {onScenarioClick && characterId === 1 && (
+                {onScenarioClick && (
                   <div className="mb-6">
                     <h3 className="text-white text-lg font-semibold mb-3">Scenarios</h3>
                     <div className="space-y-3">
-                      {/* Show current and next scenario */}
-                      {[scenarioProgress || 1, (scenarioProgress || 1) + 1].map((scenarioNum) => {
-                        const isCompleted = scenarioNum < (scenarioProgress || 0);
-                        const isCurrent = scenarioNum === (scenarioProgress || 1);
-                        const isUnlocked = scenarioNum <= (scenarioProgress || 1);
+                      {/* Show the scenario corresponding to this character */}
+                      {(() => {
+                        // Character ID = Scenario Number (character 1 = scenario 1, character 2 = scenario 2, etc.)
+                        const scenarioNum = characterId;
                         
-                        // Only show if unlocked (current or completed)
-                        if (!isUnlocked) return null;
+                        // Check if this scenario is completed (scenarioProgress > scenarioNum means we've moved past it)
+                        const isCompleted = scenarioProgress > scenarioNum;
+                        // Check if this is the current scenario
+                        const isCurrent = scenarioProgress === scenarioNum;
                         
                         return (
                           <button
@@ -489,7 +490,7 @@ const DialogueSelectionPanel: React.FC<DialogueSelectionPanelProps> = ({
                             </p>
                           </button>
                         );
-                      })}
+                      })()}
                     </div>
                   </div>
                 )}

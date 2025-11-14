@@ -7,6 +7,7 @@ import AppPanel from './AppPanel';
 import { PanelBackdrop } from './AppPanel';
 import { PanelTitle } from './PanelElements';
 import { getTranslation } from '../constants/translations';
+import { DIALOGUES_PER_SCENARIO } from '../constants/scenarios';
 
 interface ScenarioSelectionPanelProps {
   characterId: number;
@@ -34,7 +35,7 @@ const ScenarioSelectionPanel: React.FC<ScenarioSelectionPanelProps> = ({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  const { user, motherLanguage } = useStore();
+  const { user, motherLanguage, targetLanguage } = useStore();
   
   // Fetch scenario dialogues
   const fetchScenarioDialogues = async () => {
@@ -69,6 +70,7 @@ const ScenarioSelectionPanel: React.FC<ScenarioSelectionPanelProps> = ({
             .from('language_levels')
             .select('*')
             .eq('user_id', user.id)
+            .eq('target_language', targetLanguage)
             .single();
           
           if (progressError) {
@@ -77,12 +79,30 @@ const ScenarioSelectionPanel: React.FC<ScenarioSelectionPanelProps> = ({
             return;
           }
           
-          // Use scenario_dialogue_progress if available
+          // Determine progress for THIS specific scenario
           let highestCompletedDialogue = 0;
           
           if (languageLevel) {
-            if (languageLevel.scenario_dialogue_progress && languageLevel.scenario_dialogue_progress > 0) {
-              highestCompletedDialogue = languageLevel.scenario_dialogue_progress;
+            let globalScenarioProgress = languageLevel.scenario_progress || 0;
+            let globalDialogueProgress = languageLevel.scenario_dialogue_progress || 0;
+            
+            // Handle edge case: if dialogue progress is >= 10 but scenario hasn't incremented yet
+            if (globalDialogueProgress >= DIALOGUES_PER_SCENARIO && globalScenarioProgress > 0) {
+              globalScenarioProgress = globalScenarioProgress + 1;
+              globalDialogueProgress = 0;
+            }
+            
+            // If this scenario is completed (we've moved past it), mark all dialogues as completed
+            if (scenarioNumber < globalScenarioProgress) {
+              highestCompletedDialogue = DIALOGUES_PER_SCENARIO; // All dialogues completed
+            } 
+            // If this is the current scenario, use the current dialogue progress
+            else if (scenarioNumber === globalScenarioProgress) {
+              highestCompletedDialogue = globalDialogueProgress;
+            }
+            // If this scenario is in the future, no progress yet
+            else {
+              highestCompletedDialogue = 0;
             }
           }
           
