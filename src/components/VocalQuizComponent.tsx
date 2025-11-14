@@ -10,6 +10,7 @@ import { trackCompletedDialogue, saveAnonymousProgress } from '../services/auth'
 import { trackCompletedScenarioDialogue } from '../services/progress';
 import { speakWithAI } from '../services/gemini';
 import { fetchScenarioQuizWords } from '../services/scenarioQuiz';
+import { fetchScenarioExpressions } from '../services/scenarioExpressions';
 
 // Add WebSpeechAPI type definitions
 declare global {
@@ -205,9 +206,29 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
           system: isScenario ? '✅ NEW (quiz table - exact matching)' : '❌ LEGACY (words_quiz table)'
         });
         
-        // For scenarios, use the new quiz matching system
+        // For scenarios, try expressions first, then fallback to words
         if (isScenario) {
-          console.log('📚 Fetching scenario quiz words from common words table');
+          console.log('💬 Attempting to fetch pre-curated expressions...');
+          
+          // Try to fetch pre-curated expressions first
+          const scenarioExpressions = await fetchScenarioExpressions(
+            characterId,
+            safeDialogueId,
+            scenarioNumber,
+            targetLanguage,
+            motherLanguage
+          );
+          
+          // If expressions found, use them
+          if (scenarioExpressions && scenarioExpressions.length > 0) {
+            console.log('✅ Found', scenarioExpressions.length, 'expressions for scenario');
+            setQuizWords(scenarioExpressions as VocalQuizWord[]);
+            setIsLoading(false);
+            return;
+          }
+          
+          // Fallback: No expressions found, use dynamic word matching
+          console.log('⚠️ No expressions found, falling back to dynamic word matching...');
           const scenarioWords = await fetchScenarioQuizWords(
             characterId,
             safeDialogueId,
@@ -222,14 +243,14 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
               dialogueId: safeDialogueId,
               scenarioNumber 
             });
-            console.warn('No quiz words matched from dialogue. This scenario might not have common words.');
+            console.warn('No quiz words matched from dialogue. This scenario might not have common words or expressions.');
             // Set empty array - quiz will show message about completion without quiz
             setQuizWords([]);
             setIsLoading(false);
             return;
           }
           
-          console.log('✅ Found', scenarioWords.length, 'quiz words for scenario');
+          console.log('✅ Found', scenarioWords.length, 'quiz words for scenario (fallback)');
           setQuizWords(scenarioWords as VocalQuizWord[]);
           setIsLoading(false);
           return;
