@@ -75,6 +75,7 @@ const translations: Record<string, Partial<Record<SupportedLanguage, string>>> =
   'Great job! Turi is proud of you!': { en: 'Great job! Turi is proud of you!', ru: 'Отлично! Тури гордится вами!' },
   'Debug Accept': { en: 'Debug Accept', ru: 'Принять (отладка)' },
   'Continue my journey': { en: 'Continue my journey', ru: 'Продолжить обучение' },
+  'Continue': { en: 'Continue', ru: 'Продолжить' },
   'Debug Info': { en: 'Debug Info', ru: 'Отладочная информация' },
   'Expected:': { en: 'Expected:', ru: 'Ожидалось:' },
   'Heard:': { en: 'Heard:', ru: 'Распознано:' },
@@ -1846,7 +1847,7 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
     
     return (
       <div className="fixed inset-0 flex items-center justify-center z-50">
-        <div className="w-full max-w-md p-8 mx-4 shadow-2xl rounded-xl bg-slate-900/80 backdrop-blur-md border border-slate-700 text-white">
+        <div className="w-full max-w-md p-8 mx-4 shadow-2xl rounded-xl bg-slate-900/80 backdrop-blur-md border border-slate-700 text-white pointer-events-auto">
           <div className="flex flex-col items-center justify-center space-y-5">
             <div className="p-4 rounded-full bg-green-900/20 border border-green-800/30">
               <CheckCircle className="w-12 h-12 text-green-500" />
@@ -1861,7 +1862,8 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
             </p>
             <button
               onClick={handleScenarioNoQuizComplete}
-              className="px-8 py-3 mt-3 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-500 hover:to-green-600 text-white rounded-lg transition-colors font-medium shadow-md"
+              className="px-8 py-3 mt-3 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-500 hover:to-green-600 text-white rounded-lg transition-colors font-medium shadow-md cursor-pointer"
+              type="button"
             >
               {t('Continue', motherLanguage)} →
             </button>
