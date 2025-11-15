@@ -37,6 +37,7 @@ interface VocalQuizWord {
   entry_in_av?: string;
   dialogue_id: number;
   is_from_500: boolean;
+  audioUrl?: string; // Cached audio URL for TTS to avoid regenerating
   [key: string]: any; // Allow dynamic column access
 }
 
@@ -176,6 +177,18 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
   // Add this line with other state declarations
   const [recognitionActive, setRecognitionActive] = useState(false);
   const recognitionActiveRef = useRef(false);
+  
+  // Cleanup cached audio URLs on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      console.log('💾 QUIZ: Cleaning up cached audio URLs');
+      quizWords.forEach(word => {
+        if (word.audioUrl && word.audioUrl.startsWith('blob:')) {
+          URL.revokeObjectURL(word.audioUrl);
+        }
+      });
+    };
+  }, []); // Empty dependency array - only run on unmount
   
   // Ensure dialogue ID is a valid number
   const safeDialogueId = useMemo(() => {
@@ -1309,11 +1322,38 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
     }
   };
   
-  // Play pronunciation of the current word
+  // Play pronunciation of the current word (uses cached audio if available)
   const playAudio = async () => {
     if (!currentWord || !displayWord) {
       console.error('Cannot play audio - currentWord or displayWord is missing');
       return;
+    }
+    
+    // Check if we have cached audio for this word
+    if (currentWord.audioUrl) {
+      console.log('🔊 QUIZ: Using cached audio URL');
+      try {
+        const audio = new Audio(currentWord.audioUrl);
+        audio.onended = () => {
+          console.log('✅ QUIZ: Cached audio completed');
+          if (isCorrect === null) {
+            userStoppedListening.current = false;
+            startListening();
+          }
+        };
+        audio.onerror = (error) => {
+          console.error('❌ QUIZ: Cached audio playback error, regenerating:', error);
+          // Clear the bad cached URL and regenerate
+          currentWord.audioUrl = undefined;
+          playAudio();
+        };
+        await audio.play();
+        return;
+      } catch (error) {
+        console.error('❌ QUIZ: Error with cached audio, regenerating:', error);
+        currentWord.audioUrl = undefined;
+        // Fall through to generate new audio
+      }
     }
     
     // We want to play the word in the language the user is learning
@@ -1392,6 +1432,16 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
           console.log('🔊 QUIZ Attempting Gemini TTS');
           const audio = await generateSpeechWithGemini(wordToPlay, targetLanguage);
           
+          // Cache the audio URL for future replays
+          if (audio.src && currentWord) {
+            console.log('💾 QUIZ: Caching audio URL');
+            currentWord.audioUrl = audio.src;
+            // Update the quizWords array
+            setQuizWords(prev => prev.map(w => 
+              w.id === currentWord.id ? { ...w, audioUrl: audio.src } : w
+            ));
+          }
+          
           audio.onended = () => {
             console.log('✅ QUIZ Gemini TTS completed');
             if (isCorrect === null) {
@@ -1417,6 +1467,16 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
       try {
         console.log('🔊 QUIZ Attempting Gemini TTS');
         const audio = await generateSpeechWithGemini(wordToPlay, targetLanguage);
+        
+        // Cache the audio URL for future replays
+        if (audio.src && currentWord) {
+          console.log('💾 QUIZ: Caching audio URL');
+          currentWord.audioUrl = audio.src;
+          // Update the quizWords array
+          setQuizWords(prev => prev.map(w => 
+            w.id === currentWord.id ? { ...w, audioUrl: audio.src } : w
+          ));
+        }
         
         audio.onended = () => {
           console.log('✅ QUIZ Gemini TTS completed');

@@ -192,6 +192,7 @@ interface ConversationEntry {
   transcription: string;
   translation: string;
   isCompleted: boolean;
+  audioUrl?: string; // Cached audio URL for NPC TTS to avoid regenerating
 }
 
 /**
@@ -292,6 +293,18 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
   const [audioStream, setAudioStream] = useState<MediaStream | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const isPlayingFullDialogueRef = useRef<boolean>(false);
+  
+  // Cleanup cached audio URLs on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      console.log('💾 Cleaning up cached audio URLs');
+      conversationHistory.forEach(entry => {
+        if (entry.audioUrl && entry.audioUrl.startsWith('blob:')) {
+          URL.revokeObjectURL(entry.audioUrl);
+        }
+      });
+    };
+  }, []); // Empty dependency array - only run on unmount
   
   // Get store methods
   const setIsDialogueOpen = useStore(state => state.setIsDialogueOpen);
@@ -1564,7 +1577,7 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
         if (!hasBeenSpoken(firstPhrase.id)) {
           logger.info('Speaking NPC phrase for the first time', { phraseId: firstPhrase.id });
           setSpokenEntries(prev => [...prev, firstPhrase.id]);
-          playAudio(phrase);
+          playAudio(phrase, 1); // Pass step number for caching
         }
         
         // Calculate delay based on phrase length
@@ -1799,8 +1812,8 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
       setTimeout(() => {
         // Mark as spoken
         setSpokenEntries(prev => [...prev, nextStepPhrase.id]);
-        // Play audio
-        playAudio(phrase);
+        // Play audio with step number for caching
+        playAudio(phrase, nextStep);
         
         // Calculate delay based on length of phrase
         const speakingDelay = calculateSpeakingDelay(phrase);
@@ -1825,15 +1838,16 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
   /**
    * Play audio for NPC phrases
    * Uses Gemini TTS API first, falls back to browser TTS if it fails
+   * Caches the audio URL for future replays
    */
-  const playAudio = async (text: string) => {
+  const playAudio = async (text: string, stepNumber?: number) => {
     try {
       if (!text || text.trim() === '') {
         console.error('🔊 DIALOGUE playAudio: Empty text provided');
         return;
       }
       
-      console.log('🔊 DIALOGUE playAudio called with:', { text, targetLanguage });
+      console.log('🔊 DIALOGUE playAudio called with:', { text, targetLanguage, stepNumber });
       
       // For Chinese, check if text contains actual Chinese characters (not pinyin)
       if (targetLanguage === 'CH') {
@@ -1852,6 +1866,18 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
       
       try {
         const audio = await generateSpeechWithGemini(text, targetLanguage);
+        
+        // Cache the audio URL if we have a step number
+        if (stepNumber && audio.src) {
+          console.log('💾 DIALOGUE: Caching audio URL for step', stepNumber);
+          setConversationHistory(prev => 
+            prev.map(entry => 
+              entry.step === stepNumber && entry.speaker === 'NPC'
+                ? { ...entry, audioUrl: audio.src }
+                : entry
+            )
+          );
+        }
         
         // Set up event handlers for the audio
         audio.onended = () => {
@@ -2202,8 +2228,8 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
         console.log(`Playing step ${entry.step}: ${entry.speaker} - "${entry.phrase}"`);
 
         if (entry.speaker === 'NPC') {
-          // Play NPC phrase using text-to-speech
-          await playAudioWithPromise(entry.phrase);
+          // Play NPC phrase using text-to-speech (with caching)
+          await playAudioWithPromise(entry.phrase, entry);
           
           // Check again after async operation
           if (!isPlayingFullDialogueRef.current) break;
@@ -2259,9 +2285,40 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
 
   /**
    * Play audio using TTS and return a promise that resolves when done
-   * Uses Gemini TTS first, falls back to browser TTS if it fails
+   * Uses cached audio if available, otherwise generates new audio with Gemini TTS (falls back to browser TTS)
    */
-  const playAudioWithPromise = async (text: string): Promise<void> => {
+  const playAudioWithPromise = async (text: string, entry?: ConversationEntry): Promise<void> => {
+    // Check if we have cached audio URL for this entry
+    if (entry?.audioUrl) {
+      console.log('🔊 FULL DIALOGUE: Using cached audio URL');
+      try {
+        const audio = new Audio(entry.audioUrl);
+        audio.playbackRate = playbackSpeed;
+        
+        return new Promise((resolve, reject) => {
+          audio.onended = () => {
+            console.log('✅ FULL DIALOGUE: Cached audio completed');
+            resolve();
+          };
+          
+          audio.onerror = (error) => {
+            console.error('❌ FULL DIALOGUE: Cached audio playback error, regenerating:', error);
+            // If cached audio fails, regenerate
+            playAudioWithPromise(text).then(resolve).catch(resolve);
+          };
+          
+          audio.play().catch((error) => {
+            console.error('❌ FULL DIALOGUE: Failed to play cached audio, regenerating:', error);
+            // If cached audio fails, regenerate
+            playAudioWithPromise(text).then(resolve).catch(resolve);
+          });
+        });
+      } catch (error) {
+        console.error('❌ FULL DIALOGUE: Error with cached audio, regenerating:', error);
+        // Fall through to generate new audio
+      }
+    }
+    
     // For Chinese, check if text contains actual Chinese characters (not pinyin)
     if (targetLanguage === 'CH') {
       const hasChineseCharacters = /[\u4e00-\u9fff]/.test(text);
@@ -2273,8 +2330,18 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
     
     // Try Gemini TTS first
     try {
-      console.log('🔊 FULL DIALOGUE: Attempting Gemini TTS');
+      console.log('🔊 FULL DIALOGUE: Generating new audio with Gemini TTS');
       const audio = await generateSpeechWithGemini(text, targetLanguage);
+      
+      // Cache the audio URL if we have an entry reference
+      if (entry && audio.src) {
+        console.log('💾 FULL DIALOGUE: Caching audio URL for future replays');
+        entry.audioUrl = audio.src;
+        // Update the conversation history with cached URL
+        setConversationHistory(prev => 
+          prev.map(e => e.step === entry.step ? { ...e, audioUrl: audio.src } : e)
+        );
+      }
       
       // Set playback speed
       audio.playbackRate = playbackSpeed;
@@ -2449,7 +2516,7 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
         
         // Play the NPC audio right away
         console.log("RETURN: Playing NPC phrase:", entry.phrase);
-        playAudio(entry.phrase);
+        playAudio(entry.phrase, entry.step);
         
         // Calculate delay based on NPC phrase length
         const speakingDelay = calculateSpeakingDelay(entry.phrase);
@@ -2511,7 +2578,7 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
         
         // Play the NPC audio
         setTimeout(() => {
-          playAudio(entry.phrase);
+          playAudio(entry.phrase, entry.step);
         }, 300);
       }
     } else {
@@ -2552,11 +2619,24 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
     }
   };
 
-  // Play audio for an entry
+  // Play audio for an entry (uses cached audio if available)
   const handlePlayAudio = (entry: ConversationEntry) => {
     console.log("BUTTON DEBUG: Sound button clicked", entry);
     logger.info('Sound button clicked', { step: entry.step });
-    playAudio(entry.phrase);
+    
+    // If we have cached audio, use it directly
+    if (entry.audioUrl && entry.speaker === 'NPC') {
+      console.log('🔊 Using cached audio URL for replay');
+      const audio = new Audio(entry.audioUrl);
+      audio.playbackRate = playbackSpeed;
+      audio.play().catch(error => {
+        console.error('❌ Cached audio playback failed, regenerating:', error);
+        playAudio(entry.phrase, entry.step);
+      });
+    } else {
+      // Otherwise generate new audio
+      playAudio(entry.phrase, entry.step);
+    }
   };
 
   /**
@@ -3193,7 +3273,7 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
       
       // STEP 6: Play audio for NPC phrase
       setTimeout(() => {
-        playAudio(npcPhrase);
+        playAudio(npcPhrase, nextStep);
         
         // STEP 7: Look for next user phrase
         const nextUserStep = nextStep + 1;
