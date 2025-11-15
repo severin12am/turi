@@ -11,10 +11,10 @@ export async function handler(event) {
   }
 
   // Get the API key from environment (server-side only, not exposed to browser)
-  const apiKey = process.env.GOOGLE_GEMINI_API_KEY;
+  const apiKey = process.env.GOOGLE_TTS_API_KEY;
   
   if (!apiKey) {
-    console.error('Missing GOOGLE_GEMINI_API_KEY environment variable');
+    console.error('Missing GOOGLE_TTS_API_KEY environment variable');
     return {
       statusCode: 500,
       body: JSON.stringify({ error: 'Server configuration error' })
