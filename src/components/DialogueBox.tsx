@@ -1368,26 +1368,28 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
           return;
         }
         
-        // Original database fetching logic
+        // Original database fetching logic with AI fallback for missing translations
         // Choose table based on whether this is a scenario dialogue
         const sourceTable = isScenario ? `scenario_${characterId}` : `phrases_${characterId}`;
-            
-        const { data, error } = await supabase
-          .from(sourceTable)
-            .select('*')
-            .eq('dialogue_id', dialogueId) // Use the dialogueId prop
-            .order('dialogue_step', { ascending: true });
-
-        if (error) {
-            logger.error('Error fetching dialogues', { error, characterId, dialogueId });
-          setIsLoading(false);
-          return;
-        }
-
-        logger.info('Dialogues fetched successfully', { count: data?.length, dialogueId });
         
-        // Debug log available dialogues
-        if (data && data.length > 0) {
+        try {
+          // Use the fallback service which will automatically fill missing translations with AI
+          const data = await fetchDialoguesWithFallback(
+            sourceTable,
+            dialogueId,
+            targetLanguage,
+            motherLanguage
+          );
+
+            logger.info('Dialogues fetched successfully (with AI fallback if needed)', { 
+            count: data?.length, 
+            dialogueId,
+            targetLanguage,
+            motherLanguage
+          });
+        
+          // Debug log available dialogues
+          if (data && data.length > 0) {
           console.log(`🔍 DATABASE DEBUG: All available dialogues from fetch for dialogue_id ${dialogueId}:`);
           console.log(`🔍 Target language: ${targetLanguage}, Mother language: ${motherLanguage}`);
           console.log(`🔍 Available columns in first row:`, Object.keys(data[0]));
@@ -1464,7 +1466,13 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
         
       setIsLoading(false);
       } catch (error) {
-        logger.error('Failed to fetch dialogues', { error, characterId, dialogueId });
+        logger.error('Failed to fetch dialogues (including AI fallback)', { 
+          error, 
+          characterId, 
+          dialogueId,
+          targetLanguage,
+          motherLanguage
+        });
         setIsLoading(false);
       }
     };
