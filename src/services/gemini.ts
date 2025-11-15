@@ -25,6 +25,10 @@ const GEMINI_MODELS = [
 const getGeminiApiUrl = (modelName: string) => 
   `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent`;
 
+// Google Cloud Text-to-Speech API URL (uses same API key)
+const getTextToSpeechApiUrl = () => 
+  `https://texttospeech.googleapis.com/v1/text:synthesize`;
+
 // Rate limiting
 const rateLimiter = {
   requests: [] as number[],
@@ -449,7 +453,82 @@ export const generateWordExplanation = async (params: GenerateWordExplanationPar
 };
 
 /**
- * Generate improved pronunciation using optimized browser TTS
+ * Generate speech using Google Cloud Text-to-Speech API
+ * Returns an Audio element with the generated speech
+ */
+export const generateSpeechWithGemini = async (text: string, languageCode: SupportedLanguage): Promise<HTMLAudioElement> => {
+  console.log('🔊 GEMINI TTS: Attempting to generate speech with Google Cloud TTS API');
+  logger.info('Generating speech with Gemini TTS', { text, languageCode });
+
+  try {
+    // Map language codes to Google TTS language codes and voices
+    const languageMap: Record<string, { code: string; name: string }> = {
+      'en': { code: 'en-US', name: 'en-US-Neural2-D' },
+      'ru': { code: 'ru-RU', name: 'ru-RU-Wavenet-D' },
+      'es': { code: 'es-ES', name: 'es-ES-Neural2-F' },
+      'fr': { code: 'fr-FR', name: 'fr-FR-Neural2-D' },
+      'de': { code: 'de-DE', name: 'de-DE-Neural2-D' },
+      'it': { code: 'it-IT', name: 'it-IT-Neural2-C' },
+      'ar': { code: 'ar-XA', name: 'ar-XA-Wavenet-D' },
+      'CH': { code: 'cmn-CN', name: 'cmn-CN-Wavenet-D' },
+      'ja': { code: 'ja-JP', name: 'ja-JP-Neural2-D' },
+      'tr': { code: 'tr-TR', name: 'tr-TR-Wavenet-E' }
+    };
+
+    const language = languageMap[languageCode] || languageMap['en'];
+    
+    const requestBody = {
+      input: { text },
+      voice: {
+        languageCode: language.code,
+        name: language.name
+      },
+      audioConfig: {
+        audioEncoding: 'MP3',
+        speakingRate: 0.85, // Slightly slower for learning
+        pitch: 0
+      }
+    };
+
+    const response = await fetch(`${getTextToSpeechApiUrl()}?key=${getGeminiApiKey()}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(requestBody)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ GEMINI TTS: API error', { status: response.status, error: errorText });
+      throw new Error(`TTS API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    
+    if (!data.audioContent) {
+      console.error('❌ GEMINI TTS: No audio content in response');
+      throw new Error('No audio content received from TTS API');
+    }
+
+    // Convert base64 audio to blob and create audio element
+    const audioBlob = base64ToBlob(data.audioContent, 'audio/mp3');
+    const audioUrl = URL.createObjectURL(audioBlob);
+    const audio = new Audio(audioUrl);
+    
+    console.log('✅ GEMINI TTS: Successfully generated speech audio');
+    logger.info('Gemini TTS generated successfully', { languageCode, textLength: text.length });
+    
+    return audio;
+  } catch (error) {
+    console.error('❌ GEMINI TTS: Failed to generate speech', error);
+    logger.error('Gemini TTS failed', { error, text, languageCode });
+    throw error;
+  }
+};
+
+/**
+ * Generate improved pronunciation using optimized browser TTS (LEGACY - kept for compatibility)
  * Supports: Chinese, Arabic, Turkish (no API calls - just better voice selection)
  */
 export const speakWithAI = async (text: string, languageCode: SupportedLanguage): Promise<void> => {

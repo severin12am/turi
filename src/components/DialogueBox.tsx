@@ -11,7 +11,7 @@ import { getTranslation } from '../constants/translations';
 import { AIDialogueStep } from '../services/gemini';
 // New imports for enhanced word interaction
 import WordExplanationModal from './WordExplanationModal';
-import { generateWordExplanation, WordExplanationData, speakWithAI } from '../services/gemini';
+import { generateWordExplanation, WordExplanationData, speakWithAI, generateSpeechWithGemini } from '../services/gemini';
 
 // Map supported languages to their speech recognition codes
 const getRecognitionLanguage = (lang: SupportedLanguage): string => {
@@ -1824,6 +1824,7 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
 
   /**
    * Play audio for NPC phrases
+   * Uses Gemini TTS API first, falls back to browser TTS if it fails
    */
   const playAudio = async (text: string) => {
     try {
@@ -1834,60 +1835,48 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
       
       console.log('🔊 DIALOGUE playAudio called with:', { text, targetLanguage });
       
-      // Use enhanced pronunciation for Chinese, Arabic, Turkish
-      const enhancedLanguages = ['CH', 'ar', 'tr'];
-      if (enhancedLanguages.includes(targetLanguage)) {
-        // For Chinese, check if text contains actual Chinese characters (not pinyin)
-        if (targetLanguage === 'CH') {
-          const hasChineseCharacters = /[\u4e00-\u9fff]/.test(text);
-          console.log('🔊 DIALOGUE Has Chinese characters:', hasChineseCharacters, 'Text:', text);
-          
-          if (!hasChineseCharacters) {
-            console.warn('⚠️ DIALOGUE Text is pinyin, not Chinese characters. Skipping enhanced pronunciation.');
-            console.warn('⚠️ Your database ch_text column should contain Chinese characters (对不起), not pinyin (duì bù qǐ)');
-            // Fall through to browser speech
-          } else {
-            console.log(`✅ DIALOGUE Using enhanced pronunciation for ${targetLanguage}`);
-            setIsNpcSpeaking(true);
-            if (typeof onNpcSpeakStart === 'function') onNpcSpeakStart();
-            
-            try {
-              await speakWithAI(text, targetLanguage);
-              console.log('✅ DIALOGUE Enhanced pronunciation completed');
-            } catch (error) {
-              console.error('❌ DIALOGUE Enhanced pronunciation failed, falling back:', error);
-              performBrowserSpeech(text);
-              return;
-            }
-            
-            setIsNpcSpeaking(false);
-            if (typeof onNpcSpeakEnd === 'function') onNpcSpeakEnd();
-            return;
-          }
-        } else {
-          // For Arabic and Turkish, always use enhanced pronunciation
-          console.log(`✅ DIALOGUE Using enhanced pronunciation for ${targetLanguage}`);
-          setIsNpcSpeaking(true);
-          if (typeof onNpcSpeakStart === 'function') onNpcSpeakStart();
-          
-          try {
-            await speakWithAI(text, targetLanguage);
-            console.log('✅ DIALOGUE Enhanced pronunciation completed');
-          } catch (error) {
-            console.error('❌ DIALOGUE Enhanced pronunciation failed, falling back:', error);
-            performBrowserSpeech(text);
-            return;
-          }
-          
-          setIsNpcSpeaking(false);
-          if (typeof onNpcSpeakEnd === 'function') onNpcSpeakEnd();
+      // For Chinese, check if text contains actual Chinese characters (not pinyin)
+      if (targetLanguage === 'CH') {
+        const hasChineseCharacters = /[\u4e00-\u9fff]/.test(text);
+        if (!hasChineseCharacters) {
+          console.warn('⚠️ DIALOGUE Text is pinyin, not Chinese characters. Using browser TTS.');
+          performBrowserSpeech(text);
           return;
         }
       }
       
-      console.log('🔊 DIALOGUE Using browser speech. Language:', targetLanguage);
-      // Use browser speech for other languages (or pinyin)
-      performBrowserSpeech(text);
+      // Try Gemini TTS first for all languages
+      console.log('🔊 DIALOGUE Attempting Gemini TTS');
+      setIsNpcSpeaking(true);
+      if (typeof onNpcSpeakStart === 'function') onNpcSpeakStart();
+      
+      try {
+        const audio = await generateSpeechWithGemini(text, targetLanguage);
+        
+        // Set up event handlers for the audio
+        audio.onended = () => {
+          console.log('✅ DIALOGUE Gemini TTS playback completed');
+          setIsNpcSpeaking(false);
+          if (typeof onNpcSpeakEnd === 'function') onNpcSpeakEnd();
+        };
+        
+        audio.onerror = (error) => {
+          console.error('❌ DIALOGUE Gemini TTS audio playback error:', error);
+          setIsNpcSpeaking(false);
+          if (typeof onNpcSpeakEnd === 'function') onNpcSpeakEnd();
+          // Fallback to browser TTS
+          performBrowserSpeech(text);
+        };
+        
+        // Play the audio
+        await audio.play();
+        console.log('✅ DIALOGUE Gemini TTS started playing');
+        
+      } catch (error) {
+        console.error('❌ DIALOGUE Gemini TTS failed, falling back to browser TTS:', error);
+        // Fallback to browser TTS
+        performBrowserSpeech(text);
+      }
       
     } catch (error) {
       console.error('❌ DIALOGUE playAudio error:', error);
@@ -2270,8 +2259,56 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
 
   /**
    * Play audio using TTS and return a promise that resolves when done
+   * Uses Gemini TTS first, falls back to browser TTS if it fails
    */
-  const playAudioWithPromise = (text: string): Promise<void> => {
+  const playAudioWithPromise = async (text: string): Promise<void> => {
+    // For Chinese, check if text contains actual Chinese characters (not pinyin)
+    if (targetLanguage === 'CH') {
+      const hasChineseCharacters = /[\u4e00-\u9fff]/.test(text);
+      if (!hasChineseCharacters) {
+        // Use browser TTS for pinyin
+        return playBrowserTTSWithPromise(text);
+      }
+    }
+    
+    // Try Gemini TTS first
+    try {
+      console.log('🔊 FULL DIALOGUE: Attempting Gemini TTS');
+      const audio = await generateSpeechWithGemini(text, targetLanguage);
+      
+      // Set playback speed
+      audio.playbackRate = playbackSpeed;
+      
+      return new Promise((resolve, reject) => {
+        audio.onended = () => {
+          console.log('✅ FULL DIALOGUE: Gemini TTS completed');
+          resolve();
+        };
+        
+        audio.onerror = (error) => {
+          console.error('❌ FULL DIALOGUE: Gemini TTS playback error, falling back:', error);
+          // Fallback to browser TTS
+          playBrowserTTSWithPromise(text).then(resolve).catch(resolve);
+        };
+        
+        audio.play().catch((error) => {
+          console.error('❌ FULL DIALOGUE: Failed to play Gemini audio, falling back:', error);
+          // Fallback to browser TTS
+          playBrowserTTSWithPromise(text).then(resolve).catch(resolve);
+        });
+      });
+    } catch (error) {
+      console.error('❌ FULL DIALOGUE: Gemini TTS failed, using browser TTS:', error);
+      // Fallback to browser TTS
+      return playBrowserTTSWithPromise(text);
+    }
+  };
+
+  /**
+   * Play audio using browser TTS and return a promise that resolves when done
+   * Helper function for fallback
+   */
+  const playBrowserTTSWithPromise = (text: string): Promise<void> => {
     return new Promise((resolve, reject) => {
       if (!window.speechSynthesis) {
         console.warn("Speech synthesis not supported");

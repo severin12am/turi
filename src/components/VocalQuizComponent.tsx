@@ -8,7 +8,7 @@ import { useStore } from '../store';
 import { logger } from '../services/logger';
 import { trackCompletedDialogue, saveAnonymousProgress } from '../services/auth';
 import { trackCompletedScenarioDialogue } from '../services/progress';
-import { speakWithAI } from '../services/gemini';
+import { speakWithAI, generateSpeechWithGemini } from '../services/gemini';
 import { fetchScenarioQuizWords } from '../services/scenarioQuiz';
 import { fetchScenarioExpressions } from '../services/scenarioExpressions';
 
@@ -1380,53 +1380,71 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
     
     console.log('🔊 QUIZ playAudio called with:', { wordToPlay, targetLanguage });
     
-    // Use enhanced pronunciation for Chinese, Arabic, Turkish
-    const enhancedLanguages = ['CH', 'ar', 'tr'];
-    if (enhancedLanguages.includes(targetLanguage)) {
-      // For Chinese, check if text contains actual Chinese characters
-      if (targetLanguage === 'CH') {
-        const hasChineseCharacters = /[\u4e00-\u9fff]/.test(wordToPlay);
-        console.log('🔊 QUIZ Has Chinese characters:', hasChineseCharacters, 'Word:', wordToPlay);
-        
-        if (!hasChineseCharacters) {
-          console.warn('⚠️ QUIZ Text is pinyin, not Chinese characters. Skipping enhanced pronunciation.');
-          console.warn('⚠️ Your database should contain Chinese characters (你好), not pinyin (nǐ hǎo)');
-          // Fall through to browser speech
-        } else {
-          try {
-            console.log(`✅ QUIZ Using enhanced pronunciation for ${targetLanguage}`);
-            await speakWithAI(wordToPlay, targetLanguage);
-            console.log('✅ QUIZ Enhanced pronunciation completed');
-            
+    // For Chinese, check if text contains actual Chinese characters (not pinyin)
+    if (targetLanguage === 'CH') {
+      const hasChineseCharacters = /[\u4e00-\u9fff]/.test(wordToPlay);
+      if (!hasChineseCharacters) {
+        console.warn('⚠️ QUIZ Text is pinyin, not Chinese characters. Using browser TTS.');
+        // Fall through to browser TTS
+      } else {
+        // Try Gemini TTS first for Chinese
+        try {
+          console.log('🔊 QUIZ Attempting Gemini TTS');
+          const audio = await generateSpeechWithGemini(wordToPlay, targetLanguage);
+          
+          audio.onended = () => {
+            console.log('✅ QUIZ Gemini TTS completed');
             if (isCorrect === null) {
               userStoppedListening.current = false;
               startListening();
             }
-            return;
-          } catch (error) {
-            console.error('❌ QUIZ Enhanced pronunciation failed, falling back:', error);
-            // Fall through to browser speech
-          }
-        }
-      } else {
-        // For Arabic and Turkish, always use enhanced pronunciation
-        try {
-          console.log(`✅ QUIZ Using enhanced pronunciation for ${targetLanguage}`);
-          await speakWithAI(wordToPlay, targetLanguage);
-          console.log('✅ QUIZ Enhanced pronunciation completed');
+          };
           
+          audio.onerror = (error) => {
+            console.error('❌ QUIZ Gemini TTS playback error, falling back:', error);
+            playBrowserTTS(wordToPlay);
+          };
+          
+          await audio.play();
+          return;
+        } catch (error) {
+          console.error('❌ QUIZ Gemini TTS failed, falling back:', error);
+          // Fall through to browser TTS
+        }
+      }
+    } else {
+      // Try Gemini TTS first for all other languages
+      try {
+        console.log('🔊 QUIZ Attempting Gemini TTS');
+        const audio = await generateSpeechWithGemini(wordToPlay, targetLanguage);
+        
+        audio.onended = () => {
+          console.log('✅ QUIZ Gemini TTS completed');
           if (isCorrect === null) {
             userStoppedListening.current = false;
             startListening();
           }
-          return;
-        } catch (error) {
-          console.error('❌ QUIZ Enhanced pronunciation failed, falling back:', error);
-          // Fall through to browser speech
-        }
+        };
+        
+        audio.onerror = (error) => {
+          console.error('❌ QUIZ Gemini TTS playback error, falling back:', error);
+          playBrowserTTS(wordToPlay);
+        };
+        
+        await audio.play();
+        return;
+      } catch (error) {
+        console.error('❌ QUIZ Gemini TTS failed, falling back:', error);
+        // Fall through to browser TTS
       }
     }
     
+    // Fallback to browser TTS
+    playBrowserTTS(wordToPlay);
+  };
+  
+  // Helper function for browser TTS playback
+  const playBrowserTTS = (wordToPlay: string) => {
     console.log('🔊 QUIZ Using browser speech. Language:', targetLanguage);
     
     // Browser speech synthesis for other languages or fallback
