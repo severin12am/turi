@@ -3051,8 +3051,8 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
     // Look for the highest step number in the dialogue
     const maxStep = Math.max(...currentDialogues.map(d => d.dialogue_step));
     
-    // Check if this is the last step OR step 4 (specific fix for taxi dialogue)
-    const isLastStep = currentStepValue === maxStep || currentStepValue === 4;
+    // Check if this is the last step
+    const isLastStep = currentStepValue === maxStep;
     
     console.log(`Checking if dialogue is complete: step ${currentStepValue}, max step ${maxStep}`, 
       { isLastStep, allSteps: currentDialogues.map(d => d.dialogue_step) });
@@ -3072,23 +3072,27 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
       setCurrentDialogueId(dialogueId);
       setDialogueComplete(true);
       
-      // Check if completed in "Hide" mode (none)
+      // Check if completed in allowed mode
+      // Allow 'none' (Hide) or 'translation-only' modes
       // Use ref to get immediate value (avoid closure issues)
       const currentVisibilityMode = visibilityModeRef.current;
+      const allowedModes = ['none', 'translation-only'];
+      const isAllowedMode = allowedModes.includes(currentVisibilityMode);
+      
       console.log("🔍 Checking completion mode:", {
         visibilityModeState: visibilityMode,
         visibilityModeRef: currentVisibilityMode,
-        isHideMode: currentVisibilityMode === 'none',
-        willSetCompletedInHideMode: currentVisibilityMode === 'none'
+        allowedModes,
+        isAllowedMode
       });
       
-      if (currentVisibilityMode === 'none') {
+      if (isAllowedMode) {
         setCompletedInHideMode(true);
-        console.log("🎯 Dialogue completed in Hide mode - user can proceed to quiz!");
+        console.log("🎯 Dialogue completed in allowed mode - user can proceed to quiz!");
         console.log("✅ completedInHideMode flag set to TRUE");
       } else {
-        console.log("⚠️ Dialogue completed but not in Hide mode - user must complete in Hide mode to proceed");
-        console.log("❌ Current mode:", currentVisibilityMode, "- Required: none (Hide)");
+        console.log("⚠️ Dialogue completed but not in allowed mode");
+        console.log("❌ Current mode:", currentVisibilityMode, "- Required:", allowedModes);
       }
 
       // Reset processing flag after a delay to ensure we don't block further actions
@@ -3762,7 +3766,7 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
               {completedInHideMode ? (
                 <>🎉 Great job! You've completed the dialogue!</>
               ) : (
-                <>⚠️ Almost there! Complete in Hide mode (🙈) to proceed</>
+                <>⚠️ Almost there! Complete in Hide (🙈) or Translation (🌍) mode to proceed</>
               )}
             </div>
             
@@ -3790,7 +3794,7 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
                   paddingLeft: '20px'
                 }}>
                   <li>Click the visibility button below (currently: <strong>{getVisibilityLabel(visibilityMode)}</strong>)</li>
-                  <li>Switch to <strong>🙈 Hide</strong> mode</li>
+                  <li>Switch to <strong>🙈 Hide or 🌍 Translation</strong> mode</li>
                   <li>Click ↩ button to reset dialogue</li>
                   <li>Complete the entire dialogue from memory!</li>
                 </ol>
@@ -3890,7 +3894,7 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
                 {completedInHideMode ? (
                   <>Continue to Quiz →</>
                 ) : (
-                  <>🔒 Complete in Hide Mode First</>
+                  <>🔒 Complete in Hide/Translation Mode First</>
                 )}
               </button>
             </div>
@@ -3903,7 +3907,7 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
               {completedInHideMode ? (
                 <>Review your dialogue or replay the full conversation before continuing</>
               ) : (
-                <>Switch to Hide mode (🙈) and complete the dialogue from memory to unlock the quiz</>
+                <>Switch to Hide (🙈) or Translation (🌍) mode and complete the dialogue from memory to unlock the quiz</>
               )}
             </div>
           </div>
