@@ -2,14 +2,8 @@ import { logger } from './logger';
 import { SupportedLanguage } from '../constants/translations';
 import { generateWordExplanationPrompt } from '../prompts/wordExplanation';
 
-// Get Google Gemini API key from environment variables
-const getGeminiApiKey = (): string => {
-  const apiKey = import.meta.env.VITE_GOOGLE_GEMINI_API_KEY;
-  if (!apiKey) {
-    throw new Error('Missing Google Gemini API key. Please set VITE_GOOGLE_GEMINI_API_KEY in your environment variables.');
-  }
-  return apiKey;
-};
+// API calls now go through Netlify Functions to hide the API key
+// The key is stored securely on the server side as GOOGLE_GEMINI_API_KEY
 
 // Try different model names in order of preference
 // Updated based on Google's new naming convention (Sept 2025)
@@ -22,12 +16,10 @@ const GEMINI_MODELS = [
   'gemini-1.5-flash-8b'            // Smaller, faster model
 ];
 
-const getGeminiApiUrl = (modelName: string) => 
-  `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent`;
-
-// Google Cloud Text-to-Speech API URL (uses same API key)
-const getTextToSpeechApiUrl = () => 
-  `https://texttospeech.googleapis.com/v1/text:synthesize`;
+// Netlify Function endpoints (these proxy to Google APIs with the key hidden server-side)
+const getGeminiDialogueUrl = () => '/.netlify/functions/gemini-dialogue';
+const getGeminiWordExplanationUrl = () => '/.netlify/functions/gemini-word-explanation';
+const getGeminiTTSUrl = () => '/.netlify/functions/gemini-tts';
 
 // Rate limiting
 const rateLimiter = {
@@ -151,41 +143,45 @@ Example format (MUST start with NPC):
     try {
       logger.info('Trying Gemini model', { modelName, targetLanguage, motherLanguage });
       
-      const response = await fetch(`${getGeminiApiUrl(modelName)}?key=${getGeminiApiKey()}`, {
+      // Call our Netlify Function instead of Google API directly
+      const response = await fetch(getGeminiDialogueUrl(), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          contents: [{
-            parts: [{
-              text: prompt
-            }]
-          }],
-          generationConfig: {
-            temperature: 0.7,
-            topK: 40,
-            topP: 0.95,
-            maxOutputTokens: 1024,
-          },
-          safetySettings: [
-            {
-              category: "HARM_CATEGORY_HARASSMENT",
-              threshold: "BLOCK_MEDIUM_AND_ABOVE"
+          modelName,
+          requestBody: {
+            contents: [{
+              parts: [{
+                text: prompt
+              }]
+            }],
+            generationConfig: {
+              temperature: 0.7,
+              topK: 40,
+              topP: 0.95,
+              maxOutputTokens: 1024,
             },
-            {
-              category: "HARM_CATEGORY_HATE_SPEECH",
-              threshold: "BLOCK_MEDIUM_AND_ABOVE"
-            },
-            {
-              category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-              threshold: "BLOCK_MEDIUM_AND_ABOVE"
-            },
-            {
-              category: "HARM_CATEGORY_DANGEROUS_CONTENT",
-              threshold: "BLOCK_MEDIUM_AND_ABOVE"
-            }
-          ]
+            safetySettings: [
+              {
+                category: "HARM_CATEGORY_HARASSMENT",
+                threshold: "BLOCK_MEDIUM_AND_ABOVE"
+              },
+              {
+                category: "HARM_CATEGORY_HATE_SPEECH",
+                threshold: "BLOCK_MEDIUM_AND_ABOVE"
+              },
+              {
+                category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+                threshold: "BLOCK_MEDIUM_AND_ABOVE"
+              },
+              {
+                category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+                threshold: "BLOCK_MEDIUM_AND_ABOVE"
+              }
+            ]
+          }
         })
       });
 
@@ -320,41 +316,45 @@ export const generateWordExplanation = async (params: GenerateWordExplanationPar
     try {
       logger.info('Trying Gemini model for word explanation', { modelName, word, targetLanguage, motherLanguage });
       
-      const response = await fetch(`${getGeminiApiUrl(modelName)}?key=${getGeminiApiKey()}`, {
+      // Call our Netlify Function instead of Google API directly
+      const response = await fetch(getGeminiWordExplanationUrl(), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          contents: [{
-            parts: [{
-              text: prompt
-            }]
-          }],
-          generationConfig: {
-            temperature: 0.3, // Lower temperature for more consistent explanations
-            topK: 20,
-            topP: 0.8,
-            maxOutputTokens: 800,
-          },
-          safetySettings: [
-            {
-              category: "HARM_CATEGORY_HARASSMENT",
-              threshold: "BLOCK_MEDIUM_AND_ABOVE"
+          modelName,
+          requestBody: {
+            contents: [{
+              parts: [{
+                text: prompt
+              }]
+            }],
+            generationConfig: {
+              temperature: 0.3, // Lower temperature for more consistent explanations
+              topK: 20,
+              topP: 0.8,
+              maxOutputTokens: 800,
             },
-            {
-              category: "HARM_CATEGORY_HATE_SPEECH",
-              threshold: "BLOCK_MEDIUM_AND_ABOVE"
-            },
-            {
-              category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-              threshold: "BLOCK_MEDIUM_AND_ABOVE"
-            },
-            {
-              category: "HARM_CATEGORY_DANGEROUS_CONTENT",
-              threshold: "BLOCK_MEDIUM_AND_ABOVE"
-            }
-          ]
+            safetySettings: [
+              {
+                category: "HARM_CATEGORY_HARASSMENT",
+                threshold: "BLOCK_MEDIUM_AND_ABOVE"
+              },
+              {
+                category: "HARM_CATEGORY_HATE_SPEECH",
+                threshold: "BLOCK_MEDIUM_AND_ABOVE"
+              },
+              {
+                category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+                threshold: "BLOCK_MEDIUM_AND_ABOVE"
+              },
+              {
+                category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+                threshold: "BLOCK_MEDIUM_AND_ABOVE"
+              }
+            ]
+          }
         })
       });
 
@@ -490,7 +490,8 @@ export const generateSpeechWithGemini = async (text: string, languageCode: Suppo
       }
     };
 
-    const response = await fetch(`${getTextToSpeechApiUrl()}?key=${getGeminiApiKey()}`, {
+    // Call our Netlify Function instead of Google API directly
+    const response = await fetch(getGeminiTTSUrl(), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
