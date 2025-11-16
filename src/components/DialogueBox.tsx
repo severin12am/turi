@@ -1475,6 +1475,11 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
         });
         setIsLoading(false);
       }
+    } catch (error) {
+      // Catch any errors from the outer try block (including AI dialogue processing errors)
+      logger.error('Failed to process dialogues', { error, characterId, dialogueId });
+      setIsLoading(false);
+    }
     };
 
       fetchDialogues();
