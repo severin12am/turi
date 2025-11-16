@@ -9,6 +9,7 @@ import SignupPrompt from "./SignupPrompt";
 import type { SupportedLanguage } from '../constants/translations';
 import { getTranslation } from '../constants/translations';
 import { AIDialogueStep } from '../services/gemini';
+import { fetchDialoguesWithFallback } from '../services/translationFallback';
 // New imports for enhanced word interaction
 import WordExplanationModal from './WordExplanationModal';
 import { generateWordExplanation, WordExplanationData, speakWithAI, generateSpeechWithGemini } from '../services/gemini';
