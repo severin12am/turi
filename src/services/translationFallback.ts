@@ -304,6 +304,7 @@ export const fetchDialoguesWithFallback = async (
       targetLanguage, 
       motherLanguage 
     });
+    console.log('🔄 FETCHING WITH FALLBACK:', { tableName, dialogueId, targetLanguage, motherLanguage });
 
     // First, try to fetch from Supabase
     const { data, error } = await supabase
@@ -322,6 +323,8 @@ export const fetchDialoguesWithFallback = async (
       throw new Error('No data in Supabase');
     }
 
+    console.log('✅ Data fetched from Supabase:', data.length, 'phrases');
+
     // Check if translations are missing
     const targetColumn = `${targetLanguage.toLowerCase()}_text`;
     const transliterationColumn = `${targetLanguage.toLowerCase()}_text_${motherLanguage.toLowerCase()}`;
@@ -334,9 +337,23 @@ export const fetchDialoguesWithFallback = async (
       ? data.some(phrase => !phrase[transliterationColumn])
       : true; // If column doesn't exist, we'll generate transliteration in memory
 
+    console.log('🔍 TRANSLATION CHECK:', {
+      targetColumn,
+      transliterationColumn,
+      needsTranslation,
+      needsTransliteration,
+      hasTransliterationColumn,
+      sampleData: data[0] ? {
+        id: data[0].id,
+        targetText: data[0][targetColumn],
+        motherText: data[0][transliterationColumn]
+      } : null
+    });
+
     // If we have all the data, return it
     if (!needsTranslation && !needsTransliteration) {
       logger.info('All translations present in Supabase', { tableName, dialogueId });
+      console.log('✅ All translations present, returning data as-is');
       return data;
     }
 
