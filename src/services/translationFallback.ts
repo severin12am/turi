@@ -10,6 +10,15 @@ import { supabase } from './supabase';
  * to translate English source content on-demand.
  */
 
+// Try different Gemini models in order of preference (same as dialogue generation)
+const GEMINI_MODELS = [
+  'gemini-1.5-flash',              // Try legacy model first (most compatible)
+  'gemini-1.5-pro',                // Legacy pro model
+  'gemini-flash-latest',           // Alias for latest Gemini 2.5 Flash (may have quota limits)
+  'gemini-flash-lite-latest',      // Alias for latest Gemini 2.5 Flash Lite
+  'gemini-1.5-flash-8b'            // Smaller, faster model
+];
+
 export interface DialoguePhrase {
   id?: number;
   dialogue_id: number;
@@ -133,6 +142,7 @@ function parseCSVLine(line: string): string[] {
 /**
  * Translate text using Google Gemini API
  * This is called when Supabase content is missing
+ * Now includes retry logic to try multiple models if one fails
  */
 export const translateWithAI = async (
   request: TranslationRequest
@@ -145,68 +155,133 @@ export const translateWithAI = async (
     textLength: sourceText.length 
   });
 
-  try {
-    const prompt = generateTranslationPrompt(
-      sourceText,
-      sourceLanguage,
-      targetLanguage,
-      includeTransliteration
-    );
+  const prompt = generateTranslationPrompt(
+    sourceText,
+    sourceLanguage,
+    targetLanguage,
+    includeTransliteration
+  );
 
-    // Call Netlify Function for translation
-    const response = await fetch('/.netlify/functions/gemini-dialogue', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        modelName: 'gemini-1.5-flash',
-        requestBody: {
-          contents: [{
-            parts: [{
-              text: prompt
-            }]
-          }],
-          generationConfig: {
-            temperature: 0.3, // Lower temperature for consistent translations
-            topK: 20,
-            topP: 0.8,
-            maxOutputTokens: 512,
+  // Try different models until one works
+  let lastError: Error | null = null;
+  
+  for (const modelName of GEMINI_MODELS) {
+    try {
+      logger.info('Trying Gemini model for translation', { 
+        modelName, 
+        sourceLanguage, 
+        targetLanguage 
+      });
+
+      // Call Netlify Function for translation
+      const response = await fetch('/.netlify/functions/gemini-dialogue', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          modelName,
+          requestBody: {
+            contents: [{
+              parts: [{
+                text: prompt
+              }]
+            }],
+            generationConfig: {
+              temperature: 0.3, // Lower temperature for consistent translations
+              topK: 20,
+              topP: 0.8,
+              maxOutputTokens: 512,
+            }
           }
+        })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        logger.error('Gemini API error during translation', { 
+          status: response.status, 
+          error: errorText, 
+          modelName 
+        });
+        
+        // If it's a 404, try the next model
+        if (response.status === 404) {
+          lastError = new Error(`Model ${modelName} not found`);
+          continue;
         }
-      })
-    });
+        
+        // If quota exceeded (429), try next model instead of throwing
+        if (response.status === 429) {
+          lastError = new Error('Quota exceeded for this model');
+          logger.info(`Model ${modelName} quota exceeded, trying next model...`);
+          continue;
+        }
+        
+        // For other errors, try next model
+        if (response.status === 403) {
+          lastError = new Error('API access denied');
+          continue;
+        } else {
+          lastError = new Error(`AI service error (${response.status})`);
+          continue;
+        }
+      }
 
-    if (!response.ok) {
-      throw new Error(`AI translation failed: ${response.status}`);
+      const data = await response.json();
+      
+      if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
+        logger.error('Invalid Gemini API response structure during translation', { 
+          data, 
+          modelName 
+        });
+        lastError = new Error('Invalid response from AI service');
+        continue;
+      }
+
+      const generatedText = data.candidates[0].content.parts[0].text;
+      
+      // Parse JSON response
+      let result;
+      try {
+        const cleanedText = generatedText.replace(/```json\n?|\n?```/g, '').trim();
+        result = JSON.parse(cleanedText);
+      } catch (parseError) {
+        logger.error('Failed to parse AI translation response', { 
+          generatedText, 
+          parseError, 
+          modelName 
+        });
+        lastError = new Error('Failed to parse AI response. Please try again.');
+        continue;
+      }
+
+      logger.info('AI translation successful', { 
+        sourceLanguage, 
+        targetLanguage,
+        hasTransliteration: !!result.transliteration,
+        modelName
+      });
+
+      return {
+        translation: result.translation,
+        transliteration: result.transliteration
+      };
+
+    } catch (error) {
+      logger.error('Error with translation model', { error, modelName });
+      lastError = error instanceof Error ? error : new Error('Unknown error');
+      continue;
     }
-
-    const data = await response.json();
-    
-    if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
-      throw new Error('Invalid AI response');
-    }
-
-    const generatedText = data.candidates[0].content.parts[0].text;
-    
-    // Parse JSON response
-    const cleanedText = generatedText.replace(/```json\n?|\n?```/g, '').trim();
-    const result = JSON.parse(cleanedText);
-
-    logger.info('AI translation successful', { 
-      sourceLanguage, 
-      targetLanguage,
-      hasTransliteration: !!result.transliteration
-    });
-
-    return {
-      translation: result.translation,
-      transliteration: result.transliteration
-    };
-  } catch (error) {
-    logger.error('AI translation failed', { error, sourceLanguage, targetLanguage });
-    throw error;
   }
+
+  // If all models failed, throw the last error
+  logger.error('All Gemini models failed for translation', { 
+    sourceLanguage, 
+    targetLanguage,
+    lastError 
+  });
+  throw lastError || new Error('AI translation is currently unavailable. Please try again later.');
 };
 
 /**
