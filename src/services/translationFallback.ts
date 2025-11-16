@@ -301,19 +301,43 @@ function generateTranslationPrompt(
   const targetLangName = getLanguageName(targetLanguage);
   const motherLangName = motherLanguage ? getLanguageName(motherLanguage) : sourceLangName;
 
-  let prompt = `Translate the following text from ${sourceLangName} to ${targetLangName}.
+  // Special case: if source = target, we're only doing transliteration
+  const isTransliterationOnly = sourceLanguage === targetLanguage;
+
+  let prompt;
+  
+  if (isTransliterationOnly && includeTransliteration) {
+    // Transliteration-only mode (e.g., Turkish text → Russian script)
+    prompt = `Transliterate the following ${sourceLangName} text into ${motherLangName} script.
+
+Text: "${text}"
+
+Return a JSON object with:
+- "translation": keep the same text in ${sourceLangName} (no translation needed)
+- "transliteration": the text written using ${motherLangName} alphabet/script (lowercase, no punctuation)
+
+Example format:
+{
+  "translation": "original text here",
+  "transliteration": "transliterated text here in ${motherLangName} script"
+}
+
+Be accurate and natural. Approximate the ${sourceLangName} sounds using the ${motherLangName} writing system (not English romanization).`;
+  } else {
+    // Normal translation mode
+    prompt = `Translate the following text from ${sourceLangName} to ${targetLangName}.
 
 Text: "${text}"
 
 Return a JSON object with:
 - "translation": the translated text in ${targetLangName}`;
 
-  if (includeTransliteration) {
-    prompt += `
+    if (includeTransliteration) {
+      prompt += `
 - "transliteration": the translation written using ${motherLangName} alphabet/script (lowercase, no punctuation)`;
-  }
+    }
 
-  prompt += `
+    prompt += `
 
 Example format:
 {
@@ -322,6 +346,7 @@ Example format:
 }
 
 Be accurate and natural. For transliteration, approximate the ${targetLangName} sounds using the ${motherLangName} writing system.`;
+  }
 
   return prompt;
 }
