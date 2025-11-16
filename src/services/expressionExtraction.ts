@@ -5,13 +5,14 @@ import { generateExpressionExtractionPrompt } from '../prompts/expressionExtract
 // Netlify Function endpoint for expression extraction
 const getGeminiExpressionExtractionUrl = () => '/.netlify/functions/gemini-extract-expressions';
 
-// Use the same models as other Gemini features for consistency
+// Use the EXACT same models as gemini.ts for consistency
+// These models are proven to work with word explanations
 const GEMINI_MODELS = [
-  'gemini-1.5-flash',              // Fast and reliable
-  'gemini-1.5-pro',                // More powerful fallback
-  'gemini-flash-latest',           // Latest version
-  'gemini-flash-lite-latest',      // Lite version
-  'gemini-1.5-flash-8b'            // Smallest model
+  'gemini-1.5-flash',              // Try legacy model first (most compatible)
+  'gemini-1.5-pro',                // Legacy pro model
+  'gemini-flash-latest',           // Alias for latest Gemini 2.5 Flash (may have quota limits)
+  'gemini-flash-lite-latest',      // Alias for latest Gemini 2.5 Flash Lite
+  'gemini-1.5-flash-8b'            // Smaller, faster model
 ];
 
 // Rate limiting (shared concept with other AI features)
