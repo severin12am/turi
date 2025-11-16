@@ -402,31 +402,36 @@ export const fetchDialoguesWithFallback = async (
 
     // Check if translations are missing
     const targetColumn = `${targetLanguage.toLowerCase()}_text`;
+    const motherColumn = `${motherLanguage.toLowerCase()}_text`;
     const transliterationColumn = `${targetLanguage.toLowerCase()}_text_${motherLanguage.toLowerCase()}`;
     
     // Check if the columns actually exist in the data
     const hasTransliterationColumn = data.length > 0 && transliterationColumn in data[0];
     
-    const needsTranslation = data.some(phrase => !phrase[targetColumn]);
+    const needsTargetTranslation = data.some(phrase => !phrase[targetColumn]);
+    const needsMotherTranslation = data.some(phrase => !phrase[motherColumn]);
     const needsTransliteration = hasTransliterationColumn 
       ? data.some(phrase => !phrase[transliterationColumn])
       : true; // If column doesn't exist, we'll generate transliteration in memory
 
     console.log('🔍 TRANSLATION CHECK:', {
       targetColumn,
+      motherColumn,
       transliterationColumn,
-      needsTranslation,
+      needsTargetTranslation,
+      needsMotherTranslation,
       needsTransliteration,
       hasTransliterationColumn,
       sampleData: data[0] ? {
         id: data[0].id,
         targetText: data[0][targetColumn],
-        motherText: data[0][transliterationColumn]
+        motherText: data[0][motherColumn],
+        transliteration: data[0][transliterationColumn]
       } : null
     });
 
     // If we have all the data, return it
-    if (!needsTranslation && !needsTransliteration) {
+    if (!needsTargetTranslation && !needsMotherTranslation && !needsTransliteration) {
       logger.info('All translations present in Supabase', { tableName, dialogueId });
       console.log('✅ All translations present, returning data as-is');
       return data;
@@ -436,7 +441,8 @@ export const fetchDialoguesWithFallback = async (
     logger.info('Some translations missing, using AI fallback', { 
       tableName, 
       dialogueId,
-      needsTranslation,
+      needsTargetTranslation,
+      needsMotherTranslation,
       needsTransliteration,
       hasTransliterationColumn
     });
@@ -445,7 +451,7 @@ export const fetchDialoguesWithFallback = async (
       data.map(async (phrase) => {
         const enrichedPhrase = { ...phrase };
 
-        // Check if translation is missing
+        // Translate to target language if missing
         if (!phrase[targetColumn] && phrase.en_text) {
           try {
             const aiResult = await translateWithAI({
@@ -499,6 +505,31 @@ export const fetchDialoguesWithFallback = async (
             }
           } catch (error) {
             logger.error('Failed to generate transliteration', { error, dialogueStep: phrase.dialogue_step });
+          }
+        }
+
+        // Translate to mother language if missing (for the translation display)
+        if (!phrase[motherColumn] && phrase.en_text) {
+          try {
+            const aiResult = await translateWithAI({
+              sourceText: phrase.en_text,
+              sourceLanguage: 'en',
+              targetLanguage: motherLanguage,
+              includeTransliteration: false // No transliteration needed for mother language
+            });
+
+            enrichedPhrase[motherColumn] = aiResult.translation;
+            
+            logger.info('Added AI translation to mother language', { 
+              dialogueStep: phrase.dialogue_step,
+              motherLanguage
+            });
+          } catch (error) {
+            logger.error('Failed to translate phrase to mother language with AI', { 
+              error, 
+              dialogueStep: phrase.dialogue_step 
+            });
+            // Keep the phrase without translation rather than failing completely
           }
         }
 
