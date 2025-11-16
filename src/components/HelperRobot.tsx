@@ -8,6 +8,8 @@ import { checkAndUpdateUserProgress } from '../services/auth';
 import AppPanel from './AppPanel';
 import { PanelBackdrop } from './AppPanel';
 import { PanelTitle, PanelButton, PanelSelect } from './PanelElements';
+import { POPULAR_LANGUAGES } from '../constants/languages';
+import { translations as allTranslations, getTranslation, SupportedLanguage } from '../constants/translations';
 
 interface HelperRobotProps {
   instructions: Record<string, string>;
@@ -23,18 +25,12 @@ const PANEL_WIDTH = 600;
 const PANEL_HEIGHT = 576;
 const SPACING = 32; // 2rem or 32px consistent spacing
 
-const languages = [
-  { code: 'en', name: 'English (English)', nameRu: 'Английский (English)' },
-  { code: 'ru', name: 'Русский (Russian)', nameRu: 'Русский (Russian)' },
-  { code: 'es', name: 'Español (Spanish)', nameRu: 'Испанский (Spanish)' },
-  { code: 'fr', name: 'Français (French)', nameRu: 'Французский (French)' },
-  { code: 'de', name: 'Deutsch (German)', nameRu: 'Немецкий (German)' },
-  { code: 'it', name: 'Italiano (Italian)', nameRu: 'Итальянский (Italian)' },
-  { code: 'ar', name: 'العربية (Arabic)', nameRu: 'Арабский (Arabic)' },
-  { code: 'CH', name: '中文 (Chinese)', nameRu: 'Китайский (Chinese)' },
-  { code: 'ja', name: '日本語 (Japanese)', nameRu: 'Японский (Japanese)' },
-  { code: 'tr', name: 'Türkçe (Turkish)', nameRu: 'Турецкий (Turkish)' }
-];
+// Use the centralized language list - now supports all 30 languages!
+const languages = POPULAR_LANGUAGES.map(lang => ({
+  code: lang.code,
+  name: `${lang.nativeName} (${lang.name})`,
+  nameRu: `${lang.nativeName} (${lang.name})`  // We'll use native name for all
+}));
 
 const translations = {
   en: {
