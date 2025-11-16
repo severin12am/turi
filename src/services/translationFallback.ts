@@ -32,6 +32,7 @@ export interface TranslationRequest {
   sourceText: string;
   sourceLanguage: SupportedLanguage;
   targetLanguage: SupportedLanguage;
+  motherLanguage?: SupportedLanguage;  // For transliteration in mother language script
   includeTransliteration?: boolean;
 }
 
@@ -147,11 +148,12 @@ function parseCSVLine(line: string): string[] {
 export const translateWithAI = async (
   request: TranslationRequest
 ): Promise<TranslationResult> => {
-  const { sourceText, sourceLanguage, targetLanguage, includeTransliteration = true } = request;
+  const { sourceText, sourceLanguage, targetLanguage, motherLanguage, includeTransliteration = true } = request;
 
   logger.info('AI translation requested', { 
     sourceLanguage, 
-    targetLanguage, 
+    targetLanguage,
+    motherLanguage,
     textLength: sourceText.length 
   });
 
@@ -159,6 +161,7 @@ export const translateWithAI = async (
     sourceText,
     sourceLanguage,
     targetLanguage,
+    motherLanguage,
     includeTransliteration
   );
 
@@ -291,10 +294,12 @@ function generateTranslationPrompt(
   text: string,
   sourceLanguage: SupportedLanguage,
   targetLanguage: SupportedLanguage,
+  motherLanguage: SupportedLanguage | undefined,
   includeTransliteration: boolean
 ): string {
   const sourceLangName = getLanguageName(sourceLanguage);
   const targetLangName = getLanguageName(targetLanguage);
+  const motherLangName = motherLanguage ? getLanguageName(motherLanguage) : sourceLangName;
 
   let prompt = `Translate the following text from ${sourceLangName} to ${targetLangName}.
 
@@ -305,7 +310,7 @@ Return a JSON object with:
 
   if (includeTransliteration) {
     prompt += `
-- "transliteration": the translation written in ${sourceLangName} letters (lowercase, no punctuation)`;
+- "transliteration": the translation written using ${motherLangName} alphabet/script (lowercase, no punctuation)`;
   }
 
   prompt += `
@@ -316,7 +321,7 @@ Example format:
   "transliteration": "transliterated text here"
 }
 
-Be accurate and natural. For transliteration, approximate the sounds using ${sourceLangName} alphabet.`;
+Be accurate and natural. For transliteration, approximate the ${targetLangName} sounds using the ${motherLangName} writing system.`;
 
   return prompt;
 }
@@ -458,6 +463,7 @@ export const fetchDialoguesWithFallback = async (
               sourceText: phrase.en_text,
               sourceLanguage: 'en',
               targetLanguage: targetLanguage,
+              motherLanguage: motherLanguage,
               includeTransliteration: needsTransliteration
             });
 
@@ -494,6 +500,7 @@ export const fetchDialoguesWithFallback = async (
               sourceText: phrase[targetColumn],
               sourceLanguage: targetLanguage,
               targetLanguage: targetLanguage, // Same language for transliteration only
+              motherLanguage: motherLanguage,
               includeTransliteration: true
             });
             

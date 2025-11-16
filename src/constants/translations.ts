@@ -328,7 +328,12 @@ export const translations: Partial<Record<SupportedLanguage, TranslationStrings>
     // Level labels
     levelSimple: 'Простой',
     levelNormal: 'Обычный',
-    levelComplex: 'Сложный'
+    levelComplex: 'Сложный',
+    
+    // Scenario-related
+    scenarioDescription: 'Практикуйте сценарии реальных разговоров',
+    dialoguesCompleted: 'диалогов завершено',
+    regularDialogues: 'Обычные Диалоги'
   },
   es: {
     firstQuestion: "Primero, ¿qué idioma hablas ya?",
