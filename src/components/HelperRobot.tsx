@@ -142,6 +142,226 @@ const translations = {
     startJourney: '私の旅を始める',
     haveAccount: 'すでにアカウントをお持ちですか？',
     back: '戻る'
+  },
+  hi: {
+    whatLanguage: 'नमस्ते! मैं तूरी हूं, मैं आपकी भाषा सीखने की यात्रा में आपका मार्गदर्शन करूंगा! सबसे पहले, आप पहले से कौन सी भाषा बोलते हैं?',
+    whatToLearn: 'अच्छा, अब वह भाषा चुनें जिसे आप सीखना चाहते हैं',
+    ready: 'अपनी यात्रा शुरू करने के लिए तैयार!',
+    selectDifferent: 'कृपया एक अलग भाषा चुनें',
+    chooseLanguage: 'भाषा चुनें...',
+    chooseLanguageYouSpeak: 'अपनी मातृभाषा चुनें',
+    startJourney: 'मेरी यात्रा शुरू करें',
+    haveAccount: 'क्या आपके पास पहले से खाता है?',
+    back: 'वापस'
+  },
+  bn: {
+    whatLanguage: 'হ্যালো! আমি তুরি, আমি আপনার ভাষা শেখার যাত্রায় আপনাকে গাইড করব! প্রথমে, আপনি ইতিমধ্যে কোন ভাষা বলেন?',
+    whatToLearn: 'ভাল, এখন আপনি যে ভাষা শিখতে চান তা চয়ন করুন',
+    ready: 'আপনার যাত্রা শুরু করতে প্রস্তুত!',
+    selectDifferent: 'অনুগ্রহ করে একটি ভিন্ন ভাষা নির্বাচন করুন',
+    chooseLanguage: 'ভাষা চয়ন করুন...',
+    chooseLanguageYouSpeak: 'আপনার মাতৃভাষা চয়ন করুন',
+    startJourney: 'আমার যাত্রা শুরু করুন',
+    haveAccount: 'ইতিমধ্যে একটি অ্যাকাউন্ট আছে?',
+    back: 'পিছনে'
+  },
+  id: {
+    whatLanguage: 'Halo! Saya Turi, saya akan memandu Anda dalam perjalanan belajar bahasa! Pertama, bahasa apa yang sudah Anda kuasai?',
+    whatToLearn: 'Bagus, sekarang pilih bahasa yang ingin Anda pelajari',
+    ready: 'Siap memulai perjalanan Anda!',
+    selectDifferent: 'Silakan pilih bahasa yang berbeda',
+    chooseLanguage: 'Pilih bahasa...',
+    chooseLanguageYouSpeak: 'Pilih bahasa ibu Anda',
+    startJourney: 'Mulai perjalanan saya',
+    haveAccount: 'Sudah punya akun?',
+    back: 'Kembali'
+  },
+  ur: {
+    whatLanguage: 'ہیلو! میں توری ہوں، میں آپ کی زبان سیکھنے کے سفر میں آپ کی رہنمائی کروں گا! سب سے پہلے، آپ پہلے سے کون سی زبان بولتے ہیں؟',
+    whatToLearn: 'اچھا، اب وہ زبان منتخب کریں جو آپ سیکھنا چاہتے ہیں',
+    ready: 'اپنا سفر شروع کرنے کے لیے تیار!',
+    selectDifferent: 'براہ کرم ایک مختلف زبان منتخب کریں',
+    chooseLanguage: 'زبان منتخب کریں...',
+    chooseLanguageYouSpeak: 'اپنی مادری زبان منتخب کریں',
+    startJourney: 'میرا سفر شروع کریں',
+    haveAccount: 'پہلے سے اکاؤنٹ ہے؟',
+    back: 'واپس'
+  },
+  sw: {
+    whatLanguage: 'Habari! Mimi ni Turi, nitakuongoza katika safari yako ya kujifunza lugha! Kwanza, unazungumza lugha gani tayari?',
+    whatToLearn: 'Vizuri, sasa chagua lugha unayotaka kujifunza',
+    ready: 'Uko tayari kuanza safari yako!',
+    selectDifferent: 'Tafadhali chagua lugha tofauti',
+    chooseLanguage: 'Chagua lugha...',
+    chooseLanguageYouSpeak: 'Chagua lugha yako ya mama',
+    startJourney: 'Anza safari yangu',
+    haveAccount: 'Tayari una akaunti?',
+    back: 'Rudi'
+  },
+  te: {
+    whatLanguage: 'హలో! నేను తూరి, నేను మీ భాషా అభ్యాస యాత్రలో మీకు మార్గనిర్దేశం చేస్తాను! మొదట, మీరు ఇప్పటికే ఏ భాష మాట్లాడుతున్నారు?',
+    whatToLearn: 'మంచిది, ఇప్పుడు మీరు నేర్చుకోవాలనుకుంటున్న భాషను ఎంచుకోండి',
+    ready: 'మీ యాత్ర ప్రారంభించడానికి సిద్ధంగా ఉన్నారా!',
+    selectDifferent: 'దయచేసి వేరే భాషను ఎంచుకోండి',
+    chooseLanguage: 'భాషను ఎంచుకోండి...',
+    chooseLanguageYouSpeak: 'మీ మాతృభాషను ఎంచుకోండి',
+    startJourney: 'నా యాత్రను ప్రారంభించండి',
+    haveAccount: 'ఇప్పటికే ఖాతా ఉందా?',
+    back: 'వెనక్కి'
+  },
+  mr: {
+    whatLanguage: 'नमस्कार! मी तुरी आहे, मी तुमच्या भाषा शिकण्याच्या प्रवासात तुम्हाला मार्गदर्शन करेन! प्रथम, तुम्ही आधीच कोणती भाषा बोलता?',
+    whatToLearn: 'चांगले, आता तुम्हाला शिकायची असलेली भाषा निवडा',
+    ready: 'तुमचा प्रवास सुरू करण्यासाठी तयार!',
+    selectDifferent: 'कृपया वेगळी भाषा निवडा',
+    chooseLanguage: 'भाषा निवडा...',
+    chooseLanguageYouSpeak: 'तुमची मातृभाषा निवडा',
+    startJourney: 'माझा प्रवास सुरू करा',
+    haveAccount: 'आधीच खाते आहे?',
+    back: 'मागे'
+  },
+  ta: {
+    whatLanguage: 'வணக்கம்! நான் தூரி, உங்கள் மொழி கற்றல் பயணத்தில் நான் உங்களுக்கு வழிகாட்டுவேன்! முதலில், நீங்கள் ஏற்கனவே என்ன மொழி பேசுகிறீர்கள்?',
+    whatToLearn: 'நல்லது, இப்போது நீங்கள் கற்க விரும்பும் மொழியைத் தேர்வு செய்யவும்',
+    ready: 'உங்கள் பயணத்தைத் தொடங்க தயாரா!',
+    selectDifferent: 'தயவுசெய்து வேறு மொழியைத் தேர்வு செய்யவும்',
+    chooseLanguage: 'மொழியைத் தேர்வு செய்யவும்...',
+    chooseLanguageYouSpeak: 'உங்கள் தாய்மொழியைத் தேர்வு செய்யவும்',
+    startJourney: 'என் பயணத்தைத் தொடங்கவும்',
+    haveAccount: 'ஏற்கனவே கணக்கு உள்ளதா?',
+    back: 'பின்'
+  },
+  tr: {
+    whatLanguage: 'Merhaba! Ben Turi, dil öğrenme yolculuğunuzda size rehberlik edeceğim! Öncelikle, zaten hangi dili konuşuyorsunuz?',
+    whatToLearn: 'Güzel, şimdi öğrenmek istediğiniz dili seçin',
+    ready: 'Yolculuğunuza başlamaya hazır!',
+    selectDifferent: 'Lütfen farklı bir dil seçin',
+    chooseLanguage: 'Dil seçin...',
+    chooseLanguageYouSpeak: 'Ana dilinizi seçin',
+    startJourney: 'Yolculuğuma başla',
+    haveAccount: 'Zaten bir hesabınız var mı?',
+    back: 'Geri'
+  },
+  ko: {
+    whatLanguage: '안녕하세요! 저는 투리입니다. 여러분의 언어 학습 여정을 안내해 드리겠습니다! 먼저, 어떤 언어를 이미 구사하십니까?',
+    whatToLearn: '좋습니다, 이제 배우고 싶은 언어를 선택하세요',
+    ready: '여정을 시작할 준비가 되셨습니까!',
+    selectDifferent: '다른 언어를 선택해 주세요',
+    chooseLanguage: '언어 선택...',
+    chooseLanguageYouSpeak: '모국어를 선택하세요',
+    startJourney: '내 여정 시작',
+    haveAccount: '이미 계정이 있으신가요?',
+    back: '뒤로'
+  },
+  vi: {
+    whatLanguage: 'Xin chào! Tôi là Turi, tôi sẽ hướng dẫn bạn trong hành trình học ngôn ngữ! Trước tiên, bạn đã biết ngôn ngữ nào?',
+    whatToLearn: 'Tốt, bây giờ hãy chọn ngôn ngữ bạn muốn học',
+    ready: 'Sẵn sàng bắt đầu hành trình của bạn!',
+    selectDifferent: 'Vui lòng chọn một ngôn ngữ khác',
+    chooseLanguage: 'Chọn ngôn ngữ...',
+    chooseLanguageYouSpeak: 'Chọn ngôn ngữ mẹ đẻ của bạn',
+    startJourney: 'Bắt đầu hành trình của tôi',
+    haveAccount: 'Đã có tài khoản?',
+    back: 'Quay lại'
+  },
+  th: {
+    whatLanguage: 'สวัสดี! ฉันคือทูรี ฉันจะเป็นผู้นำทางในการเดินทางเรียนรู้ภาษาของคุณ! ก่อนอื่น คุณพูดภาษาอะไรอยู่แล้ว?',
+    whatToLearn: 'ดี ตอนนี้เลือกภาษาที่คุณต้องการเรียนรู้',
+    ready: 'พร้อมที่จะเริ่มการเดินทางของคุณแล้ว!',
+    selectDifferent: 'โปรดเลือกภาษาอื่น',
+    chooseLanguage: 'เลือกภาษา...',
+    chooseLanguageYouSpeak: 'เลือกภาษาแม่ของคุณ',
+    startJourney: 'เริ่มการเดินทางของฉัน',
+    haveAccount: 'มีบัญชีอยู่แล้ว?',
+    back: 'กลับ'
+  },
+  pl: {
+    whatLanguage: 'Cześć! Jestem Turi, będę prowadzić Cię w podróży nauki języka! Po pierwsze, jakim językiem już mówisz?',
+    whatToLearn: 'Dobrze, teraz wybierz język, którego chcesz się nauczyć',
+    ready: 'Gotowy do rozpoczęcia swojej podróży!',
+    selectDifferent: 'Proszę wybrać inny język',
+    chooseLanguage: 'Wybierz język...',
+    chooseLanguageYouSpeak: 'Wybierz swój język ojczysty',
+    startJourney: 'Rozpocznij moją podróż',
+    haveAccount: 'Masz już konto?',
+    back: 'Wstecz'
+  },
+  uk: {
+    whatLanguage: 'Привіт! Я Турі, я буду вашим гідом у подорожі вивчення мови! По-перше, якою мовою ви вже розмовляєте?',
+    whatToLearn: 'Добре, тепер виберіть мову, яку ви хочете вивчити',
+    ready: 'Готові розпочати свою подорож!',
+    selectDifferent: 'Будь ласка, виберіть іншу мову',
+    chooseLanguage: 'Виберіть мову...',
+    chooseLanguageYouSpeak: 'Виберіть свою рідну мову',
+    startJourney: 'Розпочати мою подорож',
+    haveAccount: 'Вже є обліковий запис?',
+    back: 'Назад'
+  },
+  nl: {
+    whatLanguage: 'Hallo! Ik ben Turi, ik zal je begeleiden op je taalleerreis! Ten eerste, welke taal spreek je al?',
+    whatToLearn: 'Goed, kies nu de taal die je wilt leren',
+    ready: 'Klaar om aan je reis te beginnen!',
+    selectDifferent: 'Selecteer een andere taal',
+    chooseLanguage: 'Kies taal...',
+    chooseLanguageYouSpeak: 'Kies je moedertaal',
+    startJourney: 'Begin mijn reis',
+    haveAccount: 'Heb je al een account?',
+    back: 'Terug'
+  },
+  ro: {
+    whatLanguage: 'Bună! Sunt Turi, te voi ghida în călătoria ta de învățare a limbilor! Mai întâi, ce limbă vorbești deja?',
+    whatToLearn: 'Bine, acum alege limba pe care vrei să o înveți',
+    ready: 'Gata să începi călătoria!',
+    selectDifferent: 'Vă rugăm să selectați o altă limbă',
+    chooseLanguage: 'Alege limba...',
+    chooseLanguageYouSpeak: 'Alege limba ta maternă',
+    startJourney: 'Începe călătoria mea',
+    haveAccount: 'Ai deja un cont?',
+    back: 'Înapoi'
+  },
+  el: {
+    whatLanguage: 'Γεια σας! Είμαι ο Τούρι, θα σας καθοδηγήσω στο ταξίδι εκμάθησης γλώσσας! Πρώτα απ\' όλα, ποια γλώσσα μιλάτε ήδη;',
+    whatToLearn: 'Καλά, τώρα επιλέξτε τη γλώσσα που θέλετε να μάθετε',
+    ready: 'Έτοιμοι να ξεκινήσετε το ταξίδι σας!',
+    selectDifferent: 'Παρακαλώ επιλέξτε διαφορετική γλώσσα',
+    chooseLanguage: 'Επιλέξτε γλώσσα...',
+    chooseLanguageYouSpeak: 'Επιλέξτε τη μητρική σας γλώσσα',
+    startJourney: 'Ξεκινήστε το ταξίδι μου',
+    haveAccount: 'Έχετε ήδη λογαριασμό;',
+    back: 'Πίσω'
+  },
+  cs: {
+    whatLanguage: 'Ahoj! Jsem Turi, budu tě provázet na tvé cestě učení jazyka! Nejprve, jakým jazykem už mluvíš?',
+    whatToLearn: 'Dobře, nyní vyber jazyk, který se chceš naučit',
+    ready: 'Připraven začít svou cestu!',
+    selectDifferent: 'Prosím vyber jiný jazyk',
+    chooseLanguage: 'Vyber jazyk...',
+    chooseLanguageYouSpeak: 'Vyber svůj rodný jazyk',
+    startJourney: 'Začít mou cestu',
+    haveAccount: 'Už máš účet?',
+    back: 'Zpět'
+  },
+  sv: {
+    whatLanguage: 'Hej! Jag är Turi, jag kommer att guida dig på din språkinlärningsresa! Först och främst, vilket språk talar du redan?',
+    whatToLearn: 'Bra, välj nu det språk du vill lära dig',
+    ready: 'Redo att börja din resa!',
+    selectDifferent: 'Vänligen välj ett annat språk',
+    chooseLanguage: 'Välj språk...',
+    chooseLanguageYouSpeak: 'Välj ditt modersmål',
+    startJourney: 'Börja min resa',
+    haveAccount: 'Har du redan ett konto?',
+    back: 'Tillbaka'
+  },
+  hu: {
+    whatLanguage: 'Helló! Turi vagyok, végigvezetlek a nyelvtanulási utadon! Először is, milyen nyelven beszélsz már?',
+    whatToLearn: 'Jó, most válaszd ki a nyelvet, amit tanulni szeretnél',
+    ready: 'Készen állsz az utazás megkezdésére!',
+    selectDifferent: 'Kérlek válassz másik nyelvet',
+    chooseLanguage: 'Válassz nyelvet...',
+    chooseLanguageYouSpeak: 'Válaszd ki az anyanyelvédet',
+    startJourney: 'Kezdd el az utazásom',
+    haveAccount: 'Már van fiókod?',
+    back: 'Vissza'
   }
 };
 
