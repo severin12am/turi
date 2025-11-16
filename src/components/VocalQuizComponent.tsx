@@ -306,9 +306,9 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
             
             console.log('🤖 Tier 2: Calling AI to extract expressions from dialogue...');
             
-            // Call AI extraction with timeout
+            // Call AI extraction with timeout (10s to allow trying all 5 models)
             const timeoutPromise = new Promise((_, reject) => 
-              setTimeout(() => reject(new Error('AI extraction timeout')), 5000)
+              setTimeout(() => reject(new Error('AI extraction timeout')), 10000)
             );
             
             const extractionPromise = extractExpressionsFromDialogue({
