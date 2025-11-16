@@ -11,6 +11,8 @@ import { trackCompletedScenarioDialogue } from '../services/progress';
 import { speakWithAI, generateSpeechWithGemini } from '../services/gemini';
 import { fetchScenarioQuizWords } from '../services/scenarioQuiz';
 import { fetchScenarioExpressions } from '../services/scenarioExpressions';
+import { extractExpressionsFromDialogue } from '../services/expressionExtraction';
+import type { ExtractedExpression } from '../services/expressionExtraction';
 
 // Add WebSpeechAPI type definitions
 declare global {
@@ -219,11 +221,11 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
           system: isScenario ? '✅ NEW (quiz table - exact matching)' : '❌ LEGACY (words_quiz table)'
         });
         
-        // For scenarios, try expressions first, then fallback to words
+        // For scenarios, use 3-tier fallback: Supabase → AI → Words
         if (isScenario) {
-          console.log('💬 Attempting to fetch pre-curated expressions...');
+          // TIER 1: Try pre-curated expressions from Supabase
+          console.log('💬 Tier 1: Attempting to fetch pre-curated expressions from Supabase...');
           
-          // Try to fetch pre-curated expressions first
           const scenarioExpressions = await fetchScenarioExpressions(
             characterId,
             safeDialogueId,
@@ -232,16 +234,137 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
             motherLanguage
           );
           
-          // If expressions found, use them
+          // If expressions found, use them (fastest path)
           if (scenarioExpressions && scenarioExpressions.length > 0) {
-            console.log('✅ Found', scenarioExpressions.length, 'expressions for scenario');
+            console.log('✅ Tier 1: Found', scenarioExpressions.length, 'pre-curated expressions');
             setQuizWords(scenarioExpressions as VocalQuizWord[]);
             setIsLoading(false);
             return;
           }
           
-          // Fallback: No expressions found, use dynamic word matching
-          console.log('⚠️ No expressions found, falling back to dynamic word matching...');
+          // TIER 2: Try AI extraction
+          console.log('⚠️ Tier 1 failed. Tier 2: Attempting AI expression extraction...');
+          
+          // Check cache first
+          const cacheKey = `ai_expressions_${characterId}_${safeDialogueId}_${targetLanguage}_${motherLanguage}`;
+          const cachedExpressions = sessionStorage.getItem(cacheKey);
+          
+          if (cachedExpressions) {
+            try {
+              const parsedCache = JSON.parse(cachedExpressions);
+              console.log('✅ Tier 2: Found', parsedCache.length, 'cached AI expressions');
+              setQuizWords(parsedCache as VocalQuizWord[]);
+              setIsLoading(false);
+              return;
+            } catch (e) {
+              console.warn('Failed to parse cached expressions, will regenerate');
+            }
+          }
+          
+          // No cache, fetch dialogue and extract with AI
+          try {
+            // Fetch dialogue text from scenario table
+            const sourceTable = `scenario_${characterId}`;
+            const { data: dialogueData, error: dialogueError } = await supabase
+              .from(sourceTable)
+              .select('*')
+              .eq('dialogue_id', safeDialogueId)
+              .order('dialogue_step', { ascending: true });
+            
+            if (dialogueError || !dialogueData || dialogueData.length === 0) {
+              console.warn('⚠️ Tier 2: Could not fetch dialogue for AI extraction');
+              throw new Error('No dialogue data for AI extraction');
+            }
+            
+            // Get target language column name
+            const getTargetLanguageColumn = (lang: SupportedLanguage): string => {
+              const columnMap: Record<string, string> = {
+                'en': 'en_text',
+                'ru': 'ru_text',
+                'es': 'es_text',
+                'fr': 'fr_text',
+                'de': 'de_text',
+                'it': 'it_text',
+                'pt': 'pt_text',
+                'ar': 'ar_text',
+                'CH': 'ch_text',
+                'ja': 'ja_text',
+                'tr': 'tr_text'
+              };
+              return columnMap[lang] || 'en_text';
+            };
+            
+            // Extract dialogue text
+            const targetColumn = getTargetLanguageColumn(targetLanguage);
+            const allDialogueText = dialogueData
+              .map(phrase => phrase[targetColumn] || '')
+              .join(' ');
+            
+            if (!allDialogueText.trim()) {
+              throw new Error('Empty dialogue text');
+            }
+            
+            console.log('🤖 Tier 2: Calling AI to extract expressions from dialogue...');
+            
+            // Call AI extraction with timeout
+            const timeoutPromise = new Promise((_, reject) => 
+              setTimeout(() => reject(new Error('AI extraction timeout')), 5000)
+            );
+            
+            const extractionPromise = extractExpressionsFromDialogue({
+              dialogueText: allDialogueText,
+              targetLanguage,
+              motherLanguage
+            });
+            
+            const aiExpressions: ExtractedExpression[] = await Promise.race([
+              extractionPromise,
+              timeoutPromise
+            ]) as ExtractedExpression[];
+            
+            // Transform AI expressions to VocalQuizWord format
+            const quizWordsFromAI: VocalQuizWord[] = aiExpressions.map((expr, index) => ({
+              id: Date.now() + index, // Temporary ID
+              dialogue_id: safeDialogueId,
+              entry_in_en: targetLanguage === 'en' ? expr.target : expr.mother,
+              entry_in_ru: targetLanguage === 'ru' ? expr.target : (motherLanguage === 'ru' ? expr.mother : ''),
+              entry_in_es: targetLanguage === 'es' ? expr.target : (motherLanguage === 'es' ? expr.mother : ''),
+              entry_in_fr: targetLanguage === 'fr' ? expr.target : (motherLanguage === 'fr' ? expr.mother : ''),
+              entry_in_de: targetLanguage === 'de' ? expr.target : (motherLanguage === 'de' ? expr.mother : ''),
+              entry_in_it: targetLanguage === 'it' ? expr.target : (motherLanguage === 'it' ? expr.mother : ''),
+              entry_in_pt: targetLanguage === 'pt' ? expr.target : (motherLanguage === 'pt' ? expr.mother : ''),
+              entry_in_ar: targetLanguage === 'ar' ? expr.target : (motherLanguage === 'ar' ? expr.mother : ''),
+              entry_in_ch: targetLanguage === 'CH' ? expr.target : (motherLanguage === 'CH' ? expr.mother : ''),
+              entry_in_ja: targetLanguage === 'ja' ? expr.target : (motherLanguage === 'ja' ? expr.mother : ''),
+              entry_in_tr: targetLanguage === 'tr' ? expr.target : (motherLanguage === 'tr' ? expr.mother : ''),
+              [`entry_in_${targetLanguage}`]: expr.target,
+              [`entry_in_${motherLanguage}`]: expr.mother,
+              is_from_500: false
+            }));
+            
+            if (quizWordsFromAI.length > 0) {
+              console.log('✅ Tier 2: AI extracted', quizWordsFromAI.length, 'expressions');
+              
+              // Cache the results
+              try {
+                sessionStorage.setItem(cacheKey, JSON.stringify(quizWordsFromAI));
+                console.log('💾 Cached AI expressions for future use');
+              } catch (e) {
+                console.warn('Failed to cache AI expressions (storage full?)');
+              }
+              
+              setQuizWords(quizWordsFromAI);
+              setIsLoading(false);
+              return;
+            }
+            
+          } catch (aiError) {
+            console.warn('⚠️ Tier 2 failed:', aiError instanceof Error ? aiError.message : 'Unknown error');
+            logger.info('AI extraction failed, falling back to word matching', { error: aiError });
+          }
+          
+          // TIER 3: Fallback to dynamic word matching from quiz table
+          console.log('⚠️ Tier 2 failed. Tier 3: Falling back to dynamic word matching...');
           const scenarioWords = await fetchScenarioQuizWords(
             characterId,
             safeDialogueId,
@@ -251,19 +374,19 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
           );
           
           if (!scenarioWords || scenarioWords.length === 0) {
-            logger.warn('No matching quiz words found for scenario', { 
+            logger.warn('No matching quiz words found for scenario (all tiers failed)', { 
               characterId, 
               dialogueId: safeDialogueId,
               scenarioNumber 
             });
-            console.warn('No quiz words matched from dialogue. This scenario might not have common words or expressions.');
+            console.warn('❌ All 3 tiers failed. This scenario has no quiz available.');
             // Set empty array - quiz will show message about completion without quiz
             setQuizWords([]);
             setIsLoading(false);
             return;
           }
           
-          console.log('✅ Found', scenarioWords.length, 'quiz words for scenario (fallback)');
+          console.log('✅ Tier 3: Found', scenarioWords.length, 'quiz words from fallback');
           setQuizWords(scenarioWords as VocalQuizWord[]);
           setIsLoading(false);
           return;
