@@ -3676,7 +3676,7 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
   if (isLoading) {
     return (
       <div className="dialogue-box-container">
-        <div className="dialogue-loading">Loading...</div>
+        <div className="dialogue-loading">{getTranslation(motherLanguage, 'loading')}</div>
       </div>
     );
   }
@@ -3688,7 +3688,7 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
     return (
       <div className="dialogue-box-container">
         <div className="dialogue-error">
-          No dialogues found.
+          {getTranslation(motherLanguage, 'error')}: {getTranslation(motherLanguage, 'selectDialogue')}
           <button onClick={onClose} className="close-button">×</button>
         </div>
       </div>
@@ -4163,8 +4163,8 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
     return (
       <div className="dialogue-box-container">
         <div className="dialogue-error">
-          <p>There was an error displaying the dialogue.</p>
-          <button onClick={onClose} className="close-button">Close</button>
+          <p>{getTranslation(motherLanguage, 'error')}</p>
+          <button onClick={onClose} className="close-button">{getTranslation(motherLanguage, 'close')}</button>
         </div>
       </div>
     );
