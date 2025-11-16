@@ -404,8 +404,13 @@ export const fetchDialoguesWithFallback = async (
     const targetColumn = `${targetLanguage.toLowerCase()}_text`;
     const transliterationColumn = `${targetLanguage.toLowerCase()}_text_${motherLanguage.toLowerCase()}`;
     
+    // Check if the columns actually exist in the data
+    const hasTransliterationColumn = data.length > 0 && transliterationColumn in data[0];
+    
     const needsTranslation = data.some(phrase => !phrase[targetColumn]);
-    const needsTransliteration = data.some(phrase => !phrase[transliterationColumn]);
+    const needsTransliteration = hasTransliterationColumn 
+      ? data.some(phrase => !phrase[transliterationColumn])
+      : true; // If column doesn't exist, we'll generate transliteration in memory
 
     // If we have all the data, return it
     if (!needsTranslation && !needsTransliteration) {
@@ -418,7 +423,8 @@ export const fetchDialoguesWithFallback = async (
       tableName, 
       dialogueId,
       needsTranslation,
-      needsTransliteration
+      needsTransliteration,
+      hasTransliterationColumn
     });
 
     const enrichedData = await Promise.all(
@@ -437,8 +443,16 @@ export const fetchDialoguesWithFallback = async (
 
             enrichedPhrase[targetColumn] = aiResult.translation;
             
+            // Store transliteration in memory (whether or not DB column exists)
             if (aiResult.transliteration) {
               enrichedPhrase[transliterationColumn] = aiResult.transliteration;
+              
+              if (!hasTransliterationColumn) {
+                logger.info('Transliteration generated in-memory (column does not exist in DB)', {
+                  dialogueStep: phrase.dialogue_step,
+                  transliterationColumn
+                });
+              }
             }
 
             logger.info('Added AI translation to phrase', { 
@@ -451,6 +465,26 @@ export const fetchDialoguesWithFallback = async (
               dialogueStep: phrase.dialogue_step 
             });
             // Keep the phrase without translation rather than failing completely
+          }
+        }
+        // If translation exists but transliteration is missing (and column doesn't exist)
+        else if (!hasTransliterationColumn && phrase[targetColumn]) {
+          try {
+            const aiResult = await translateWithAI({
+              sourceText: phrase[targetColumn],
+              sourceLanguage: targetLanguage,
+              targetLanguage: targetLanguage, // Same language for transliteration only
+              includeTransliteration: true
+            });
+            
+            if (aiResult.transliteration) {
+              enrichedPhrase[transliterationColumn] = aiResult.transliteration;
+              logger.info('Transliteration generated in-memory for existing translation', {
+                dialogueStep: phrase.dialogue_step
+              });
+            }
+          } catch (error) {
+            logger.error('Failed to generate transliteration', { error, dialogueStep: phrase.dialogue_step });
           }
         }
 
