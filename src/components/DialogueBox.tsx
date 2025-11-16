@@ -1466,9 +1466,21 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
         
       setIsLoading(false);
       } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        const errorStack = error instanceof Error ? error.stack : undefined;
         logger.error('Failed to fetch dialogues (including AI fallback)', { 
-          error, 
+          error,
+          errorMessage,
+          errorStack,
           characterId, 
+          dialogueId,
+          targetLanguage,
+          motherLanguage
+        });
+        console.error('❌ DIALOGUE FETCH ERROR:', {
+          message: errorMessage,
+          stack: errorStack,
+          table: isScenario ? `scenario_${characterId}` : `phrases_${characterId}`,
           dialogueId,
           targetLanguage,
           motherLanguage

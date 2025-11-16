@@ -482,10 +482,10 @@ const DialogueSelectionPanel: React.FC<DialogueSelectionPanelProps> = ({
                             </div>
                             <p className="text-white/70 text-sm">
                               {isCompleted 
-                                ? `${DIALOGUES_PER_SCENARIO} / ${DIALOGUES_PER_SCENARIO} dialogues completed`
+                                ? `${DIALOGUES_PER_SCENARIO} / ${DIALOGUES_PER_SCENARIO} ${getTranslation(motherLanguage, 'dialoguesCompleted')}`
                                 : isCurrent && scenarioDialogueProgress > 0
-                                  ? `${scenarioDialogueProgress} / ${DIALOGUES_PER_SCENARIO} dialogues completed`
-                                  : 'Practice real-world conversation scenarios'
+                                  ? `${scenarioDialogueProgress} / ${DIALOGUES_PER_SCENARIO} ${getTranslation(motherLanguage, 'dialoguesCompleted')}`
+                                  : getTranslation(motherLanguage, 'scenarioDescription')
                               }
                             </p>
                           </button>
@@ -496,7 +496,7 @@ const DialogueSelectionPanel: React.FC<DialogueSelectionPanelProps> = ({
                 )}
                 
                 {/* Regular Dialogues Section */}
-                <h3 className="text-white text-lg font-semibold mb-3">Regular Dialogues</h3>
+                <h3 className="text-white text-lg font-semibold mb-3">{getTranslation(motherLanguage, 'regularDialogues')}</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                 {availableDialogues.map((dialogueId) => {
                   const isCompleted = isDialogueCompleted(dialogueId);

@@ -104,6 +104,11 @@ interface TranslationStrings {
   levelSimple?: string;
   levelNormal?: string;
   levelComplex?: string;
+  
+  // Scenario-related
+  scenarioDescription?: string;
+  dialoguesCompleted?: string;
+  regularDialogues?: string;
 }
 
 // Partial record allows for gradual expansion of translations
@@ -212,7 +217,12 @@ export const translations: Partial<Record<SupportedLanguage, TranslationStrings>
     // Level labels
     levelSimple: 'Simple',
     levelNormal: 'Normal',
-    levelComplex: 'Complex'
+    levelComplex: 'Complex',
+    
+    // Scenario-related
+    scenarioDescription: 'Practice real-world conversation scenarios',
+    dialoguesCompleted: 'dialogues completed',
+    regularDialogues: 'Regular Dialogues'
   },
   ru: {
     firstQuestion: "Сначала, какой язык вы уже знаете?",
@@ -498,6 +508,11 @@ export const translations: Partial<Record<SupportedLanguage, TranslationStrings>
     levelSimple: "Basit",
     levelNormal: "Normal",
     levelComplex: "Karmaşık",
+    
+    // Scenario-related
+    scenarioDescription: "Gerçek dünya sohbet senaryolarını pratik edin",
+    dialoguesCompleted: "diyalog tamamlandı",
+    regularDialogues: "Normal Diyaloglar",
     characterNames: {
       1: "Tom",
       2: "Noah",
