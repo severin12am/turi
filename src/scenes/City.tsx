@@ -1,5 +1,5 @@
 // src/scenes/City.tsx
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { useGLTF, Html } from '@react-three/drei';
 import * as THREE from 'three';
@@ -1577,7 +1577,7 @@ const CityScene: React.FC = () => {
     return () => clearInterval(interval);
   }, [playerPosition, character, character2, character3, character4, character5, 
       character6, character7, character8, character9, character10, character11, character12, character13, character14, character15, character16, character17, character18, character19, character20, character21, character22, character23, character24, character25, character26, character27, character28, character29, character30,
-      isDialogueActive, loadingDialogue, showDialogueSelection]);
+      loadingDialogue, showDialogueSelection]); // Removed isDialogueActive to prevent re-running when dialogue opens
   
   // Handle dialogue activation with proper error handling
   const handleDialogueActivation = async (characterId: number, dialogueId: number) => {
@@ -1649,7 +1649,7 @@ const CityScene: React.FC = () => {
     setShowDialogueSelection(false);
   };
   
-  const handleCloseDialogue = () => {
+  const handleCloseDialogue = useCallback(() => {
     setIsDialogueActive(false);
     setAiDialogue(null); // Clear AI dialogue when closing
     
@@ -1667,7 +1667,7 @@ const CityScene: React.FC = () => {
     
     // Clear scenario flag AFTER deciding which panel to show
     setIsScenarioDialogue(false);
-  };
+  }, [isScenarioDialogue]); // Only recreate if isScenarioDialogue changes
   
   // Handle scenario button click (opens scenario selection)
   const handleScenarioClick = (scenarioNumber: number) => {
