@@ -109,6 +109,9 @@ interface TranslationStrings {
   scenarioDescription?: string;
   dialoguesCompleted?: string;
   regularDialogues?: string;
+  
+  // Dialogue completion
+  completeInHideOrTranslationMode?: string;
 }
 
 // Partial record allows for gradual expansion of translations
@@ -222,7 +225,8 @@ export const translations: Partial<Record<SupportedLanguage, TranslationStrings>
     // Scenario-related
     scenarioDescription: 'Practice real-world conversation scenarios',
     dialoguesCompleted: 'dialogues completed',
-    regularDialogues: 'Regular Dialogues'
+    regularDialogues: 'Regular Dialogues',
+    completeInHideOrTranslationMode: 'To prove you\'ve mastered this dialogue, complete in Hide or Translation mode to proceed (click visibility button below)'
   },
   ru: {
     firstQuestion: "Сначала, какой язык вы уже знаете?",
@@ -333,7 +337,8 @@ export const translations: Partial<Record<SupportedLanguage, TranslationStrings>
     // Scenario-related
     scenarioDescription: 'Практикуйте сценарии реальных разговоров',
     dialoguesCompleted: 'диалогов завершено',
-    regularDialogues: 'Обычные Диалоги'
+    regularDialogues: 'Обычные Диалоги',
+    completeInHideOrTranslationMode: 'Чтобы доказать, что вы освоили этот диалог, завершите его в режиме Скрыть или Перевод (нажмите кнопку видимости ниже)'
   },
   es: {
     firstQuestion: "Primero, ¿qué idioma hablas ya?",
@@ -518,6 +523,7 @@ export const translations: Partial<Record<SupportedLanguage, TranslationStrings>
     scenarioDescription: "Gerçek dünya sohbet senaryolarını pratik edin",
     dialoguesCompleted: "diyalog tamamlandı",
     regularDialogues: "Normal Diyaloglar",
+    completeInHideOrTranslationMode: "Bu diyaloğu öğrendiğinizi kanıtlamak için, Gizle veya Çeviri modunda tamamlayın (aşağıdaki görünürlük düğmesine tıklayın)",
     characterNames: {
       1: "Tom",
       2: "Noah",

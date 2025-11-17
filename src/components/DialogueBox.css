@@ -101,7 +101,7 @@
   margin-left: 10px;
 }
 
-.small-button, .sound-button, .return-button, .complete-button {
+.small-button, .sound-button, .return-button, .complete-button, .replay-user-button {
   background: rgba(0, 0, 0, 0.2);
   border: 2px solid rgba(0, 0, 0, 0.1);
   border-radius: 50%;
@@ -116,13 +116,13 @@
   margin: 0 5px;
 }
 
-.small-button:hover, .sound-button:hover, .return-button:hover, .complete-button:hover {
+.small-button:hover, .sound-button:hover, .return-button:hover, .complete-button:hover, .replay-user-button:hover {
   background: rgba(0, 0, 0, 0.3);
   transform: scale(1.1);
   border-color: rgba(0, 0, 0, 0.3);
 }
 
-.small-button:active, .sound-button:active, .return-button:active, .complete-button:active {
+.small-button:active, .sound-button:active, .return-button:active, .complete-button:active, .replay-user-button:active {
   transform: scale(0.95);
   background: rgba(0, 0, 0, 0.4);
 }

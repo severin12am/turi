@@ -2210,13 +2210,13 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
 
   const getVisibilityLabel = (mode: VisibilityMode): string => {
     switch (mode) {
-      case 'all': return 'All';
-      case 'phrase-trans': return 'P+T';
-      case 'phrase-transl': return 'P+Tr';
-      case 'phrase-only': return 'P';
-      case 'translation-only': return 'Tr';
+      case 'all': return 'Everything';
+      case 'phrase-trans': return 'Phrase + Transliteration';
+      case 'phrase-transl': return 'Phrase + Translation';
+      case 'phrase-only': return 'Phrase Only';
+      case 'translation-only': return 'Translation Only';
       case 'none': return 'Hide';
-      default: return 'All';
+      default: return 'Everything';
     }
   };
 
@@ -3864,15 +3864,6 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
                       className="replay-user-button"
                       onClick={() => playUserRecording(entry.step)}
                       title="Replay your recording"
-                      style={{
-                        fontSize: '18px',
-                        padding: '5px 10px',
-                        backgroundColor: '#3b82f6',
-                        border: 'none',
-                        borderRadius: '4px',
-                        cursor: 'pointer',
-                        marginLeft: '5px'
-                      }}
                     >
                       🎙️
                     </button>
@@ -3900,19 +3891,6 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
               });
               return null;
             })()}
-            <div style={{
-              marginBottom: '15px',
-              fontSize: '18px',
-              fontWeight: 'bold',
-              color: completedInHideMode ? '#4ade80' : '#fbbf24'
-            }}>
-              {completedInHideMode ? (
-                <>🎉 Great job! You've completed the dialogue!</>
-              ) : (
-                <>⚠️ Almost there! Complete in Hide (🙈) or Translation (🌍) mode to proceed</>
-              )}
-            </div>
-            
             {!completedInHideMode && (
               <div style={{
                 marginBottom: '15px',
@@ -3922,87 +3900,91 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
                 borderRadius: '8px',
                 fontSize: '15px',
                 color: 'rgba(255, 255, 255, 0.9)',
-                lineHeight: '1.6'
+                lineHeight: '1.6',
+                textAlign: 'center'
               }}>
-                <div style={{ marginBottom: '8px', fontWeight: 'bold' }}>
-                  📚 Memory Challenge Required!
-                </div>
-                <div style={{ fontSize: '14px' }}>
-                  To prove you've mastered this dialogue:
-                </div>
-                <ol style={{ 
-                  textAlign: 'left', 
-                  display: 'inline-block',
-                  margin: '10px 0',
-                  paddingLeft: '20px'
-                }}>
-                  <li>Click the visibility button below (currently: <strong>{getVisibilityLabel(visibilityMode)}</strong>)</li>
-                  <li>Switch to <strong>🙈 Hide or 🌍 Translation</strong> mode</li>
-                  <li>Click ↩ button to reset dialogue</li>
-                  <li>Complete the entire dialogue from memory!</li>
-                </ol>
+                {getTranslation(motherLanguage, 'completeInHideOrTranslationMode') || 'To prove you\'ve mastered this dialogue, complete in Hide or Translation mode to proceed (click visibility button below)'}
               </div>
             )}
             
-            <div style={{
+            {/* Control Panel */}
+            <div style={{ 
+              marginTop: '15px',
               display: 'flex',
-              gap: '15px',
-              justifyContent: 'center',
-              alignItems: 'center',
-              flexWrap: 'wrap'
+              gap: '10px',
+              flexWrap: 'wrap',
+              justifyContent: 'center'
             }}>
               {/* Replay Full Dialogue Button */}
-              <button
-                onClick={isPlayingFullDialogue ? stopFullDialogue : playFullDialogue}
-                disabled={isPlayingFullDialogue && false} // Never actually disabled, just changes behavior
+              <button 
                 style={{
-                  padding: '15px 35px',
-                  fontSize: '18px',
-                  fontWeight: 'bold',
-                  backgroundColor: isPlayingFullDialogue ? '#ef4444' : '#3b82f6',
+                  padding: '8px 15px',
+                  backgroundColor: isPlayingFullDialogue ? '#ef4444' : '#2563eb',
                   color: 'white',
                   border: 'none',
-                  borderRadius: '12px',
+                  borderRadius: '4px',
                   cursor: 'pointer',
-                  transition: 'all 0.3s ease',
-                  boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3)',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '8px'
+                  gap: '6px',
+                  fontSize: '14px',
+                  fontWeight: 'bold'
                 }}
-                onMouseEnter={(e) => {
-                  if (isPlayingFullDialogue) {
-                    e.currentTarget.style.backgroundColor = '#dc2626';
-                  } else {
-                    e.currentTarget.style.backgroundColor = '#2563eb';
-                  }
-                  e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '0 6px 8px rgba(0, 0, 0, 0.4)';
-                }}
-                onMouseLeave={(e) => {
-                  if (isPlayingFullDialogue) {
-                    e.currentTarget.style.backgroundColor = '#ef4444';
-                  } else {
-                    e.currentTarget.style.backgroundColor = '#3b82f6';
-                  }
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.3)';
-                }}
+                onClick={isPlayingFullDialogue ? stopFullDialogue : playFullDialogue}
+                title={isPlayingFullDialogue ? 'Stop playback' : 'Replay full dialogue'}
               >
-                {isPlayingFullDialogue ? (
-                  <>
-                    <span style={{ fontSize: '20px' }}>⏹️</span>
-                    Stop Playback
-                  </>
-                ) : (
-                  <>
-                    <span style={{ fontSize: '20px' }}>🎭</span>
-                    Replay Full Dialogue
-                  </>
-                )}
+                {isPlayingFullDialogue ? 'Stop Playback' : 'Replay Full Dialogue'}
               </button>
               
-              {/* Continue to Quiz Button */}
+              {/* Speed Control Button */}
+              <button 
+                style={{
+                  padding: '8px 15px',
+                  backgroundColor: '#2563eb',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  fontSize: '14px',
+                  fontWeight: 'bold'
+                }}
+                onClick={togglePlaybackSpeed}
+                title={`Current speed: ${playbackSpeed}x. Click to change.`}
+              >
+                <span>{playbackSpeed}x</span>
+              </button>
+              
+              {/* Visibility Mode Button */}
+              <button 
+                style={{
+                  padding: '8px 15px',
+                  backgroundColor: '#7c3aed',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  fontSize: '14px',
+                  fontWeight: 'bold'
+                }}
+                onClick={toggleVisibilityMode}
+                title={`Text visibility: ${getVisibilityLabel(visibilityMode)}. Click to change.`}
+              >
+                <span>{getVisibilityLabel(visibilityMode)}</span>
+              </button>
+            </div>
+            
+            {/* Continue to Quiz Button */}
+            <div style={{
+              marginTop: '15px',
+              display: 'flex',
+              justifyContent: 'center'
+            }}>
               <button
                 onClick={handleContinueToQuiz}
                 disabled={!completedInHideMode}
@@ -4035,121 +4017,12 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
                 }}
               >
                 {completedInHideMode ? (
-                  <>Continue to Quiz →</>
+                  <>Continue to Quiz</>
                 ) : (
-                  <>🔒 Complete in Hide/Translation Mode First</>
+                  <>Complete in Hide/Translation Mode First</>
                 )}
               </button>
             </div>
-            
-            <div style={{
-              marginTop: '12px',
-              fontSize: '14px',
-              color: 'rgba(255, 255, 255, 0.6)'
-            }}>
-              {completedInHideMode ? (
-                <>Review your dialogue or replay the full conversation before continuing</>
-              ) : (
-                <>Switch to Hide (🙈) or Translation (🌍) mode and complete the dialogue from memory to unlock the quiz</>
-              )}
-            </div>
-          </div>
-        )}
-        
-        {/* Debug controls in development */}
-        {process.env.NODE_ENV === 'development' && (
-          <div className="debug-controls" style={{ 
-            marginTop: '15px', 
-            padding: '10px', 
-            borderTop: '1px solid #333',
-            display: 'flex',
-            gap: '10px',
-            flexWrap: 'wrap'
-          }}>
-            <button 
-              style={{
-                padding: '8px 15px',
-                backgroundColor: '#8e44ad',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer'
-              }}
-              onClick={() => {
-                console.log("DEBUG: Force show quiz button pressed");
-                const dialogueId = dialoguesRef.current[0]?.dialogue_id || 1;
-                // Call the function directly within this scope where it's defined
-                try {
-                  // Set dialogue ID for quiz
-                  console.log("Setting dialogue ID:", dialogueId);
-                  setCurrentDialogueId(dialogueId);
-                  
-                  // Set the showQuiz flag directly
-                  console.log("Setting showQuiz to TRUE");
-                  setShowQuiz(true);
-                } catch (e) {
-                  console.error("Error showing quiz:", e);
-                }
-              }}
-            >
-              Force Show Quiz
-            </button>
-            <button 
-              style={{
-                padding: '8px 15px',
-                backgroundColor: '#dc2626',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer'
-              }}
-              onClick={() => {
-                console.log("DEBUG: Clearing hover buttons");
-                setHoveredWord(null);
-              }}
-            >
-              Clear Hover Buttons
-            </button>
-            <button 
-              style={{
-                padding: '8px 15px',
-                backgroundColor: '#2563eb',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                fontSize: '14px',
-                fontWeight: 'bold'
-              }}
-              onClick={togglePlaybackSpeed}
-              title={`Current speed: ${playbackSpeed}x. Click to change.`}
-            >
-              <span style={{ fontSize: '18px' }}>{getSpeedIcon(playbackSpeed)}</span>
-              <span>{playbackSpeed}x</span>
-            </button>
-            <button 
-              style={{
-                padding: '8px 15px',
-                backgroundColor: '#7c3aed',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                fontSize: '14px',
-                fontWeight: 'bold'
-              }}
-              onClick={toggleVisibilityMode}
-              title={`Text visibility: ${getVisibilityLabel(visibilityMode)}. Click to change.`}
-            >
-              <span style={{ fontSize: '18px' }}>{getVisibilityIcon(visibilityMode)}</span>
-              <span>{getVisibilityLabel(visibilityMode)}</span>
-            </button>
           </div>
         )}
 
