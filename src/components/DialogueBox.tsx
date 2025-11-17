@@ -3521,12 +3521,24 @@ Keep it simple, practical, and focused only on structure. No extra examples need
 
   /**
    * Effect to initialize conversation and set up state on first render
+   * NOTE: This is a FALLBACK only - initialization should normally happen in the fetch useEffect
    */
   useEffect(() => {
-    if (dialoguesRef.current.length > 0 && !conversationInitializedRef.current && conversationHistory.length === 0) {
-      console.log("Initial render with dialogues available, initializing conversation");
+    // Only run if BOTH refs say not initialized AND dialogInitialized is also false
+    if (dialoguesRef.current.length > 0 && 
+        !conversationInitializedRef.current && 
+        !dialogInitialized.current &&
+        conversationHistory.length === 0) {
+      console.log("⚠️ FALLBACK: Initial render with dialogues available, initializing conversation");
       setTimeout(() => {
-        initializeConversation(dialoguesRef.current);
+        // Double-check before initializing (in case it was initialized during the timeout)
+        if (!conversationInitializedRef.current && !dialogInitialized.current) {
+          console.log("⚠️ FALLBACK: Actually initializing now");
+          dialogInitialized.current = true;
+          initializeConversation(dialoguesRef.current);
+        } else {
+          console.log("✅ FALLBACK: Conversation already initialized, skipping");
+        }
       }, 500); // Add a delay before initializing to ensure state is stable
     }
     
