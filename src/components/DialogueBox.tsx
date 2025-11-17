@@ -233,6 +233,7 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
   const currentStepRef = useRef<number>(1);
   const conversationHistoryRef = useRef<ConversationEntry[]>([]);
   const dialoguesRef = useRef<DialoguePhrase[]>([]); // Add a ref for dialogues
+  const mountedAt = useRef<number>(Date.now()); // Track when component mounted to prevent premature distance-based closing
   
   // Update refs when state changes
   useEffect(() => {
@@ -1294,7 +1295,9 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
    * Effect hook to automatically close dialogue when player moves too far from character
    */
   useEffect(() => {
-    if (distance > 5) {
+    // Don't close if component just mounted (within 2 seconds) to prevent premature closing
+    const timeSinceMounted = Date.now() - mountedAt.current;
+    if (distance > 5 && timeSinceMounted > 2000) {
       onClose();
     }
   }, [distance, onClose]);

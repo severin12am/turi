@@ -308,6 +308,9 @@ const CityScene: React.FC = () => {
   const [selectedScenarioNumber, setSelectedScenarioNumber] = useState<number>(1);
   const [isScenarioDialogue, setIsScenarioDialogue] = useState(false);
   
+  // Track when dialogue was opened to prevent premature distance-based closing
+  const dialogueOpenedAt = useRef<number>(0);
+  
   // Mobile controls state
   const [mobileMovement, setMobileMovement] = useState({ x: 0, z: 0 });
   const [mobileLook, setMobileLook] = useState({ x: 0, y: 0 });
@@ -1564,7 +1567,11 @@ const CityScene: React.FC = () => {
       
       if (!withinRangeOfAnyCharacter && (isDialogueActive || showDialogueSelection)) {
         if (isDialogueActive) {
-          handleCloseDialogue();
+          // Don't close dialogue if it was just opened (within 2 seconds) to prevent premature closing
+          const timeSinceOpened = Date.now() - dialogueOpenedAt.current;
+          if (timeSinceOpened > 2000) {
+            handleCloseDialogue();
+          }
         }
         if (showDialogueSelection) {
           setShowDialogueSelection(false);
@@ -1611,6 +1618,7 @@ const CityScene: React.FC = () => {
       
       // If we get here, data exists so show dialogue
       setSelectedDialogueId(dialogueId);
+      dialogueOpenedAt.current = Date.now(); // Track when dialogue opened
       setIsDialogueActive(true);
       setShowDialogueSelection(false); // Hide selection panel
       logger.info('Dialogue activated', { characterId, dialogueId });
@@ -1638,6 +1646,7 @@ const CityScene: React.FC = () => {
     console.log('AI Dialogue selected in City component:', dialogueId, 'for character:', activeCharacterId);
     setAiDialogue(dialogue);
     setSelectedDialogueId(dialogueId);
+    dialogueOpenedAt.current = Date.now(); // Track when dialogue opened
     setIsDialogueActive(true);
     setShowDialogueSelection(false);
     logger.info('AI Dialogue activated', { characterId: activeCharacterId, dialogueId });
@@ -1684,6 +1693,7 @@ const CityScene: React.FC = () => {
     setSelectedScenarioNumber(scenarioNumber);
     setSelectedDialogueId(dialogueId);
     setAiDialogue(null); // Clear any AI dialogue
+    dialogueOpenedAt.current = Date.now(); // Track when dialogue opened
     setIsDialogueActive(true);
     setShowScenarioSelection(false);
     logger.info('Scenario dialogue activated', { characterId: activeCharacterId, scenarioNumber, dialogueId });
