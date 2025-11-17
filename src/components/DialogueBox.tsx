@@ -2809,6 +2809,45 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
   };
   
   /**
+   * Helper function to get full language name from language code
+   */
+  const getLanguageName = (code: SupportedLanguage): string => {
+    const languageNames: Record<SupportedLanguage, string> = {
+      'en': 'English',
+      'CH': 'Chinese',
+      'hi': 'Hindi',
+      'es': 'Spanish',
+      'fr': 'French',
+      'ar': 'Arabic',
+      'bn': 'Bengali',
+      'pt': 'Portuguese',
+      'ru': 'Russian',
+      'id': 'Indonesian',
+      'ur': 'Urdu',
+      'de': 'German',
+      'ja': 'Japanese',
+      'sw': 'Swahili',
+      'te': 'Telugu',
+      'mr': 'Marathi',
+      'ta': 'Tamil',
+      'tr': 'Turkish',
+      'ko': 'Korean',
+      'vi': 'Vietnamese',
+      'it': 'Italian',
+      'th': 'Thai',
+      'pl': 'Polish',
+      'uk': 'Ukrainian',
+      'nl': 'Dutch',
+      'ro': 'Romanian',
+      'el': 'Greek',
+      'cs': 'Czech',
+      'sv': 'Swedish',
+      'hu': 'Hungarian'
+    };
+    return languageNames[code] || 'English';
+  };
+  
+  /**
    * Generate sentence structure explanation using Gemini AI
    */
   const handleShowStructureExplanation = async (phrase: string, translation: string) => {
@@ -3967,11 +4006,13 @@ Keep it simple, practical, and focused only on structure. No extra examples need
                   {/* "If stuck" hint - inline with return button */}
                   {entry.speaker === 'User' && isCurrentUserPhrase && !entry.isCompleted && (
                     <span style={{
-                      fontSize: '12px',
-                      color: 'rgba(255, 255, 255, 0.7)',
+                      fontSize: '14px',
+                      color: 'rgba(255, 255, 255, 0.95)',
+                      fontWeight: 'bold',
                       fontStyle: 'italic',
-                      marginLeft: '8px',
-                      whiteSpace: 'nowrap'
+                      marginLeft: '10px',
+                      whiteSpace: 'nowrap',
+                      textShadow: '0 0 8px rgba(255, 255, 255, 0.5)'
                     }}>
                       ← If stuck
                     </span>
