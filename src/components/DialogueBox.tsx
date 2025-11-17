@@ -2897,7 +2897,7 @@ Keep it simple, practical, and focused only on structure. No extra examples need
                   temperature: 0.3,
                   topK: 20,
                   topP: 0.8,
-                  maxOutputTokens: 300,
+                  maxOutputTokens: 1000,
                 }
               }
             })
