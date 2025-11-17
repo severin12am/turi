@@ -2931,11 +2931,22 @@ Keep it simple, practical, and focused only on structure. No extra examples need
 
       const data = await response.json();
       console.log('✅ Received data:', data);
+      console.log('🔍 Candidates:', data.candidates);
+      console.log('🔍 First candidate:', data.candidates?.[0]);
+      console.log('🔍 Content:', data.candidates?.[0]?.content);
+      console.log('🔍 Parts:', data.candidates?.[0]?.content?.parts);
+      console.log('🔍 Full content object keys:', data.candidates?.[0]?.content ? Object.keys(data.candidates[0].content) : 'N/A');
       
       // Validate response structure (same as other AI functions)
       if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
         console.error('❌ Invalid response structure:', data);
         throw new Error('Invalid response from AI service');
+      }
+      
+      // Check if parts exists
+      if (!data.candidates[0].content.parts || !data.candidates[0].content.parts[0]) {
+        console.error('❌ Parts array is missing or empty:', data.candidates[0].content);
+        throw new Error('Invalid content structure - parts missing');
       }
       
       const generatedText = data.candidates[0].content.parts[0].text;
