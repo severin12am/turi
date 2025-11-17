@@ -2878,22 +2878,48 @@ Keep it simple, practical, and focused only on structure. No extra examples need
 
       console.log('📡 Sending request to Netlify function...');
       
-      const response = await fetch('/.netlify/functions/gemini-text-explanation', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          modelName: 'gemini-1.5-flash',
-          requestBody: {
-            contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: {
-              temperature: 0.3,
-              topK: 20,
-              topP: 0.8,
-              maxOutputTokens: 300,
-            }
+      // Try multiple model names in order of preference
+      const modelNames = ['gemini-flash-latest', 'gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-flash-lite-latest'];
+      let response;
+      let lastError;
+      
+      for (const modelName of modelNames) {
+        try {
+          console.log(`📡 Trying model: ${modelName}`);
+          response = await fetch('/.netlify/functions/gemini-text-explanation', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              modelName,
+              requestBody: {
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: {
+                  temperature: 0.3,
+                  topK: 20,
+                  topP: 0.8,
+                  maxOutputTokens: 300,
+                }
+              }
+            })
+          });
+          
+          if (response.ok) {
+            console.log(`✅ Model ${modelName} worked!`);
+            break;
+          } else {
+            const errorData = await response.json();
+            console.log(`❌ Model ${modelName} failed:`, errorData);
+            lastError = errorData;
           }
-        })
-      });
+        } catch (err) {
+          console.log(`❌ Model ${modelName} error:`, err);
+          lastError = err;
+        }
+      }
+      
+      if (!response) {
+        throw new Error('All models failed');
+      }
 
       console.log('📡 Response status:', response.status, response.statusText);
 
@@ -3964,6 +3990,31 @@ Keep it simple, practical, and focused only on structure. No extra examples need
                 </div>
                 
                 <div className="dialogue-buttons">
+                  {/* "If stuck" hint - before buttons */}
+                  {entry.speaker === 'User' && isCurrentUserPhrase && !entry.isCompleted && (
+                    <span style={{
+                      fontSize: '14px',
+                      color: 'rgba(255, 255, 255, 0.95)',
+                      fontWeight: 'bold',
+                      fontStyle: 'italic',
+                      marginRight: '10px',
+                      whiteSpace: 'nowrap',
+                      textShadow: '0 0 8px rgba(255, 255, 255, 0.5)',
+                      display: 'flex',
+                      alignItems: 'center'
+                    }}>
+                      If stuck →
+                    </span>
+                  )}
+                  
+                  <button
+                    className="return-button"
+                    onClick={() => handleGoBack(entry)}
+                    title="Go back to previous step"
+                  >
+                    ↩
+                  </button>
+                  
                   {/* Structure explanation button */}
                   <button
                     className="structure-button"
@@ -3994,29 +4045,6 @@ Keep it simple, practical, and focused only on structure. No extra examples need
                   >
                     ❓
                   </button>
-                  
-                  <button
-                    className="return-button"
-                    onClick={() => handleGoBack(entry)}
-                    title="Go back to previous step"
-                  >
-                    ↩
-                  </button>
-                  
-                  {/* "If stuck" hint - inline with return button */}
-                  {entry.speaker === 'User' && isCurrentUserPhrase && !entry.isCompleted && (
-                    <span style={{
-                      fontSize: '14px',
-                      color: 'rgba(255, 255, 255, 0.95)',
-                      fontWeight: 'bold',
-                      fontStyle: 'italic',
-                      marginLeft: '10px',
-                      whiteSpace: 'nowrap',
-                      textShadow: '0 0 8px rgba(255, 255, 255, 0.5)'
-                    }}>
-                      ← If stuck
-                    </span>
-                  )}
                   
                   <button 
                     className="sound-button"
