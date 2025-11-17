@@ -2823,6 +2823,8 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
       const targetLangName = getLanguageName(targetLanguage);
       const motherLangName = getLanguageName(motherLanguage);
       
+      console.log('🔍 Requesting structure explanation:', { phrase, targetLangName, motherLangName });
+      
       const prompt = `You are a language teacher explaining sentence structure to a student.
 
 Phrase in ${targetLangName}: "${phrase}"
@@ -2835,6 +2837,8 @@ Provide a concise explanation (2-3 sentences maximum) in ${motherLangName} that:
 
 Keep it simple, practical, and focused only on structure. No extra examples needed.`;
 
+      console.log('📡 Sending request to Netlify function...');
+      
       const response = await fetch('/.netlify/functions/gemini-text-explanation', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -2852,21 +2856,30 @@ Keep it simple, practical, and focused only on structure. No extra examples need
         })
       });
 
+      console.log('📡 Response status:', response.status, response.statusText);
+
       if (!response.ok) {
-        throw new Error('Failed to generate explanation');
+        const errorText = await response.text();
+        console.error('❌ API Error:', errorText);
+        throw new Error(`API returned ${response.status}: ${errorText}`);
       }
 
       const data = await response.json();
+      console.log('✅ Received data:', data);
+      
       const explanation = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Could not generate explanation';
       
       setStructureExplanationText(explanation);
       setIsLoadingStructure(false);
       
       logger.info('Structure explanation generated', { phrase, targetLanguage, motherLanguage });
+      console.log('✅ Structure explanation generated successfully');
     } catch (error) {
-      setStructureExplanationText('Failed to generate explanation. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('❌ Structure explanation failed:', errorMessage, error);
+      setStructureExplanationText(`Failed to generate explanation: ${errorMessage}\n\nThis feature requires the Netlify function to be deployed. Please check the console for details.`);
       setIsLoadingStructure(false);
-      logger.error('Structure explanation failed', { error });
+      logger.error('Structure explanation failed', { error: errorMessage });
     }
   };
   
@@ -3950,6 +3963,20 @@ Keep it simple, practical, and focused only on structure. No extra examples need
                   >
                     ↩
                   </button>
+                  
+                  {/* "If stuck" hint - inline with return button */}
+                  {entry.speaker === 'User' && isCurrentUserPhrase && !entry.isCompleted && (
+                    <span style={{
+                      fontSize: '12px',
+                      color: 'rgba(255, 255, 255, 0.7)',
+                      fontStyle: 'italic',
+                      marginLeft: '8px',
+                      whiteSpace: 'nowrap'
+                    }}>
+                      ← If stuck
+                    </span>
+                  )}
+                  
                   <button 
                     className="sound-button"
                     onClick={() => handlePlayAudio(entry)}
@@ -3968,18 +3995,6 @@ Keep it simple, practical, and focused only on structure. No extra examples need
                     </button>
                   )}
                 </div>
-                
-                {/* "If stuck" hint - only show for current user phrase */}
-                {entry.speaker === 'User' && isCurrentUserPhrase && !entry.isCompleted && (
-                  <div style={{
-                    fontSize: '11px',
-                    color: 'rgba(255, 255, 255, 0.5)',
-                    marginTop: '5px',
-                    textAlign: 'center'
-                  }}>
-                    If stuck ↑
-                  </div>
-                )}
               </div>
             </div>
           );
