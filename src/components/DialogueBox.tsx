@@ -289,6 +289,12 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
   const [isLoadingExplanation, setIsLoadingExplanation] = useState(false);
   const [explanationError, setExplanationError] = useState<string | null>(null);
   
+  // State for sentence structure explanation
+  const [showStructureExplanation, setShowStructureExplanation] = useState(false);
+  const [structureExplanationText, setStructureExplanationText] = useState('');
+  const [isLoadingStructure, setIsLoadingStructure] = useState(false);
+  const [currentStructurePhrase, setCurrentStructurePhrase] = useState<string>('');
+  
   // State for audio recording functionality
   const [userRecordings, setUserRecordings] = useState<Map<number, Blob>>(new Map());
   const [audioStream, setAudioStream] = useState<MediaStream | null>(null);
@@ -2803,6 +2809,68 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
   };
   
   /**
+   * Generate sentence structure explanation using Gemini AI
+   */
+  const handleShowStructureExplanation = async (phrase: string, translation: string) => {
+    if (!phrase || phrase.trim() === '') return;
+    
+    setCurrentStructurePhrase(phrase);
+    setShowStructureExplanation(true);
+    setIsLoadingStructure(true);
+    setStructureExplanationText('');
+    
+    try {
+      const targetLangName = getLanguageName(targetLanguage);
+      const motherLangName = getLanguageName(motherLanguage);
+      
+      const prompt = `You are a language teacher explaining sentence structure to a student.
+
+Phrase in ${targetLangName}: "${phrase}"
+Translation in ${motherLangName}: "${translation}"
+
+Provide a concise explanation (2-3 sentences maximum) in ${motherLangName} that:
+1. Breaks down the sentence structure (subject, verb, object, etc.)
+2. Explains word order or grammatical patterns specific to ${targetLangName}
+3. Highlights key grammar points that differ from ${motherLangName}
+
+Keep it simple, practical, and focused only on structure. No extra examples needed.`;
+
+      const response = await fetch('/.netlify/functions/gemini-text-explanation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          modelName: 'gemini-1.5-flash',
+          requestBody: {
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: {
+              temperature: 0.3,
+              topK: 20,
+              topP: 0.8,
+              maxOutputTokens: 300,
+            }
+          }
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate explanation');
+      }
+
+      const data = await response.json();
+      const explanation = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Could not generate explanation';
+      
+      setStructureExplanationText(explanation);
+      setIsLoadingStructure(false);
+      
+      logger.info('Structure explanation generated', { phrase, targetLanguage, motherLanguage });
+    } catch (error) {
+      setStructureExplanationText('Failed to generate explanation. Please try again.');
+      setIsLoadingStructure(false);
+      logger.error('Structure explanation failed', { error });
+    }
+  };
+  
+  /**
    * Handle mouse enter on a word to show action buttons
    * @param word The word being hovered
    * @param event Mouse event for positioning
@@ -3844,6 +3912,37 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
                 </div>
                 
                 <div className="dialogue-buttons">
+                  {/* Structure explanation button */}
+                  <button
+                    className="structure-button"
+                    onClick={() => handleShowStructureExplanation(entry.phrase, entry.translation)}
+                    title="Explain sentence structure"
+                    style={{
+                      background: 'rgba(0, 0, 0, 0.2)',
+                      border: '2px solid rgba(0, 0, 0, 0.1)',
+                      borderRadius: '50%',
+                      width: '40px',
+                      height: '40px',
+                      fontSize: '18px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      margin: '0 5px'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = 'rgba(0, 0, 0, 0.3)';
+                      e.currentTarget.style.transform = 'scale(1.1)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'rgba(0, 0, 0, 0.2)';
+                      e.currentTarget.style.transform = 'scale(1)';
+                    }}
+                  >
+                    ❓
+                  </button>
+                  
                   <button
                     className="return-button"
                     onClick={() => handleGoBack(entry)}
@@ -3869,6 +3968,18 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
                     </button>
                   )}
                 </div>
+                
+                {/* "If stuck" hint - only show for current user phrase */}
+                {entry.speaker === 'User' && isCurrentUserPhrase && !entry.isCompleted && (
+                  <div style={{
+                    fontSize: '11px',
+                    color: 'rgba(255, 255, 255, 0.5)',
+                    marginTop: '5px',
+                    textAlign: 'center'
+                  }}>
+                    If stuck ↑
+                  </div>
+                )}
               </div>
             </div>
           );
@@ -4039,6 +4150,80 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
             onClose={closeWordExplanation}
             onPlaySound={playWordSound}
           />
+        )}
+        
+        {/* Sentence Structure Explanation Modal */}
+        {showStructureExplanation && (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 10000
+          }}
+          onClick={() => setShowStructureExplanation(false)}
+          >
+            <div style={{
+              backgroundColor: 'white',
+              borderRadius: '12px',
+              padding: '30px',
+              maxWidth: '600px',
+              width: '90%',
+              maxHeight: '80vh',
+              overflow: 'auto',
+              position: 'relative'
+            }}
+            onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={() => setShowStructureExplanation(false)}
+                style={{
+                  position: 'absolute',
+                  top: '10px',
+                  right: '10px',
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '24px',
+                  cursor: 'pointer',
+                  color: '#666'
+                }}
+              >
+                ×
+              </button>
+              
+              <h3 style={{ marginTop: 0, color: '#333' }}>Sentence Structure</h3>
+              
+              <div style={{
+                padding: '15px',
+                backgroundColor: '#f5f5f5',
+                borderRadius: '8px',
+                marginBottom: '15px',
+                color: '#333',
+                fontStyle: 'italic'
+              }}>
+                {currentStructurePhrase}
+              </div>
+              
+              {isLoadingStructure ? (
+                <div style={{ textAlign: 'center', padding: '20px', color: '#666' }}>
+                  Loading explanation...
+                </div>
+              ) : (
+                <div style={{ 
+                  color: '#333', 
+                  lineHeight: '1.6',
+                  whiteSpace: 'pre-wrap'
+                }}>
+                  {structureExplanationText}
+                </div>
+              )}
+            </div>
+          </div>
         )}
       </div>
     );
