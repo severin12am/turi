@@ -1525,7 +1525,7 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
       dialogInitialized.current = false;
       conversationInitializedRef.current = false;
     };
-  }, [characterId, dialogueId, aiDialogue]); // Add dialogueId and aiDialogue to dependency array
+  }, [characterId, dialogueId]); // Only re-run when characterId or dialogueId changes, not when aiDialogue prop updates
 
   /**
    * Initializes the conversation with first NPC dialogue
