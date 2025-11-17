@@ -1366,9 +1366,17 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
           setDialogues(convertedPhrases);
           
           // Initialize conversation if not already initialized
+          console.log("🤖 AI Dialogue: Checking if should initialize", {
+            dialogInitialized: dialogInitialized.current,
+            conversationInitializedRef: conversationInitializedRef.current
+          });
+          
           if (!dialogInitialized.current && !conversationInitializedRef.current) {
+            console.log("🤖 AI Dialogue: INITIALIZING NOW");
             dialogInitialized.current = true;
             initializeConversation(convertedPhrases);
+          } else {
+            console.log("🤖 AI Dialogue: SKIPPING - already initialized");
           }
           
           setIsLoading(false);
@@ -1466,9 +1474,18 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
       setDialogues(data || []);
           
         // Only initialize conversation if not already initialized
+        console.log("💾 Database Dialogue: Checking if should initialize", {
+          hasData: !!(data && data.length > 0),
+          dialogInitialized: dialogInitialized.current,
+          conversationInitializedRef: conversationInitializedRef.current
+        });
+        
         if (data && data.length > 0 && !dialogInitialized.current && !conversationInitializedRef.current) {
+          console.log("💾 Database Dialogue: INITIALIZING NOW");
           dialogInitialized.current = true;
           initializeConversation(data);
+        } else {
+          console.log("💾 Database Dialogue: SKIPPING - already initialized or no data");
         }
         
       setIsLoading(false);
@@ -1514,9 +1531,17 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
    * Initializes the conversation with first NPC dialogue
    */
   const initializeConversation = (phrases: DialoguePhrase[]) => {
+    console.log("🔄 initializeConversation CALLED", {
+      conversationInitializedRef: conversationInitializedRef.current,
+      dialogInitialized: dialogInitialized.current,
+      conversationHistoryLength: conversationHistory.length,
+      phrasesCount: phrases.length,
+      callStack: new Error().stack
+    });
+    
     // Skip if already initialized to avoid duplicates
     if (conversationInitializedRef.current) {
-      console.log("Conversation already initialized, skipping");
+      console.log("⛔ Conversation already initialized, skipping");
       return;
     }
     
@@ -1567,8 +1592,14 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
   };
   
   const initializeWithPhrase = (firstPhrase: DialoguePhrase, phrases: DialoguePhrase[]) => {
+    console.log("🎬 initializeWithPhrase STARTING", {
+      firstPhraseId: firstPhrase.id,
+      conversationInitializedBefore: conversationInitializedRef.current
+    });
+    
     // Mark as initialized immediately to prevent duplicate initializations
     conversationInitializedRef.current = true;
+    console.log("✅ Set conversationInitializedRef.current = true");
     
     // Clear any existing conversation history to prevent duplicates
     setConversationHistory([]);
@@ -1606,10 +1637,18 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
       
       // Play the NPC audio first
       setTimeout(() => {
+        console.log("⏰ Timeout reached, checking if should play audio", {
+          phraseId: firstPhrase.id,
+          hasBeenSpoken: hasBeenSpoken(firstPhrase.id)
+        });
+        
         if (!hasBeenSpoken(firstPhrase.id)) {
+          console.log("🔊 PLAYING AUDIO for first time for phrase:", firstPhrase.id);
           logger.info('Speaking NPC phrase for the first time', { phraseId: firstPhrase.id });
           setSpokenEntries(prev => [...prev, firstPhrase.id]);
           playAudio(phrase, 1); // Pass step number for caching
+        } else {
+          console.log("⏭️ SKIPPING AUDIO - already spoken:", firstPhrase.id);
         }
         
         // Calculate delay based on phrase length
