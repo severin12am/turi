@@ -2932,9 +2932,20 @@ Keep it simple, practical, and focused only on structure. No extra examples need
       const data = await response.json();
       console.log('✅ Received data:', data);
       
-      const explanation = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Could not generate explanation';
+      // Validate response structure (same as other AI functions)
+      if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
+        console.error('❌ Invalid response structure:', data);
+        throw new Error('Invalid response from AI service');
+      }
       
-      setStructureExplanationText(explanation);
+      const generatedText = data.candidates[0].content.parts[0].text;
+      console.log('📝 Generated text:', generatedText);
+      
+      if (!generatedText || generatedText.trim() === '') {
+        throw new Error('AI returned empty response');
+      }
+      
+      setStructureExplanationText(generatedText);
       setIsLoadingStructure(false);
       
       logger.info('Structure explanation generated', { phrase, targetLanguage, motherLanguage });
