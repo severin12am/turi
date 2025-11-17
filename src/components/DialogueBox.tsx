@@ -234,6 +234,7 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
   const conversationHistoryRef = useRef<ConversationEntry[]>([]);
   const dialoguesRef = useRef<DialoguePhrase[]>([]); // Add a ref for dialogues
   const mountedAt = useRef<number>(Date.now()); // Track when component mounted to prevent premature distance-based closing
+  const initTimeoutRef = useRef<NodeJS.Timeout | null>(null); // Track initialization timeout to clean up on unmount
   
   // Update refs when state changes
   useEffect(() => {
@@ -1525,6 +1526,13 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
     
     // Reset dialogInitialized when component unmounts or characterId changes
     return () => { 
+      // Clear initialization timeout if component unmounts
+      if (initTimeoutRef.current) {
+        console.log("🧹 Clearing initialization timeout on unmount");
+        clearTimeout(initTimeoutRef.current);
+        initTimeoutRef.current = null;
+      }
+      
       dialogInitialized.current = false;
       conversationInitializedRef.current = false;
     };
@@ -1639,7 +1647,12 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
       console.log("Added initial NPC phrase:", phrase);
       
       // Play the NPC audio first
-      setTimeout(() => {
+      // Clear any existing timeout first
+      if (initTimeoutRef.current) {
+        clearTimeout(initTimeoutRef.current);
+      }
+      
+      initTimeoutRef.current = setTimeout(() => {
         console.log("⏰ Timeout reached, checking if should play audio", {
           phraseId: firstPhrase.id,
           hasBeenSpoken: hasBeenSpoken(firstPhrase.id)

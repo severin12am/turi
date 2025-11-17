@@ -18,9 +18,7 @@ if (typeof window !== 'undefined') {
 useStore.getState().resetState();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>,
+  <App />,
 );
 
 // Declare global window properties

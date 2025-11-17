@@ -1659,6 +1659,15 @@ const CityScene: React.FC = () => {
   };
   
   const handleCloseDialogue = useCallback(() => {
+    // Prevent closing if dialogue was just opened (within 2 seconds)
+    const timeSinceOpened = Date.now() - dialogueOpenedAt.current;
+    console.log('🔍 handleCloseDialogue called, time since opened:', timeSinceOpened, 'ms');
+    if (timeSinceOpened < 2000) {
+      console.log('🚫 PREVENTED premature dialogue close!', timeSinceOpened, 'ms ago');
+      return;
+    }
+    console.log('✅ Allowing dialogue close, time since opened:', timeSinceOpened, 'ms');
+    
     setIsDialogueActive(false);
     setAiDialogue(null); // Clear AI dialogue when closing
     
