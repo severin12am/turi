@@ -3888,7 +3888,7 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
             disabled={!dialogueComplete || isPlayingFullDialogue}
             style={{
               padding: '10px 20px',
-              backgroundColor: isPlayingFullDialogue ? '#ef4444' : '#7c3aed',
+              backgroundColor: isPlayingFullDialogue ? 'rgba(239, 68, 68, 0.7)' : 'rgba(124, 58, 237, 0.6)',
               color: 'white',
               border: 'none',
               borderRadius: '4px',
@@ -3910,7 +3910,7 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
           <button 
             style={{
               padding: '10px 20px',
-              backgroundColor: '#7c3aed',
+              backgroundColor: 'rgba(124, 58, 237, 0.6)',
               color: 'white',
               border: 'none',
               borderRadius: '4px',
@@ -3931,7 +3931,7 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
           <button 
             style={{
               padding: '10px 20px',
-              backgroundColor: '#7c3aed',
+              backgroundColor: 'rgba(124, 58, 237, 0.6)',
               color: 'white',
               border: 'none',
               borderRadius: '4px',
