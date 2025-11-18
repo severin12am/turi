@@ -68,7 +68,7 @@ export const supabase = createClient(supabaseUrl, supabaseKey, {
       }
     },
     storageKey: 'turi-auth-token',
-    debug: import.meta.env.DEV
+    debug: false // Disable verbose auth logs - use window.debugSession() when needed
   },
   global: {
     headers: {

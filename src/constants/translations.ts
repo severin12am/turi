@@ -112,6 +112,9 @@ interface TranslationStrings {
   
   // Dialogue completion
   completeInHideOrTranslationMode?: string;
+  
+  // Dictionary
+  pleaseSignIn?: string;
 }
 
 // Partial record allows for gradual expansion of translations
@@ -226,7 +229,8 @@ export const translations: Partial<Record<SupportedLanguage, TranslationStrings>
     scenarioDescription: 'Practice real-world conversation scenarios',
     dialoguesCompleted: 'dialogues completed',
     regularDialogues: 'Regular Dialogues',
-    completeInHideOrTranslationMode: 'To prove you\'ve mastered this dialogue, complete in Hide or Translation mode to proceed (click visibility button)'
+    completeInHideOrTranslationMode: 'To prove you\'ve mastered this dialogue, complete in Hide or Translation mode to proceed (click visibility button)',
+    pleaseSignIn: 'Please sign in to save words to your dictionary'
   },
   ru: {
     firstQuestion: "Сначала, какой язык вы уже знаете?",
@@ -338,7 +342,8 @@ export const translations: Partial<Record<SupportedLanguage, TranslationStrings>
     scenarioDescription: 'Практикуйте сценарии реальных разговоров',
     dialoguesCompleted: 'диалогов завершено',
     regularDialogues: 'Обычные Диалоги',
-    completeInHideOrTranslationMode: 'Чтобы доказать, что вы освоили этот диалог, завершите его в режиме Скрыть или Перевод (нажмите кнопку видимости)'
+    completeInHideOrTranslationMode: 'Чтобы доказать, что вы освоили этот диалог, завершите его в режиме Скрыть или Перевод (нажмите кнопку видимости)',
+    pleaseSignIn: 'Пожалуйста, войдите, чтобы сохранять слова в словарь'
   },
   es: {
     firstQuestion: "Primero, ¿qué idioma hablas ya?",

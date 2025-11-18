@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Volume2, Info } from 'lucide-react';
+import { Search, Volume2, Info, BookMarked } from 'lucide-react';
 
 interface WordHoverActionsProps {
   word: string;
@@ -8,6 +8,9 @@ interface WordHoverActionsProps {
   onGoogleSearch: (word: string) => void;
   onPlaySound: (word: string) => void;
   onShowExplanation: (word: string) => void;
+  onAddToDictionary: (word: string) => void;
+  isUserLoggedIn: boolean;
+  isAddingToDictionary?: boolean;
 }
 
 const WordHoverActions: React.FC<WordHoverActionsProps> = ({
@@ -16,7 +19,10 @@ const WordHoverActions: React.FC<WordHoverActionsProps> = ({
   position,
   onGoogleSearch,
   onPlaySound,
-  onShowExplanation
+  onShowExplanation,
+  onAddToDictionary,
+  isUserLoggedIn,
+  isAddingToDictionary = false
 }) => {
   // console.log('🎯 WordHoverActions render:', { word, isVisible, position }); // Debug log
   if (!isVisible) return null;
@@ -121,6 +127,31 @@ const WordHoverActions: React.FC<WordHoverActionsProps> = ({
         title="Show explanation"
       >
         <Info size={16} />
+      </button>
+
+      {/* Add to Dictionary Button */}
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          console.log('📚 Add to dictionary clicked for:', word);
+          onAddToDictionary(word);
+        }}
+        disabled={!isUserLoggedIn || isAddingToDictionary}
+        style={{
+          padding: '8px',
+          border: 'none',
+          borderRadius: '6px',
+          backgroundColor: !isUserLoggedIn ? '#f3f4f6' : '#fef3c7',
+          color: !isUserLoggedIn ? '#9ca3af' : '#92400e',
+          cursor: !isUserLoggedIn ? 'not-allowed' : 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          opacity: !isUserLoggedIn ? 0.5 : 1,
+        }}
+        title={!isUserLoggedIn ? "Sign in to add words to dictionary" : "Add to dictionary"}
+      >
+        {isAddingToDictionary ? '⏳' : <BookMarked size={16} />}
       </button>
     </div>
   );

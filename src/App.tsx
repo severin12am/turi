@@ -497,7 +497,7 @@ function App() {
           console.warn('🚨 Session lost detected! User should be logged in but session is missing.');
           debugSessionState();
         }
-      }, 30000); // Check every 30 seconds
+      }, 300000); // Check every 5 minutes instead of 30 seconds
       
       return () => clearInterval(interval);
     }

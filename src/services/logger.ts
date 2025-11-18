@@ -42,6 +42,11 @@ class Logger {
     ]
   };
   
+  // Minimum log level - logs below this are completely skipped (no processing)
+  // 'debug' = 0, 'info' = 1, 'warn' = 2, 'error' = 3
+  private minLogLevel: number = 1; // Default: skip debug, keep info/warn/error
+  private logLevels = { debug: 0, info: 1, warn: 2, error: 3 };
+  
   constructor() {
     this.loadFromStorage();
     window.addEventListener('beforeunload', () => {
@@ -55,6 +60,15 @@ class Logger {
    */
   configure(config: Partial<LoggerConfig>) {
     this.config = { ...this.config, ...config };
+  }
+  
+  /**
+   * Set minimum log level (logs below this are completely skipped)
+   * @param {LogLevel} level - Minimum level ('debug', 'info', 'warn', 'error')
+   */
+  setLogLevel(level: LogLevel) {
+    this.minLogLevel = this.logLevels[level];
+    console.log(`📊 Log level set to: ${level} (${this.minLogLevel})`);
   }
   
   /**
@@ -147,6 +161,11 @@ class Logger {
    * @param {any} data - Additional data
    */
   private addLog(level: LogLevel, message: string, data?: any) {
+    // Early exit: Skip logs below minimum level (zero overhead)
+    if (this.logLevels[level] < this.minLogLevel) {
+      return;
+    }
+    
     // Check if we should filter this log
     if (this.shouldFilterLog(message)) {
       return;
@@ -296,3 +315,36 @@ class Logger {
 }
 
 export const logger = new Logger();
+
+// Add global logging controls for debugging
+if (typeof window !== 'undefined') {
+  (window as any).setLogLevel = (level: 'debug' | 'info' | 'warn' | 'error') => {
+    logger.setLogLevel(level);
+    logger.configure({ consoleOutput: true });
+  };
+  
+  (window as any).enableVerboseLogs = () => {
+    logger.setLogLevel('debug'); // Show everything including debug
+    logger.configure({ consoleOutput: true });
+    console.log('✅ Verbose logging enabled (all levels). Use window.setLogLevel("warn") for production mode.');
+  };
+  
+  (window as any).disableVerboseLogs = () => {
+    logger.setLogLevel('warn'); // Only warnings and errors
+    console.log('🔇 Verbose logging disabled. Only WARN and ERROR will be processed.');
+  };
+  
+  (window as any).getLogs = () => {
+    return logger.getLogs();
+  };
+  
+  // Set production-friendly defaults
+  logger.setLogLevel('warn'); // Skip debug and info by default
+  
+  console.log('🔧 Logger controls:');
+  console.log('  window.setLogLevel("debug"|"info"|"warn"|"error") - Set minimum level');
+  console.log('  window.enableVerboseLogs() - Show everything');
+  console.log('  window.disableVerboseLogs() - Only errors/warnings');
+  console.log('  window.getLogs() - Get all stored logs');
+  console.log('📊 Current level: WARN (only warnings and errors are processed)');
+}

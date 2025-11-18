@@ -13,6 +13,7 @@ import { fetchDialoguesWithFallback } from '../services/translationFallback';
 // New imports for enhanced word interaction
 import WordExplanationModal from './WordExplanationModal';
 import { generateWordExplanation, WordExplanationData, speakWithAI, generateSpeechWithGemini } from '../services/gemini';
+import { addWordToDictionary } from '../services/dictionary';
 
 // Map supported languages to their speech recognition codes
 const getRecognitionLanguage = (lang: SupportedLanguage): string => {
@@ -302,6 +303,10 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
   const [audioStream, setAudioStream] = useState<MediaStream | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const isPlayingFullDialogueRef = useRef<boolean>(false);
+  
+  // State for dictionary functionality
+  const [addingWordToDictionary, setAddingWordToDictionary] = useState<string | null>(null);
+  const [wordAddedFeedback, setWordAddedFeedback] = useState<string | null>(null);
   
   // Cleanup cached audio URLs on unmount to prevent memory leaks
   useEffect(() => {
@@ -2799,6 +2804,57 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
   };
 
   /**
+   * Add a word to the user's dictionary
+   * @param word The word to add
+   */
+  const handleAddWordToDictionary = async (word: string) => {
+    if (!word || word.trim() === '') return;
+    
+    // Check if user is logged in
+    if (!user || !user.id) {
+      console.log('📚 User not logged in, cannot add word to dictionary');
+      alert(getTranslation(motherLanguage, 'pleaseSignIn') || 'Please sign in to save words to your dictionary.');
+      return;
+    }
+    
+    const normalizedWord = word.trim().replace(/[.,?!;:]/g, '');
+    
+    // Set loading state
+    setAddingWordToDictionary(normalizedWord);
+    
+    // Hide the hover actions
+    setHoveredWord(null);
+    
+    try {
+      // Add word to dictionary
+      const result = await addWordToDictionary(
+        user.id,
+        normalizedWord,
+        targetLanguage,
+        motherLanguage
+      );
+      
+      if (result) {
+        // Show success feedback
+        setWordAddedFeedback(normalizedWord);
+        console.log(`📚 Word "${normalizedWord}" added to dictionary`);
+        
+        // Clear feedback after 2 seconds
+        setTimeout(() => {
+          setWordAddedFeedback(null);
+        }, 2000);
+      } else {
+        console.warn(`📚 Failed to add word "${normalizedWord}" to dictionary`);
+      }
+    } catch (error) {
+      console.error('Error adding word to dictionary:', error);
+      logger.error('Error adding word to dictionary', { error, word: normalizedWord });
+    } finally {
+      setAddingWordToDictionary(null);
+    }
+  };
+
+  /**
    * Show in-app explanation for a word using Gemini API
    * @param word The word to explain
    */
@@ -3176,6 +3232,31 @@ Keep it simple, practical, and focused only on structure. No extra examples need
                       title="Show explanation"
                     >
                       ℹ️
+                    </button>
+
+                    {/* Add to Dictionary Button */}
+                                         <button
+                       onClick={(e) => {
+                         e.stopPropagation();
+                         console.log('📚 Add to dictionary clicked for:', cleanWord);
+                         handleAddWordToDictionary(cleanWord);
+                       }}
+                      disabled={!user || !user.id || addingWordToDictionary === cleanWord}
+                      style={{
+                        padding: '8px',
+                        border: 'none',
+                        borderRadius: '6px',
+                        backgroundColor: (!user || !user.id) ? '#f3f4f6' : '#fef3c7',
+                        color: (!user || !user.id) ? '#9ca3af' : '#92400e',
+                        cursor: (!user || !user.id) ? 'not-allowed' : 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        opacity: (!user || !user.id) ? 0.5 : 1,
+                      }}
+                      title={(!user || !user.id) ? "Sign in to add words to dictionary" : "Add to dictionary"}
+                    >
+                      {addingWordToDictionary === cleanWord ? '⏳' : '📚'}
                     </button>
                   </div>
                 )}
@@ -3984,6 +4065,29 @@ Keep it simple, practical, and focused only on structure. No extra examples need
   try {
     return (
       <div className="dialogue-box-container" style={{ pointerEvents: 'auto' }}>
+        {/* Success feedback notification */}
+        {wordAddedFeedback && (
+          <div style={{
+            position: 'fixed',
+            top: '20px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            backgroundColor: '#10b981',
+            color: 'white',
+            padding: '12px 24px',
+            borderRadius: '8px',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+            zIndex: 1000000,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            animation: 'fadeInOut 2s ease-in-out'
+          }}>
+            <span>✓</span>
+            <span>"{wordAddedFeedback}" added to dictionary!</span>
+          </div>
+        )}
+        
         {conversationHistory.map((entry, index) => {
           const previousUserPhrases = conversationHistory
             .filter(e => e.speaker === 'User' && e.isCompleted && e.step < entry.step)
