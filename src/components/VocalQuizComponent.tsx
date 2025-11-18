@@ -93,6 +93,9 @@ const translations: Record<string, Partial<Record<SupportedLanguage, string>>> =
   'Length difference:': { en: 'Length difference:', ru: 'Разница в длине:' },
   'Correct answers:': { en: 'Correct answers:', ru: 'Правильные ответы:' },
   'Play pronunciation': { en: 'Play pronunciation', ru: 'Воспроизвести произношение' },
+  'Listening...': { en: 'Listening...', ru: 'Слушаю...' },
+  'Start listening': { en: 'Start listening', ru: 'Начать прослушивание' },
+  'Click to start listening': { en: 'Click to start listening', ru: 'Нажмите, чтобы начать прослушивание' },
   // Add new translations for quiz completion panel
   'Great work!': { en: 'Great work!', ru: 'Отличная работа!' },
   'Let\'s try again!': { en: 'Let\'s try again!', ru: 'Давайте попробуем ещё раз!' },
@@ -1121,7 +1124,7 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
       } else {
         console.log('🎤 Not resetting - state has changed');
       }
-    }, 1500); // Slightly shorter error display time to improve flow
+    }, 1000); // Faster error display for better responsiveness
   };
 
   // Debug function to manually process a recognized word (bypassing speech recognition)
@@ -1690,26 +1693,36 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
     }
   };
   
-  // Retry voice recognition
+  // Retry voice recognition - simplified for better reliability
   const retryVoiceRecognition = () => {
     // Reset state
     setTranscript('');
     setIsCorrect(null);
+    setRecognitionActive(false);
+    recognitionActiveRef.current = false;
+    userStoppedListening.current = false;
     
-    // Restart speech recognition
     if (recognitionRef.current) {
       try {
         recognitionRef.current.stop();
-        setTimeout(() => {
-          if (recognitionRef.current) {
-            recognitionRef.current.start();
-            setIsListening(true);
-            console.log('🎤 Manually restarted speech recognition');
-          }
-        }, 300);
+        console.log('🎤 Stopping recognition for manual restart');
       } catch (error) {
-        console.error('Failed to restart speech recognition:', error);
+        console.log('🎤 Recognition already stopped or not active');
       }
+      
+      // Shorter delay for faster response
+      setTimeout(() => {
+        if (recognitionRef.current) {
+          try {
+            recognitionRef.current.start();
+            console.log('🎤 Manually restarted speech recognition');
+          } catch (error) {
+            console.error('Failed to start recognition:', error);
+            // User-friendly fallback
+            setTranscript('Could not start listening. Please try again.');
+          }
+        }
+      }, 200);
     }
   };
   
@@ -2253,7 +2266,7 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
           </h2>
                   
                   {/* Sound buttons container */}
-                  <div className="text-xl font-medium text-indigo-300 flex justify-center items-center gap-2 mt-4 sound-container relative" style={{ zIndex: 5 }}>
+                  <div className="text-xl font-medium text-indigo-300 flex justify-center items-center gap-3 mt-4 sound-container relative" style={{ zIndex: 5 }}>
                     {/* Sound button */}
             <button 
                       onClick={(e) => { e.stopPropagation(); playAudio(); }}
@@ -2264,7 +2277,34 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
             >
                       <Volume className="w-8 h-8" />
             </button>
+                    
+                    {/* Microphone button - always visible for manual control */}
+                    <button 
+                      onClick={(e) => { 
+                        e.stopPropagation(); 
+                        retryVoiceRecognition(); 
+                      }}
+                      className={`p-4 rounded-full transition-all cursor-pointer flex items-center justify-center shadow-lg ${
+                        isListening 
+                          ? 'bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 animate-pulse' 
+                          : 'bg-gradient-to-r from-green-600 to-green-700 hover:from-green-500 hover:to-green-600'
+                      }`}
+                      style={{ minWidth: '60px', minHeight: '60px' }}
+                      aria-label={isListening ? t('Listening...', motherLanguage) : t('Start listening', motherLanguage)}
+                      type="button"
+                      title={isListening ? t('Listening...', motherLanguage) : t('Click to start listening', motherLanguage)}
+                    >
+                      <Mic className="w-8 h-8" />
+                    </button>
           </div>
+                  
+                  {/* Listening indicator */}
+                  {isListening && isCorrect === null && (
+                    <div className="flex items-center justify-center gap-2 mt-3 animate-pulse">
+                      <span className="text-2xl">🎤</span>
+                      <span className="text-indigo-300 font-medium">{t('Listening...', motherLanguage)}</span>
+                    </div>
+                  )}
                   
                   {/* Enhanced hint section */}
                   {showHint && (
