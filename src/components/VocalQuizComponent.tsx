@@ -1693,8 +1693,14 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
     }
   };
   
-  // Retry voice recognition - simplified for better reliability
+  // Retry voice recognition - only restart if not already listening
   const retryVoiceRecognition = () => {
+    // If already listening and working fine, don't interrupt
+    if (isListening && recognitionActiveRef.current && isCorrect === null) {
+      console.log('🎤 Already listening - no need to restart');
+      return;
+    }
+    
     // Reset state
     setTranscript('');
     setIsCorrect(null);
@@ -1712,14 +1718,14 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
       
       // Shorter delay for faster response
       setTimeout(() => {
-        if (recognitionRef.current) {
+        if (recognitionRef.current && !recognitionActiveRef.current) {
           try {
             recognitionRef.current.start();
             console.log('🎤 Manually restarted speech recognition');
           } catch (error) {
             console.error('Failed to start recognition:', error);
-            // User-friendly fallback
-            setTranscript('Could not start listening. Please try again.');
+            // Don't show error in transcript - just log it
+            console.log('Recognition will auto-restart on next cycle');
           }
         }
       }, 200);
@@ -2278,7 +2284,7 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
                       <Volume className="w-8 h-8" />
             </button>
                     
-                    {/* Microphone button - always visible for manual control */}
+                    {/* Microphone button - visual indicator and manual restart if needed */}
                     <button 
                       onClick={(e) => { 
                         e.stopPropagation(); 
@@ -2292,19 +2298,11 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
                       style={{ minWidth: '60px', minHeight: '60px' }}
                       aria-label={isListening ? t('Listening...', motherLanguage) : t('Start listening', motherLanguage)}
                       type="button"
-                      title={isListening ? t('Listening...', motherLanguage) : t('Click to start listening', motherLanguage)}
+                      title={isListening ? '🎤 Listening for your answer (red = active)' : 'Click if not listening'}
                     >
                       <Mic className="w-8 h-8" />
                     </button>
           </div>
-                  
-                  {/* Listening indicator */}
-                  {isListening && isCorrect === null && (
-                    <div className="flex items-center justify-center gap-2 mt-3 animate-pulse">
-                      <span className="text-2xl">🎤</span>
-                      <span className="text-indigo-300 font-medium">{t('Listening...', motherLanguage)}</span>
-                    </div>
-                  )}
                   
                   {/* Enhanced hint section */}
                   {showHint && (
