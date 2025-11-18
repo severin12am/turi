@@ -12,7 +12,7 @@ import { AIDialogueStep } from '../services/gemini';
 import { fetchDialoguesWithFallback } from '../services/translationFallback';
 // New imports for enhanced word interaction
 import WordExplanationModal from './WordExplanationModal';
-import { generateWordExplanation, WordExplanationData, speakWithAI, generateSpeechWithGemini } from '../services/gemini';
+import { generateWordExplanation, WordExplanationData, speakWithAI, generateSpeechWithGemini, translateWord } from '../services/gemini';
 import { addWordToDictionary } from '../services/dictionary';
 
 // Map supported languages to their speech recognition codes
@@ -2826,18 +2826,29 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
     setHoveredWord(null);
     
     try {
-      // Add word to dictionary
+      // Get translation for the word
+      console.log(`📚 Translating "${normalizedWord}" from ${targetLanguage} to ${motherLanguage}`);
+      const translation = await translateWord({
+        word: normalizedWord,
+        fromLanguage: targetLanguage,
+        toLanguage: motherLanguage
+      });
+      
+      console.log(`📚 Translation result: "${translation}"`);
+      
+      // Add word to dictionary with translation
       const result = await addWordToDictionary(
         user.id,
         normalizedWord,
         targetLanguage,
-        motherLanguage
+        motherLanguage,
+        translation || undefined // Pass translation if available
       );
       
       if (result) {
         // Show success feedback
         setWordAddedFeedback(normalizedWord);
-        console.log(`📚 Word "${normalizedWord}" added to dictionary`);
+        console.log(`📚 Word "${normalizedWord}" added to dictionary with translation "${translation}"`);
         
         // Clear feedback after 2 seconds
         setTimeout(() => {

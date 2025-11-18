@@ -82,6 +82,12 @@ export interface GenerateWordExplanationParams {
   motherLanguage: SupportedLanguage;
 }
 
+export interface TranslateWordParams {
+  word: string;
+  fromLanguage: SupportedLanguage;
+  toLanguage: SupportedLanguage;
+}
+
 export const generateAIDialogue = async (params: GenerateDialogueParams): Promise<AIDialogueStep[]> => {
   // Check rate limiting
   if (!rateLimiter.canMakeRequest()) {
@@ -790,4 +796,69 @@ function getLanguageName(code: SupportedLanguage): string {
   };
   
   return languageNames[code] || code;
+}
+
+/**
+ * Translate a single word from one language to another using Gemini API
+ * Returns just the translation without detailed explanation
+ */
+export const translateWord = async (params: TranslateWordParams): Promise<string> => {
+  const { word, fromLanguage, toLanguage } = params;
+  
+  const fromLangName = getLanguageName(fromLanguage);
+  const toLangName = getLanguageName(toLanguage);
+  
+  const prompt = `Translate the word "${word}" from ${fromLangName} to ${toLangName}. 
+Provide ONLY the most common translation as a single word or short phrase (2-3 words maximum).
+Do not include explanations, examples, or any additional text.
+Just output the translation.`;
+
+  // Try first model only (faster for simple translations)
+  try {
+    logger.info('Translating word', { word, fromLanguage, toLanguage });
+    
+    const response = await fetch(getGeminiWordExplanationUrl(), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        modelName: GEMINI_MODELS[0], // Use fastest model
+        requestBody: {
+          contents: [{
+            parts: [{
+              text: prompt
+            }]
+          }],
+          generationConfig: {
+            temperature: 0.1, // Very low temperature for consistent translations
+            topK: 10,
+            topP: 0.5,
+            maxOutputTokens: 50, // Short response
+          }
+        }
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Translation request failed: ${response.status} ${errorText}`);
+    }
+
+    const data = await response.json();
+    
+    if (!data.candidates?.[0]?.content?.parts?.[0]?.text) {
+      throw new Error('Invalid response structure from translation service');
+    }
+
+    const translation = data.candidates[0].content.parts[0].text.trim();
+    
+    logger.info('Word translated successfully', { word, translation });
+    return translation;
+
+  } catch (error) {
+    logger.error('Error translating word', { error, word });
+    // Return empty string on error so we can still save the word
+    return '';
+  }
 } 
