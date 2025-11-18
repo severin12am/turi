@@ -187,8 +187,10 @@ const HelperRobotPanel: React.FC<HelperRobotPanelProps> = ({ onClose }) => {
     if (!user?.id) return;
     
     try {
-      console.log('HelperRobotPanel: Loading dictionary for user:', user.id, 'target:', targetLanguage, 'mother:', motherLanguage);
-      const entries = await getUserDictionary(user.id, targetLanguage, motherLanguage);
+      console.log('HelperRobotPanel: Loading ALL dictionary entries for user:', user.id);
+      // Load ALL dictionary entries for the user, not filtered by current language pair
+      // This allows users to see all their saved vocabulary across all language pairs
+      const entries = await getUserDictionary(user.id);
       console.log(`HelperRobotPanel: Loaded ${entries.length} dictionary entries from table`, entries);
       setDictionaryEntries(entries);
     } catch (error) {
@@ -585,6 +587,13 @@ const HelperRobotPanel: React.FC<HelperRobotPanelProps> = ({ onClose }) => {
                         >
                           {/* Word Info */}
                           <div className="space-y-1">
+                            {/* Language indicator badge */}
+                            <div className="flex justify-between items-center mb-1">
+                              <span className="text-xs text-blue-400 font-medium uppercase">
+                                {entry.target_language}
+                              </span>
+                            </div>
+                            
                             {/* Word and Translation */}
                             <div 
                               className="text-lg font-medium text-white truncate cursor-help" 

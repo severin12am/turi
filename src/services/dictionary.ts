@@ -137,28 +137,35 @@ export const getUserDictionary = async (
   motherLanguage?: SupportedLanguage
 ): Promise<DictionaryEntry[]> => {
   try {
+    console.log('📚 getUserDictionary called with:', { userId, targetLanguage, motherLanguage });
+    
     let query = supabase
       .from('dictionary')
       .select('*')
       .eq('user_id', userId);
 
     if (targetLanguage) {
+      console.log('📚 Filtering by target_language:', targetLanguage);
       query = query.eq('target_language', targetLanguage);
     }
 
     if (motherLanguage) {
+      console.log('📚 Filtering by mother_language:', motherLanguage);
       query = query.eq('mother_language', motherLanguage);
     }
 
     const { data, error } = await query.order('created_at', { ascending: false });
 
     if (error) {
+      console.error('📚 Error fetching user dictionary:', error);
       logger.error('Error fetching user dictionary', { error });
       return [];
     }
 
+    console.log('📚 Dictionary query returned:', data?.length || 0, 'entries', data);
     return data || [];
   } catch (error) {
+    console.error('📚 Exception in getUserDictionary:', error);
     logger.error('Exception in getUserDictionary', { error });
     return [];
   }
