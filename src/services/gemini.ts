@@ -813,82 +813,92 @@ Provide ONLY the most common translation as a single word or short phrase (2-3 w
 Do not include explanations, examples, or any additional text.
 Just output the translation.`;
 
-  // Try first model only (faster for simple translations)
-  try {
-    console.log(`🔤 TRANSLATION: Starting translation for "${word}" from ${fromLanguage} to ${toLanguage}`);
-    logger.info('Translating word', { word, fromLanguage, toLanguage });
-    
-    const requestBody = {
-      modelName: GEMINI_MODELS[0], // Use fastest model
-      requestBody: {
-        contents: [{
-          parts: [{
-            text: prompt
-          }]
-        }],
-        generationConfig: {
-          temperature: 0.1, // Very low temperature for consistent translations
-          topK: 10,
-          topP: 0.5,
-          maxOutputTokens: 50, // Short response
+  console.log(`🔤 TRANSLATION: Starting translation for "${word}" from ${fromLanguage} to ${toLanguage}`);
+  logger.info('Translating word', { word, fromLanguage, toLanguage });
+
+  // Try different models until one works
+  let lastError: Error | null = null;
+  
+  for (const modelName of GEMINI_MODELS) {
+    try {
+      console.log(`🔤 TRANSLATION: Trying model ${modelName}...`);
+      
+      const requestBody = {
+        modelName,
+        requestBody: {
+          contents: [{
+            parts: [{
+              text: prompt
+            }]
+          }],
+          generationConfig: {
+            temperature: 0.1, // Very low temperature for consistent translations
+            topK: 10,
+            topP: 0.5,
+            maxOutputTokens: 50, // Short response
+          },
+          safetySettings: [
+            {
+              category: "HARM_CATEGORY_HARASSMENT",
+              threshold: "BLOCK_MEDIUM_AND_ABOVE"
+            },
+            {
+              category: "HARM_CATEGORY_HATE_SPEECH",
+              threshold: "BLOCK_MEDIUM_AND_ABOVE"
+            },
+            {
+              category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+              threshold: "BLOCK_MEDIUM_AND_ABOVE"
+            },
+            {
+              category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+              threshold: "BLOCK_MEDIUM_AND_ABOVE"
+            }
+          ]
+        }
+      };
+      
+      const response = await fetch(getGeminiWordExplanationUrl(), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
-        safetySettings: [
-          {
-            category: "HARM_CATEGORY_HARASSMENT",
-            threshold: "BLOCK_MEDIUM_AND_ABOVE"
-          },
-          {
-            category: "HARM_CATEGORY_HATE_SPEECH",
-            threshold: "BLOCK_MEDIUM_AND_ABOVE"
-          },
-          {
-            category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-            threshold: "BLOCK_MEDIUM_AND_ABOVE"
-          },
-          {
-            category: "HARM_CATEGORY_DANGEROUS_CONTENT",
-            threshold: "BLOCK_MEDIUM_AND_ABOVE"
-          }
-        ]
+        body: JSON.stringify(requestBody)
+      });
+
+      console.log(`🔤 TRANSLATION: Response status: ${response.status} for model ${modelName}`);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.warn(`🔤 TRANSLATION: Model ${modelName} failed (${response.status}), trying next...`);
+        lastError = new Error(`Translation request failed: ${response.status} ${errorText}`);
+        continue; // Try next model
       }
-    };
 
-    console.log('🔤 TRANSLATION: Sending request to Netlify function...', requestBody);
-    
-    const response = await fetch(getGeminiWordExplanationUrl(), {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestBody)
-    });
+      const data = await response.json();
+      
+      if (!data.candidates?.[0]?.content?.parts?.[0]?.text) {
+        console.warn(`🔤 TRANSLATION: Invalid response from model ${modelName}, trying next...`);
+        lastError = new Error('Invalid response structure from translation service');
+        continue; // Try next model
+      }
 
-    console.log('🔤 TRANSLATION: Response status:', response.status);
+      const translation = data.candidates[0].content.parts[0].text.trim();
+      
+      console.log(`🔤 TRANSLATION: SUCCESS with model ${modelName} - "${word}" = "${translation}"`);
+      logger.info('Word translated successfully', { word, translation, modelName });
+      return translation;
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('🔤 TRANSLATION: Request failed:', response.status, errorText);
-      throw new Error(`Translation request failed: ${response.status} ${errorText}`);
+    } catch (error) {
+      console.warn(`🔤 TRANSLATION: Error with model ${modelName}:`, error);
+      lastError = error instanceof Error ? error : new Error('Unknown error occurred');
+      continue; // Try next model
     }
-
-    const data = await response.json();
-    console.log('🔤 TRANSLATION: Response data:', data);
-    
-    if (!data.candidates?.[0]?.content?.parts?.[0]?.text) {
-      console.error('🔤 TRANSLATION: Invalid response structure:', data);
-      throw new Error('Invalid response structure from translation service');
-    }
-
-    const translation = data.candidates[0].content.parts[0].text.trim();
-    
-    console.log(`🔤 TRANSLATION: SUCCESS - "${word}" = "${translation}"`);
-    logger.info('Word translated successfully', { word, translation });
-    return translation;
-
-  } catch (error) {
-    console.error('🔤 TRANSLATION: ERROR -', error);
-    logger.error('Error translating word', { error, word });
-    // Return empty string on error so we can still save the word
-    return '';
   }
+  
+  // If we get here, all models failed
+  console.error('🔤 TRANSLATION: All models failed. Last error:', lastError);
+  logger.error('Error translating word - all models failed', { error: lastError, word });
+  // Return empty string on error so we can still save the word
+  return '';
 } 
