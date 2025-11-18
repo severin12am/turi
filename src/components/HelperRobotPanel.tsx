@@ -4,6 +4,7 @@ import { useStore } from '../store';
 import { logger } from '../services/logger';
 import ProgressVisualization from './ProgressVisualization';
 import { syncWordProgress } from '../services/progress';
+import { getUserDictionary, type DictionaryEntry } from '../services/dictionary';
 import { LogOut } from 'lucide-react';
 import AppPanel from './AppPanel';
 import { PanelBackdrop } from './AppPanel';
@@ -51,11 +52,14 @@ const HelperRobotPanel: React.FC<HelperRobotPanelProps> = ({ onClose }) => {
   const { user, isLoggedIn, motherLanguage, targetLanguage, setLanguages, resetState, logout } = useStore();
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [showVocabulary, setShowVocabulary] = useState<boolean>(false);
+  const [showCurrentVocabulary, setShowCurrentVocabulary] = useState<boolean>(false);
   const [showScenarios, setShowScenarios] = useState<boolean>(false);
   const [allWords, setAllWords] = useState<Word[]>([]);
   const [learnedWords, setLearnedWords] = useState<Word[]>([]);
+  const [dictionaryEntries, setDictionaryEntries] = useState<DictionaryEntry[]>([]);
   const [languagePairs, setLanguagePairs] = useState<LanguagePair[]>([]);
   const [searchTerm, setSearchTerm] = useState<string>('');
+  const [dictionarySearchTerm, setDictionarySearchTerm] = useState<string>('');
   const [showHelpTooltip, setShowHelpTooltip] = useState<boolean>(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   
@@ -81,6 +85,9 @@ const HelperRobotPanel: React.FC<HelperRobotPanelProps> = ({ onClose }) => {
       
       // Load words data
       await loadWords();
+      
+      // Load dictionary entries
+      await loadDictionary();
       
       // Load language pairs data
       await loadLanguagePairs();
@@ -176,6 +183,20 @@ const HelperRobotPanel: React.FC<HelperRobotPanelProps> = ({ onClose }) => {
     }
   };
   
+  const loadDictionary = async () => {
+    if (!user?.id) return;
+    
+    try {
+      console.log('HelperRobotPanel: Loading dictionary for user:', user.id, 'target:', targetLanguage, 'mother:', motherLanguage);
+      const entries = await getUserDictionary(user.id, targetLanguage, motherLanguage);
+      console.log(`HelperRobotPanel: Loaded ${entries.length} dictionary entries from table`, entries);
+      setDictionaryEntries(entries);
+    } catch (error) {
+      logger.error('Error in loadDictionary', { error });
+      console.error('Error loading dictionary:', error);
+    }
+  };
+  
   const loadLanguagePairs = async () => {
     if (!user?.id) return;
     
@@ -233,6 +254,10 @@ const HelperRobotPanel: React.FC<HelperRobotPanelProps> = ({ onClose }) => {
     setShowVocabulary(!showVocabulary);
   };
   
+  const toggleCurrentVocabulary = () => {
+    setShowCurrentVocabulary(!showCurrentVocabulary);
+  };
+  
   const toggleScenarios = () => {
     setShowScenarios(!showScenarios);
   };
@@ -248,6 +273,17 @@ const HelperRobotPanel: React.FC<HelperRobotPanelProps> = ({ onClose }) => {
       (word.example && word.translation.toLowerCase().includes(term))
     );
   }, [allWords, searchTerm]);
+  
+  // Filter dictionary entries based on search term
+  const filteredDictionaryEntries = useMemo(() => {
+    if (!dictionarySearchTerm.trim()) return dictionaryEntries;
+    
+    const term = dictionarySearchTerm.toLowerCase().trim();
+    return dictionaryEntries.filter(entry => 
+      entry.word.toLowerCase().includes(term) || 
+      (entry.translation && entry.translation.toLowerCase().includes(term))
+    );
+  }, [dictionaryEntries, dictionarySearchTerm]);
   
   // Handle user logout
   const handleLogout = async () => {
@@ -511,6 +547,66 @@ const HelperRobotPanel: React.FC<HelperRobotPanelProps> = ({ onClose }) => {
                   ) : (
                     <div className="p-4 text-center text-white/60">
                       No words found
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+            
+            {/* Current Vocabulary Section */}
+            <div className="bg-white/5 rounded-2xl p-5 mb-6 cursor-pointer hover:bg-white/10 transition-colors" onClick={toggleCurrentVocabulary}>
+              <div className="flex justify-between items-center">
+                <div>
+                  <h3 className="text-xl font-medium text-white/90">Current Vocabulary</h3>
+                  <p className="text-sm text-white/60 mt-1">{dictionaryEntries.length} saved words</p>
+                </div>
+                <span className="text-blue-400 text-sm">{showCurrentVocabulary ? 'Hide Details' : 'Show Details'}</span>
+              </div>
+            </div>
+            
+            {/* Current Vocabulary list (shown when toggled) */}
+            {showCurrentVocabulary && (
+              <div className="mb-6">
+                <PanelInput
+                  type="text"
+                  placeholder="Search saved words..."
+                  value={dictionarySearchTerm}
+                  onChange={(e) => setDictionarySearchTerm(e.target.value)}
+                  className="mb-4"
+                />
+                
+                <div className="max-h-[60vh] overflow-y-auto bg-white/5 rounded-2xl p-4">
+                  {filteredDictionaryEntries.length > 0 ? (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                      {filteredDictionaryEntries.map(entry => (
+                        <div 
+                          key={entry.id}
+                          className="relative p-3 rounded-xl transition-all bg-white/5 border border-white/10 hover:bg-white/10"
+                        >
+                          {/* Word Info */}
+                          <div className="space-y-1">
+                            {/* Word and Translation */}
+                            <div 
+                              className="text-lg font-medium text-white truncate cursor-help" 
+                              title={entry.word}
+                            >
+                              {entry.word}
+                            </div>
+                            {entry.translation && (
+                              <div 
+                                className="text-sm text-slate-300 truncate cursor-help" 
+                                title={entry.translation}
+                              >
+                                {entry.translation}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-4 text-center text-white/60">
+                      {dictionarySearchTerm.trim() ? 'No words found' : 'No saved words yet. Hover over words in dialogues and click "Save to vocabulary" to add them here.'}
                     </div>
                   )}
                 </div>

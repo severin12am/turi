@@ -4198,12 +4198,11 @@ Keep it simple, practical, and focused only on structure. No extra examples need
                   {entry.speaker === 'User' && isCurrentUserPhrase && !entry.isCompleted && (
                     <span style={{
                       fontSize: '14px',
-                      color: 'rgba(255, 255, 255, 0.95)',
+                      color: '#000000',
                       fontWeight: 'bold',
                       fontStyle: 'italic',
                       marginRight: '10px',
                       whiteSpace: 'nowrap',
-                      textShadow: '0 0 8px rgba(255, 255, 255, 0.5)',
                       display: 'flex',
                       alignItems: 'center'
                     }}>
