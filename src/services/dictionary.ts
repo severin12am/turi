@@ -154,7 +154,7 @@ export const getUserDictionary = async (
       query = query.eq('mother_language', motherLanguage);
     }
 
-    const { data, error } = await query.order('created_at', { ascending: false });
+    const { data, error } = await query;
 
     if (error) {
       console.error('📚 Error fetching user dictionary:', error);
