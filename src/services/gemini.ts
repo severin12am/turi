@@ -815,48 +815,78 @@ Just output the translation.`;
 
   // Try first model only (faster for simple translations)
   try {
+    console.log(`🔤 TRANSLATION: Starting translation for "${word}" from ${fromLanguage} to ${toLanguage}`);
     logger.info('Translating word', { word, fromLanguage, toLanguage });
+    
+    const requestBody = {
+      modelName: GEMINI_MODELS[0], // Use fastest model
+      requestBody: {
+        contents: [{
+          parts: [{
+            text: prompt
+          }]
+        }],
+        generationConfig: {
+          temperature: 0.1, // Very low temperature for consistent translations
+          topK: 10,
+          topP: 0.5,
+          maxOutputTokens: 50, // Short response
+        },
+        safetySettings: [
+          {
+            category: "HARM_CATEGORY_HARASSMENT",
+            threshold: "BLOCK_MEDIUM_AND_ABOVE"
+          },
+          {
+            category: "HARM_CATEGORY_HATE_SPEECH",
+            threshold: "BLOCK_MEDIUM_AND_ABOVE"
+          },
+          {
+            category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+            threshold: "BLOCK_MEDIUM_AND_ABOVE"
+          },
+          {
+            category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+            threshold: "BLOCK_MEDIUM_AND_ABOVE"
+          }
+        ]
+      }
+    };
+
+    console.log('🔤 TRANSLATION: Sending request to Netlify function...', requestBody);
     
     const response = await fetch(getGeminiWordExplanationUrl(), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        modelName: GEMINI_MODELS[0], // Use fastest model
-        requestBody: {
-          contents: [{
-            parts: [{
-              text: prompt
-            }]
-          }],
-          generationConfig: {
-            temperature: 0.1, // Very low temperature for consistent translations
-            topK: 10,
-            topP: 0.5,
-            maxOutputTokens: 50, // Short response
-          }
-        }
-      })
+      body: JSON.stringify(requestBody)
     });
+
+    console.log('🔤 TRANSLATION: Response status:', response.status);
 
     if (!response.ok) {
       const errorText = await response.text();
+      console.error('🔤 TRANSLATION: Request failed:', response.status, errorText);
       throw new Error(`Translation request failed: ${response.status} ${errorText}`);
     }
 
     const data = await response.json();
+    console.log('🔤 TRANSLATION: Response data:', data);
     
     if (!data.candidates?.[0]?.content?.parts?.[0]?.text) {
+      console.error('🔤 TRANSLATION: Invalid response structure:', data);
       throw new Error('Invalid response structure from translation service');
     }
 
     const translation = data.candidates[0].content.parts[0].text.trim();
     
+    console.log(`🔤 TRANSLATION: SUCCESS - "${word}" = "${translation}"`);
     logger.info('Word translated successfully', { word, translation });
     return translation;
 
   } catch (error) {
+    console.error('🔤 TRANSLATION: ERROR -', error);
     logger.error('Error translating word', { error, word });
     // Return empty string on error so we can still save the word
     return '';
