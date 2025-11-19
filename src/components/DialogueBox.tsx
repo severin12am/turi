@@ -1843,7 +1843,7 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
 
       console.log('[Missions] Suggestion generated');
       setMissionHelperMessage(suggestion);
-      setShowHelpMe(false); // Hide button after use
+      // Keep help button visible for subsequent exchanges
     } catch (error) {
       console.error('[Missions] Error generating help:', error);
       setMissionHelperMessage('Error generating suggestion. Please try again.');
@@ -4372,44 +4372,59 @@ Keep it simple, practical, and focused only on structure. No extra examples need
             transform: 'translateY(-50%)',
             left: '20px',
             zIndex: 999999,
-            maxWidth: '340px',
+            maxWidth: '442px',
             pointerEvents: 'auto'
           }}>
             <div style={{
-              backgroundColor: 'rgba(30, 41, 59, 0.95)',
-              borderRadius: '12px',
-              padding: '20px',
-              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
-              border: '1px solid rgba(148, 163, 184, 0.3)',
-              width: '340px'
+              backgroundColor: 'rgba(0, 0, 0, 0.5)',
+              backdropFilter: 'blur(12px)',
+              WebkitBackdropFilter: 'blur(12px)',
+              borderRadius: '24px',
+              padding: '28px',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              width: '442px',
+              position: 'relative',
+              overflow: 'hidden'
             }}>
+              {/* Gradient overlay (like AppPanel) */}
               <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                marginBottom: '14px'
-              }}>
-                <span style={{ color: 'white', fontWeight: 'bold', fontSize: '15px' }}>
-                  Turi:
-                </span>
-                {awaitingMissionApproval && (
-                  <span style={{ 
-                    marginLeft: 'auto',
-                    fontSize: '12px',
-                    color: 'rgba(251, 191, 36, 1)',
-                    fontWeight: '500'
-                  }}>
-                    Checking...
+                position: 'absolute',
+                inset: 0,
+                background: 'linear-gradient(to bottom right, rgba(59, 130, 246, 0.1), rgba(147, 51, 234, 0.1))',
+                pointerEvents: 'none'
+              }} />
+              
+              {/* Content */}
+              <div style={{ position: 'relative', zIndex: 10 }}>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  marginBottom: '16px'
+                }}>
+                  <span style={{ color: 'white', fontWeight: 'bold', fontSize: '18px' }}>
+                    Turi:
                   </span>
-                )}
-              </div>
-              <div style={{
-                color: 'rgba(226, 232, 240, 0.95)',
-                fontSize: '14px',
-                lineHeight: '1.7',
-                whiteSpace: 'pre-wrap'
-              }}>
-                {missionHelperMessage}
+                  {awaitingMissionApproval && (
+                    <span style={{ 
+                      marginLeft: 'auto',
+                      fontSize: '14px',
+                      color: 'rgba(251, 191, 36, 1)',
+                      fontWeight: '500'
+                    }}>
+                      Checking...
+                    </span>
+                  )}
+                </div>
+                <div style={{
+                  color: 'rgba(226, 232, 240, 0.95)',
+                  fontSize: '21px',
+                  lineHeight: '1.6',
+                  whiteSpace: 'pre-wrap'
+                }}>
+                  {missionHelperMessage}
+                </div>
               </div>
             </div>
           </div>
