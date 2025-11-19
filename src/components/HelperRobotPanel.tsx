@@ -579,31 +579,23 @@ const HelperRobotPanel: React.FC<HelperRobotPanelProps> = ({ onClose }) => {
                 
                 <div className="max-h-[60vh] overflow-y-auto bg-white/5 rounded-2xl p-4">
                   {filteredDictionaryEntries.length > 0 ? (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {filteredDictionaryEntries.map(entry => (
                         <div 
                           key={entry.id}
                           className="relative p-3 rounded-xl transition-all bg-white/5 border border-white/10 hover:bg-white/10"
                         >
-                          {/* Word Info */}
+                          {/* Word/Phrase and Translation */}
                           <div className="space-y-1">
-                            {/* Language indicator badge */}
-                            <div className="flex justify-between items-center mb-1">
-                              <span className="text-xs text-blue-400 font-medium uppercase">
-                                {entry.target_language}
-                              </span>
-                            </div>
-                            
-                            {/* Word and Translation */}
                             <div 
-                              className="text-lg font-medium text-white truncate cursor-help" 
+                              className="text-lg font-medium text-white break-words cursor-help" 
                               title={entry.word}
                             >
                               {entry.word}
                             </div>
                             {entry.translation && (
                               <div 
-                                className="text-sm text-slate-300 truncate cursor-help" 
+                                className="text-sm text-slate-300 break-words cursor-help" 
                                 title={entry.translation}
                               >
                                 {entry.translation}

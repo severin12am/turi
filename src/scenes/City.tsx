@@ -11,7 +11,9 @@ import type { Character as CharacterType } from '../types';
 import DialogueBox from '../components/DialogueBox';
 import DialogueSelectionPanel from '../components/DialogueSelectionPanel';
 import ScenarioSelectionPanel from '../components/ScenarioSelectionPanel';
+import MissionSelectionPanel from '../components/MissionSelectionPanel';
 import { AIDialogueStep } from '../services/gemini';
+import { Mission } from '../constants/missions';
 import MobileControls from '../components/MobileControls';
 
 // Preload the character models
@@ -307,6 +309,11 @@ const CityScene: React.FC = () => {
   const [showScenarioSelection, setShowScenarioSelection] = useState(false);
   const [selectedScenarioNumber, setSelectedScenarioNumber] = useState<number>(1);
   const [isScenarioDialogue, setIsScenarioDialogue] = useState(false);
+  
+  // Add state for mission selection
+  const [showMissionSelection, setShowMissionSelection] = useState(false);
+  const [selectedMission, setSelectedMission] = useState<Mission | null>(null);
+  const [isMissionMode, setIsMissionMode] = useState(false);
   
   // Track when dialogue was opened to prevent premature distance-based closing
   const dialogueOpenedAt = useRef<number>(0);
@@ -1715,6 +1722,38 @@ const CityScene: React.FC = () => {
     setShowDialogueSelection(true);
   };
   
+  // Handle missions button click (opens mission selection)
+  const handleMissionsClick = () => {
+    console.log('Missions clicked for scenario:', selectedScenarioNumber);
+    setShowScenarioSelection(false);
+    setShowMissionSelection(true);
+    logger.info('[Missions] Mission selection opened', { scenarioNumber: selectedScenarioNumber });
+  };
+  
+  // Handle mission selection
+  const handleMissionSelect = (mission: Mission) => {
+    console.log('Mission selected:', mission);
+    setSelectedMission(mission);
+    setIsMissionMode(true);
+    setIsScenarioDialogue(false); // Mission mode is separate from scenario dialogue
+    setAiDialogue(null); // Clear any AI dialogue
+    dialogueOpenedAt.current = Date.now(); // Track when dialogue opened
+    setIsDialogueActive(true);
+    setShowMissionSelection(false);
+    logger.info('[Missions] Mission started', { 
+      missionId: mission.id, 
+      goal: mission.goal, 
+      npcRole: mission.npcRole 
+    });
+  };
+  
+  // Handle mission selection panel back button
+  const handleMissionBack = () => {
+    console.log('Back from mission selection');
+    setShowMissionSelection(false);
+    setShowScenarioSelection(true);
+  };
+  
   return (
     <div className="h-screen w-full">
       <Canvas camera={{ fov: 75 }}>
@@ -2109,6 +2148,8 @@ const CityScene: React.FC = () => {
           aiDialogue={aiDialogue}
           isScenario={isScenarioDialogue}
           scenarioNumber={selectedScenarioNumber}
+          isMissionMode={isMissionMode}
+          mission={selectedMission}
         />
       )}
       
@@ -2128,7 +2169,17 @@ const CityScene: React.FC = () => {
           scenarioNumber={selectedScenarioNumber}
           scenarioName="Scenario 1: Greetings and Introductions"
           onScenarioDialogueSelect={handleScenarioDialogueSelect}
+          onMissionsClick={handleMissionsClick}
           onBack={handleScenarioBack}
+        />
+      )}
+      
+      {showMissionSelection && !isDialogueActive && (
+        <MissionSelectionPanel
+          scenarioNumber={selectedScenarioNumber}
+          characterId={activeCharacterId}
+          onMissionSelect={handleMissionSelect}
+          onBack={handleMissionBack}
         />
       )}
       

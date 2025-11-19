@@ -115,6 +115,21 @@ interface TranslationStrings {
   
   // Dictionary
   pleaseSignIn?: string;
+  
+  // Missions
+  missions?: string;
+  mission?: string;
+  missionDescription?: string;
+  talkingTo?: string;
+  start?: string;
+  back?: string;
+  helperRobotChecking?: string;
+  waitingForApproval?: string;
+  sentenceApproved?: string;
+  helpMe?: string;
+  taskCompleted?: string;
+  taskCompletedMessage?: string;
+  next?: string;
 }
 
 // Partial record allows for gradual expansion of translations
@@ -230,7 +245,22 @@ export const translations: Partial<Record<SupportedLanguage, TranslationStrings>
     dialoguesCompleted: 'dialogues completed',
     regularDialogues: 'Regular Dialogues',
     completeInHideOrTranslationMode: 'To prove you\'ve mastered this dialogue, complete in Hide or Translation mode to proceed (click visibility button)',
-    pleaseSignIn: 'Please sign in to save words to your dictionary'
+    pleaseSignIn: 'Please sign in to save words to your dictionary',
+    
+    // Missions
+    missions: 'Missions',
+    mission: 'Mission',
+    missionDescription: 'Complete specific goals through natural conversation. The helper robot will guide you!',
+    talkingTo: 'Talking to',
+    start: 'Start',
+    back: 'Back',
+    helperRobotChecking: 'Helper robot is checking...',
+    waitingForApproval: 'Waiting for approval',
+    sentenceApproved: 'Sentence approved!',
+    helpMe: 'Help me',
+    taskCompleted: 'Task completed!',
+    taskCompletedMessage: 'Task completed, you\'re one step closer to fluency!',
+    next: 'Next'
   },
   ru: {
     firstQuestion: "Сначала, какой язык вы уже знаете?",
@@ -343,7 +373,22 @@ export const translations: Partial<Record<SupportedLanguage, TranslationStrings>
     dialoguesCompleted: 'диалогов завершено',
     regularDialogues: 'Обычные Диалоги',
     completeInHideOrTranslationMode: 'Чтобы доказать, что вы освоили этот диалог, завершите его в режиме Скрыть или Перевод (нажмите кнопку видимости)',
-    pleaseSignIn: 'Пожалуйста, войдите, чтобы сохранять слова в словарь'
+    pleaseSignIn: 'Пожалуйста, войдите, чтобы сохранять слова в словарь',
+    
+    // Missions
+    missions: 'Миссии',
+    mission: 'Миссия',
+    missionDescription: 'Выполняйте конкретные задачи через естественный разговор. Робот-помощник будет вас направлять!',
+    talkingTo: 'Разговариваете с',
+    start: 'Начать',
+    back: 'Назад',
+    helperRobotChecking: 'Робот-помощник проверяет...',
+    waitingForApproval: 'Ожидание одобрения',
+    sentenceApproved: 'Предложение одобрено!',
+    helpMe: 'Помогите мне',
+    taskCompleted: 'Задание выполнено!',
+    taskCompletedMessage: 'Задание выполнено, вы на шаг ближе к беглости!',
+    next: 'Далее'
   },
   es: {
     firstQuestion: "Primero, ¿qué idioma hablas ya?",
