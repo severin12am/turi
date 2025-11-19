@@ -2566,33 +2566,21 @@ Return ONLY the transliteration, nothing else.`;
           // Add a small pause after NPC speaks
           await new Promise(resolve => setTimeout(resolve, 500));
         } else if (entry.speaker === 'User') {
-          // In mission mode, generate TTS for user phrases (no recordings)
-          if (isMissionMode) {
-            console.log(`Mission mode: generating TTS for user phrase "${entry.phrase}"`);
-            await playAudioWithPromise(entry.phrase, entry);
+          // Play user's recording if available
+          const recording = userRecordings.get(entry.step);
+          
+          if (recording) {
+            await playRecordingWithPromise(recording);
             
             // Check again after async operation
             if (!isPlayingFullDialogueRef.current) break;
             
-            // Add a small pause after user phrase
+            // Add a small pause after user recording
             await new Promise(resolve => setTimeout(resolve, 500));
           } else {
-            // Play user's recording if available (regular dialogue mode)
-            const recording = userRecordings.get(entry.step);
-            
-            if (recording) {
-              await playRecordingWithPromise(recording);
-              
-              // Check again after async operation
-              if (!isPlayingFullDialogueRef.current) break;
-              
-              // Add a small pause after user recording
-              await new Promise(resolve => setTimeout(resolve, 500));
-            } else {
-              console.log(`No recording found for user step ${entry.step}, skipping`);
-              // Still add a pause to maintain rhythm
-              await new Promise(resolve => setTimeout(resolve, 300));
-            }
+            console.log(`No recording found for user step ${entry.step}, skipping`);
+            // Still add a pause to maintain rhythm
+            await new Promise(resolve => setTimeout(resolve, 300));
           }
         }
 
@@ -4831,7 +4819,6 @@ Keep it simple, practical, and focused only on structure. No extra examples need
             }}>
               {/* Replay Full Dialogue Button */}
               <button 
-                disabled={isPlayingFullDialogue}
                 style={{
                   padding: '15px 30px',
                   fontSize: '16px',
@@ -4840,7 +4827,7 @@ Keep it simple, practical, and focused only on structure. No extra examples need
                   color: 'white',
                   border: 'none',
                   borderRadius: '12px',
-                  cursor: isPlayingFullDialogue ? 'not-allowed' : 'pointer',
+                  cursor: 'pointer',
                   transition: 'all 0.3s ease',
                   display: 'flex',
                   alignItems: 'center',
@@ -4848,17 +4835,15 @@ Keep it simple, practical, and focused only on structure. No extra examples need
                 }}
                 onClick={isPlayingFullDialogue ? stopFullDialogue : playFullDialogue}
                 onMouseEnter={(e) => {
-                  if (!isPlayingFullDialogue) {
-                    e.currentTarget.style.transform = 'scale(1.05)';
-                    e.currentTarget.style.boxShadow = '0 8px 16px rgba(0, 0, 0, 0.2)';
-                  }
+                  e.currentTarget.style.transform = 'scale(1.05)';
+                  e.currentTarget.style.boxShadow = '0 8px 16px rgba(0, 0, 0, 0.2)';
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.transform = 'scale(1)';
                   e.currentTarget.style.boxShadow = 'none';
                 }}
               >
-                <span>{isPlayingFullDialogue ? ' Stop Playback' : 'Replay Full Dialogue'}</span>
+                <span>{isPlayingFullDialogue ? '🛑 Stop Playback' : '▶️ Replay Full Dialogue'}</span>
               </button>
               
               {/* Go to Quiz Button */}

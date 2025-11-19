@@ -56,7 +56,8 @@ export const generateNPCResponse = async (params: MissionNPCParams): Promise<Mis
   2. Stay 100% in character as ${npcRole}
   3. NEVER mention the learner's goal
   4. Make conversation last at least 2-4 natural exchanges
-  5. Be natural, conversational, but keep responses short, and use simpler words and more common sentence structures
+  5. Be natural, conversational, but keep responses short, and use simpler words and more common sentence structures. 
+  6. After 2-4 exchanges, gently help the language learner complete his mission.
   
   Your role: ${npcRole}
   Language: ${targetLanguage}
