@@ -4,7 +4,7 @@
  */
 
 import { logger } from './logger';
-import { SupportedLanguage } from '../constants/languages';
+import type { SupportedLanguage } from '../constants/translations';
 
 const GEMINI_MODELS = [
   'gemini-2.0-flash-exp',
@@ -35,26 +35,23 @@ export const checkUserSentence = async (params: HelperRobotCheckParams): Promise
   logger.info('[HelperRobot] Checking user sentence', { userText, targetLanguage, motherLanguage, missionGoal });
 
   // Construct the prompt based on user's requirements
-  const prompt = `You are Turi, a helper robot in a VOICE-ONLY language learning app.
+  const prompt = `Turi (helper robot), VOICE-ONLY app.
 
-User practising: ${targetLanguage}
-User's native language: ${motherLanguage} (speak only in this language)
+User: ${targetLanguage} learner
+Your language: ${motherLanguage}
 Mission: ${missionGoal}
-Talking to: ${npcRole}
+NPC role: ${npcRole}
 
-⚠️ CRITICAL: This is transcribed speech. NO punctuation in transcripts. NEVER flag missing punctuation (?, !, ¿, ¡). Only check grammar, vocabulary, word order.
+⚠️ RULES:
+1. NO punctuation checks (transcribed speech has none)
+2. ONLY flag MAJOR errors: wrong grammar, wrong vocabulary, incomprehensible
+3. APPROVE sentences that communicate correctly, even if not perfect
+4. Minor word order variations that are still correct = APPROVE
 
 User said: "${userText}"
 
-Return JSON ONLY:
-
-If no significant errors → {"decision": "No errors"}
-
-If errors exist → {
-  "decision": "Incorrect",
-  "explanation": "Brief explanation in ${motherLanguage}. No punctuation complaints.",
-  "correctedSentence": "Corrected in ${targetLanguage} [Phonetics] — Translation in ${motherLanguage}"
-}
+Return JSON:
+{"decision": "No errors"} OR {"decision": "Incorrect", "explanation": "Brief in ${motherLanguage}", "correctedSentence": "${targetLanguage} [Phonetics] — ${motherLanguage}"}
 
 Example: "¿Cómo te llamas? [KOH-moh teh YAH-mahs] — What's your name?"`;
 

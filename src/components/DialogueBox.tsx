@@ -4733,14 +4733,14 @@ Keep it simple, practical, and focused only on structure. No extra examples need
                   fontWeight: '600'
                 }}
               >
-                💡 {getTranslation(motherLanguage, 'helpMe')}
+                {getTranslation(motherLanguage, 'helpMe')}
               </button>
             )}
             
             {/* Speak Button */}
             <button
               onClick={() => {
-                console.log('[Missions] 🎤 Speak button clicked, current state:', { isListening, isMissionMode, hasRecognition: !!recognitionRef.current });
+                console.log('[Missions] Speak button clicked, current state:', { isListening, isMissionMode, hasRecognition: !!recognitionRef.current });
                 if (!isListening) {
                   console.log('[Missions] Starting speech recognition...');
                   try {
@@ -4772,13 +4772,13 @@ Keep it simple, practical, and focused only on structure. No extra examples need
                 backgroundColor: isListening ? 'rgba(239, 68, 68, 0.8)' : 'rgba(16, 185, 129, 0.8)',
                 color: 'white',
                 border: 'none',
-                borderRadius: '50px',
+                borderRadius: '8px',
                 cursor: 'pointer',
                 fontSize: '16px',
                 fontWeight: '600'
               }}
             >
-              🎤 {isListening ? 'Stop' : getTranslation(motherLanguage, 'speak')}
+              {isListening ? 'Stop' : getTranslation(motherLanguage, 'speak')}
             </button>
           </div>
         )}
