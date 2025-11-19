@@ -1337,10 +1337,10 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
           logger.info('[Missions] Mission mode active', { missionId: mission.id, goal: mission.goal });
           console.log('[Missions] Initializing mission mode');
           
-          // Show initial helper message (mission goal is already shown in banner at top)
+          // Show initial helper message with mission goal (no banner needed)
           const initMsg = motherLanguage === 'ru' 
-            ? `Нажмите кнопку или начните говорить`
-            : `Click button or start speaking`;
+            ? `Миссия: ${mission.goal}\n\nНажмите кнопку или начните говорить`
+            : `Mission: ${mission.goal}\n\nClick button or start speaking`;
           setMissionHelperMessage(initMsg);
           
           // Initialize empty conversation
@@ -4262,32 +4262,7 @@ Keep it simple, practical, and focused only on structure. No extra examples need
   try {
     return (
       <div className="dialogue-box-container" style={{ pointerEvents: 'auto' }}>
-        {/* Mission Goal Banner */}
-        {isMissionMode && mission && (
-          <div style={{
-            position: 'fixed',
-            top: '20px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            backgroundColor: 'rgba(147, 51, 234, 0.95)',
-            color: 'white',
-            padding: '12px 24px',
-            borderRadius: '8px',
-            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
-            zIndex: 999999,
-            maxWidth: '600px',
-            textAlign: 'center'
-          }}>
-            <div style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '4px' }}>
-              🎯 {getTranslation(motherLanguage, 'mission')}: {mission.goal}
-            </div>
-            <div style={{ fontSize: '12px', opacity: 0.9 }}>
-              {getTranslation(motherLanguage, 'talkingTo')}: {mission.npcRole}
-            </div>
-          </div>
-        )}
-
-        {/* Turi Panel - Mission Mode Helper */}
+        {/* Turi Panel - Mission Mode Helper (stays on left like tips were) */}
         {isMissionMode && missionHelperMessage && (
           <div className="fixed top-[50%] transform -translate-y-1/2 left-8 z-50 max-w-sm">
             <div style={{
@@ -4328,45 +4303,6 @@ Keep it simple, practical, and focused only on structure. No extra examples need
                 {missionHelperMessage}
               </div>
             </div>
-          </div>
-        )}
-
-        {/* Mission Completion Overlay */}
-        {isMissionMode && missionCompleted && (
-          <div style={{
-            position: 'fixed',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            backgroundColor: 'rgba(16, 185, 129, 0.98)',
-            color: 'white',
-            padding: '32px 48px',
-            borderRadius: '16px',
-            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)',
-            zIndex: 1000001,
-            textAlign: 'center'
-          }}>
-            <div style={{ fontSize: '48px', marginBottom: '16px' }}>🎉</div>
-            <div style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '8px' }}>
-              {getTranslation(motherLanguage, 'taskCompleted')}
-            </div>
-            <div style={{ fontSize: '14px', opacity: 0.95, marginBottom: '16px' }}>
-              {missionHelperMessage}
-            </div>
-            <button
-              onClick={onClose}
-              style={{
-                backgroundColor: 'white',
-                color: 'rgb(16, 185, 129)',
-                padding: '12px 24px',
-                borderRadius: '8px',
-                border: 'none',
-                cursor: 'pointer',
-                fontWeight: '600'
-              }}
-            >
-              Close
-            </button>
           </div>
         )}
 
