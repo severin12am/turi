@@ -2539,12 +2539,29 @@ Return ONLY the transliteration, nothing else.`;
     isPlayingFullDialogueRef.current = true;
 
     try {
+      // Log all conversation history for debugging
+      console.log('🔍 Full conversation history:', conversationHistory.map(e => ({
+        step: e.step,
+        speaker: e.speaker,
+        phrase: e.phrase,
+        isCompleted: e.isCompleted,
+        hasRecording: userRecordings.has(e.step)
+      })));
+      
       // Get all completed entries in order
+      // In mission mode, user entries might not be marked as completed but still have recordings
       const completedEntries = conversationHistory
-        .filter(entry => entry.isCompleted || entry.speaker === 'NPC')
+        .filter(entry => {
+          if (entry.speaker === 'NPC') return true; // Always include NPC
+          if (entry.speaker === 'User' && isMissionMode) {
+            // In mission mode, include user entries that have recordings
+            return userRecordings.has(entry.step);
+          }
+          return entry.isCompleted; // Regular mode: only completed entries
+        })
         .sort((a, b) => a.step - b.step);
 
-      console.log(`Playing ${completedEntries.length} dialogue entries`);
+      console.log(`Playing ${completedEntries.length} dialogue entries:`, completedEntries.map(e => `Step ${e.step}: ${e.speaker}`));
 
       for (let i = 0; i < completedEntries.length; i++) {
         const entry = completedEntries[i];
