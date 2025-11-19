@@ -9,7 +9,7 @@ import SignupPrompt from "./SignupPrompt";
 import type { SupportedLanguage } from '../constants/translations';
 import { getTranslation } from '../constants/translations';
 import { AIDialogueStep } from '../services/gemini';
-import { fetchDialoguesWithFallback } from '../services/translationFallback';
+import { fetchDialoguesWithFallback, translateWithAI } from '../services/translationFallback';
 // New imports for enhanced word interaction
 import WordExplanationModal from './WordExplanationModal';
 import { generateWordExplanation, WordExplanationData, speakWithAI, generateSpeechWithGemini, translateWord } from '../services/gemini';
@@ -1858,14 +1858,25 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
       console.log('[Missions] Sending approved text to NPC:', userText);
       setCurrentUserInput(''); // Clear unapproved input
       
-      // Add approved user message to history
+      // Generate translation and transliteration for user's text
+      const userTranslation = await translateWithAI({
+        sourceText: userText,
+        sourceLanguage: targetLanguage,
+        targetLanguage: motherLanguage,
+        motherLanguage: motherLanguage,
+        includeTransliteration: true
+      });
+      
+      console.log('[Missions] User text translation:', userTranslation);
+      
+      // Add approved user message to history with translation and transliteration
       const userEntry: ConversationEntry = {
         id: Date.now(), // Use timestamp as ID
         step: conversationHistory.length + 1,
         speaker: 'User',
         phrase: userText,
-        transcription: '', // Mission mode doesn't pre-define these
-        translation: '',
+        transcription: userTranslation.transliteration || '',
+        translation: userTranslation.translation || '',
         isCompleted: true
       };
       
@@ -1888,14 +1899,25 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
       
       console.log('[Missions] NPC responded:', npcResponse.response);
       
-      // Add NPC response to history
+      // Generate translation and transliteration for NPC's response
+      const npcTranslation = await translateWithAI({
+        sourceText: npcResponse.response,
+        sourceLanguage: targetLanguage,
+        targetLanguage: motherLanguage,
+        motherLanguage: motherLanguage,
+        includeTransliteration: true
+      });
+      
+      console.log('[Missions] NPC response translation:', npcTranslation);
+      
+      // Add NPC response to history with translation and transliteration
       const npcEntry: ConversationEntry = {
         id: Date.now() + 1,
         step: newHistory.length + 1,
         speaker: 'NPC',
         phrase: npcResponse.response,
-        transcription: npcResponse.transcription || '',
-        translation: npcResponse.translation || '',
+        transcription: npcTranslation.transliteration || '',
+        translation: npcTranslation.translation || '',
         isCompleted: true
       };
       
@@ -4297,9 +4319,10 @@ Keep it simple, practical, and focused only on structure. No extra examples need
             position: 'fixed',
             top: '50%',
             transform: 'translateY(-50%)',
-            left: '32px',
-            zIndex: 50,
-            maxWidth: '340px'
+            left: '20px',
+            zIndex: 999999,
+            maxWidth: '340px',
+            pointerEvents: 'auto'
           }}>
             <div style={{
               backgroundColor: 'rgba(30, 41, 59, 0.95)',
@@ -4315,7 +4338,6 @@ Keep it simple, practical, and focused only on structure. No extra examples need
                 gap: '8px',
                 marginBottom: '14px'
               }}>
-                <span style={{ fontSize: '20px' }}>🤖</span>
                 <span style={{ color: 'white', fontWeight: 'bold', fontSize: '15px' }}>
                   Turi:
                 </span>
@@ -4416,7 +4438,8 @@ Keep it simple, practical, and focused only on structure. No extra examples need
                     </div>
                   )}
                   
-                  {isCurrentUserPhrase && (
+                  {/* Recognition bar - only in regular dialogue mode */}
+                  {!isMissionMode && isCurrentUserPhrase && (
                     <div className="recognition-status">
                       <div className="transcript">
                         {transcript ? `Heard: ${transcript}` : "Waiting for speech..."}
@@ -4476,13 +4499,16 @@ Keep it simple, practical, and focused only on structure. No extra examples need
                     </span>
                   )}
                   
-                  <button
-                    className="return-button"
-                    onClick={() => handleGoBack(entry)}
-                    title="Go back to previous step"
-                  >
-                    ↩
-                  </button>
+                  {/* Return button - only in regular dialogue mode */}
+                  {!isMissionMode && (
+                    <button
+                      className="return-button"
+                      onClick={() => handleGoBack(entry)}
+                      title="Go back to previous step"
+                    >
+                      ↩
+                    </button>
+                  )}
                   
                   {/* Structure explanation button */}
                   <button
