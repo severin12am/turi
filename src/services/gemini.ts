@@ -459,42 +459,46 @@ export const generateWordExplanation = async (params: GenerateWordExplanationPar
 };
 
 /**
- * Generate speech using Google Cloud Text-to-Speech API
+ * Generate speech using Google Cloud TTS API
  * Returns an Audio element with the generated speech
+ * 
+ * @param text - Text to convert to speech
+ * @param languageCode - Language code (e.g., 'en', 'ru', 'CH')
+ * @param gender - Character gender (for voice selection)
+ * @param characterId - Character ID (1-30) for unique voice, or null for Turi voice
  */
 export const generateSpeechWithGemini = async (
   text: string, 
   languageCode: SupportedLanguage, 
-  gender: 'male' | 'female' = 'male'
+  gender: 'male' | 'female' = 'male',
+  characterId: number | null = null
 ): Promise<HTMLAudioElement> => {
   console.log('🔊 GEMINI TTS: Attempting to generate speech with Google Cloud TTS API');
-  logger.info('Generating speech with Gemini TTS', { text, languageCode, gender });
+  logger.info('Generating speech with Gemini TTS', { text, languageCode, gender, characterId });
 
   try {
-    // Map language codes to Google TTS language codes and voices
-    // Google voice naming: A, C, E, F = female | B, D = male
-    const languageMap: Record<string, { code: string; male: string; female: string }> = {
-      'en': { code: 'en-US', male: 'en-US-Neural2-D', female: 'en-US-Neural2-F' },
-      'ru': { code: 'ru-RU', male: 'ru-RU-Wavenet-B', female: 'ru-RU-Wavenet-A' },
-      'es': { code: 'es-ES', male: 'es-ES-Neural2-B', female: 'es-ES-Neural2-A' },
-      'fr': { code: 'fr-FR', male: 'fr-FR-Neural2-B', female: 'fr-FR-Neural2-A' },
-      'de': { code: 'de-DE', male: 'de-DE-Neural2-B', female: 'de-DE-Neural2-A' },
-      'it': { code: 'it-IT', male: 'it-IT-Neural2-D', female: 'it-IT-Neural2-A' },
-      'ar': { code: 'ar-XA', male: 'ar-XA-Wavenet-B', female: 'ar-XA-Wavenet-A' },
-      'CH': { code: 'cmn-CN', male: 'cmn-CN-Wavenet-B', female: 'cmn-CN-Wavenet-A' },
-      'ja': { code: 'ja-JP', male: 'ja-JP-Neural2-D', female: 'ja-JP-Neural2-A' },
-      'tr': { code: 'tr-TR', male: 'tr-TR-Wavenet-B', female: 'tr-TR-Wavenet-A' }
-    };
-
-    const language = languageMap[languageCode] || languageMap['en'];
-    const voiceName = gender === 'female' ? language.female : language.male;
+    // Import voice assignment functions dynamically to avoid circular dependencies
+    const { getCharacterVoice, getTuriVoice, getLanguageCode } = await import('../constants/voiceAssignments');
     
-    console.log(`🔊 GEMINI TTS: Using ${gender} voice: ${voiceName}`);
+    // Get the appropriate voice
+    let voiceName: string;
+    if (characterId !== null && characterId >= 1 && characterId <= 30) {
+      // Character-specific voice
+      voiceName = getCharacterVoice(characterId, gender, languageCode);
+      console.log(`🔊 GEMINI TTS: Using character ${characterId} voice: ${voiceName}`);
+    } else {
+      // Turi system voice (for quiz, word pronunciation, etc.)
+      voiceName = getTuriVoice(languageCode);
+      console.log(`🔊 GEMINI TTS: Using Turi system voice: ${voiceName}`);
+    }
+    
+    // Get language code
+    const langCode = getLanguageCode(languageCode);
     
     const requestBody = {
       input: { text },
       voice: {
-        languageCode: language.code,
+        languageCode: langCode,
         name: voiceName
       },
       audioConfig: {
