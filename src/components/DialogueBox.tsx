@@ -589,7 +589,21 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
         const currentConversationHistory = conversationHistoryRef.current;
         const currentStepValue = currentStepRef.current;
         
-        // Only process if we have a current phrase to match
+        // MISSION MODE: Skip phrase matching and go straight to handleSuccessfulSpeechRecognition
+        if (isMissionMode && mission) {
+          console.log('[Missions] 🎤 Speech final result, passing to handler:', transcript);
+          if (result.isFinal) {
+            if (processingRecognitionRef.current) {
+              console.log("[Missions] ⚠️ Already processing recognition, ignoring duplicate event");
+              return;
+            }
+            processingRecognitionRef.current = true;
+            handleSuccessfulSpeechRecognition(transcript, confidence);
+          }
+          return;
+        }
+        
+        // REGULAR MODE: Only process if we have a current phrase to match
         const currentUserPhrase = currentConversationHistory.find(
           entry => entry.speaker === 'User' && 
                    entry.step === currentStepValue && 
@@ -725,7 +739,21 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
                   const currentConversationHistory = conversationHistoryRef.current;
                   const currentStepValue = currentStepRef.current;
                   
-                  // Find the current user phrase
+                  // MISSION MODE: Skip phrase matching and go straight to handleSuccessfulSpeechRecognition
+                  if (isMissionMode && mission) {
+                    console.log('[Missions] 🎤 Speech final result (nested), passing to handler:', transcript);
+                    if (result.isFinal) {
+                      if (processingRecognitionRef.current) {
+                        console.log("[Missions] ⚠️ Already processing recognition (nested), ignoring duplicate event");
+                        return;
+                      }
+                      processingRecognitionRef.current = true;
+                      handleSuccessfulSpeechRecognition(transcript, confidence);
+                    }
+                    return;
+                  }
+                  
+                  // REGULAR MODE: Find the current user phrase
                   const currentUserPhrase = currentConversationHistory.find(
                     entry => entry.speaker === 'User' && 
                            entry.step === currentStepValue && 
