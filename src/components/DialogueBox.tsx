@@ -313,6 +313,7 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const isPlayingFullDialogueRef = useRef<boolean>(false);
   const currentAudioRef = useRef<HTMLAudioElement | null>(null);
+  const tempRecordingBlobRef = useRef<Blob | null>(null); // Temporary storage for mission mode recording
   
   // State for dictionary functionality
   const [addingWordToDictionary, setAddingWordToDictionary] = useState<string | null>(null);
@@ -1897,7 +1898,7 @@ Return ONLY the transliteration, nothing else.`;
   /**
    * Handle NPC response in mission mode
    */
-  const handleMissionNPCResponse = async (userText: string) => {
+  const handleMissionNPCResponse = async (userText: string, recordingBlob?: Blob) => {
     try {
       console.log('[Missions] Sending approved text to NPC:', userText);
       setCurrentUserInput(''); // Clear unapproved input
@@ -1905,6 +1906,10 @@ Return ONLY the transliteration, nothing else.`;
       // Use ref to get the most current conversation history
       const currentHistory = conversationHistoryRef.current;
       console.log('[Missions] 📊 Current history before adding user entry:', currentHistory.length);
+      
+      // Calculate the step number for this user entry
+      const userStepNumber = currentHistory.length + 1;
+      console.log('[Missions] 🎙️ User entry will be step:', userStepNumber);
       
       // Generate translation and transliteration for user's text
       const userTranslation = await translateWithAI({
@@ -1921,10 +1926,20 @@ Return ONLY the transliteration, nothing else.`;
       console.log('[Missions] User text translation:', userTranslation);
       console.log('[Missions] User text transliteration:', userTransliteration);
       
+      // Save the recording with the correct step number if provided
+      if (recordingBlob) {
+        setUserRecordings(prev => {
+          const newMap = new Map(prev);
+          newMap.set(userStepNumber, recordingBlob);
+          console.log(`[Missions] 💾 Saved recording for step ${userStepNumber}`);
+          return newMap;
+        });
+      }
+      
       // Add approved user message to history with translation and transliteration
       const userEntry: ConversationEntry = {
         id: Date.now(), // Use timestamp as ID
-        step: currentHistory.length + 1,
+        step: userStepNumber,
         speaker: 'User',
         phrase: userText,
         transcription: userTransliteration,
@@ -1980,6 +1995,10 @@ Return ONLY the transliteration, nothing else.`;
       
       const finalHistory = [...newHistory, npcEntry];
       setConversationHistory(finalHistory);
+      
+      // Update currentStep to match the conversation length
+      setCurrentStep(finalHistory.length);
+      console.log('[Missions] ⬆️ Updated currentStep to:', finalHistory.length);
       
       console.log('[Missions] 📚 Updated conversation history:', finalHistory.map(e => `${e.speaker}:${e.phrase.substring(0, 20)}`));
       console.log('[Missions] 📚 Total entries in history:', finalHistory.length);
@@ -2376,15 +2395,21 @@ Return ONLY the transliteration, nothing else.`;
       recorder.onstop = () => {
         const audioBlob = new Blob(audioChunks, { type: recorder.mimeType });
         
-        // Store recording for this step (replacing any previous recording)
-        setUserRecordings(prev => {
-          const newMap = new Map(prev);
-          newMap.set(step, audioBlob);
-          return newMap;
-        });
-        
-        console.log(`Recording saved for step ${step}, size: ${audioBlob.size} bytes`);
-        logger.info('User recording saved', { step, size: audioBlob.size });
+        if (isMissionMode) {
+          // In mission mode, store in temp ref for later use with correct step
+          tempRecordingBlobRef.current = audioBlob;
+          console.log(`[Missions] 🎙️ Recording temporarily stored, size: ${audioBlob.size} bytes`);
+        } else {
+          // Regular mode: Store recording for this step
+          setUserRecordings(prev => {
+            const newMap = new Map(prev);
+            newMap.set(step, audioBlob);
+            return newMap;
+          });
+          
+          console.log(`Recording saved for step ${step}, size: ${audioBlob.size} bytes`);
+          logger.info('User recording saved', { step, size: audioBlob.size });
+        }
         
         // Clean up the stream
         stream.getTracks().forEach(track => track.stop());
@@ -3795,8 +3820,12 @@ Keep it simple, practical, and focused only on structure. No extra examples need
           setAwaitingMissionApproval(false);
           setMissionHelperMessage(getTranslation(motherLanguage, 'sentenceApproved') || 'Approved!');
           
+          // Get the recording blob and clear the temp ref
+          const recordingBlob = tempRecordingBlobRef.current;
+          tempRecordingBlobRef.current = null;
+          
           setTimeout(() => {
-            handleMissionNPCResponse(transcript);
+            handleMissionNPCResponse(transcript, recordingBlob || undefined);
           }, 800);
         } else {
           // Rejected - show correction
@@ -3804,6 +3833,9 @@ Keep it simple, practical, and focused only on structure. No extra examples need
           const correctionMsg = `${decision.explanation}\n\n${decision.correctedSentence}`;
           setMissionHelperMessage(correctionMsg);
           setCurrentUserInput(''); // Clear unapproved input
+          
+          // Clear temp recording since it was rejected
+          tempRecordingBlobRef.current = null;
         }
       } catch (error) {
         console.error('[Missions] Error checking sentence:', error);
