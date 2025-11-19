@@ -53,6 +53,7 @@ interface VocalQuizProps {
   isScenario?: boolean;
   scenarioNumber?: number;
   isMission?: boolean;
+  missionConversation?: string; // Full conversation text from mission for AI extraction
 }
 
 import type { SupportedLanguage } from '../constants/translations';
@@ -163,7 +164,8 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
   characterId = 1,
   isScenario = false,
   scenarioNumber = 1,
-  isMission = false
+  isMission = false,
+  missionConversation
 }) => {
   // Get languages from store
   const { motherLanguage, targetLanguage, user, setIsQuizActive, setIsMovementDisabled } = useStore();
@@ -239,6 +241,86 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
         
         // For scenarios OR missions, use 3-tier fallback: Supabase → AI → Words
         if (isScenario || isMission) {
+          // For missions with conversation text, skip Tier 1 and go directly to AI extraction
+          if (isMission && missionConversation) {
+            console.log('🎯 Mission mode with conversation text: Using AI extraction directly');
+            
+            // Check cache first
+            const cacheKey = `ai_expressions_mission_${safeDialogueId}_${targetLanguage}_${motherLanguage}`;
+            const cachedExpressions = sessionStorage.getItem(cacheKey);
+            
+            if (cachedExpressions) {
+              try {
+                const parsedCache = JSON.parse(cachedExpressions);
+                console.log('✅ Found', parsedCache.length, 'cached mission AI expressions');
+                setQuizWords(parsedCache as VocalQuizWord[]);
+                setIsLoading(false);
+                return;
+              } catch (e) {
+                console.warn('Failed to parse cached expressions, will regenerate');
+              }
+            }
+            
+            // Extract expressions from mission conversation with AI
+            try {
+              console.log('🤖 Calling AI to extract expressions from mission conversation...');
+              
+              const timeoutPromise = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('AI extraction timeout')), 10000)
+              );
+              
+              const extractionPromise = extractExpressionsFromDialogue({
+                dialogueText: missionConversation,
+                targetLanguage,
+                motherLanguage
+              });
+              
+              const aiExpressions: ExtractedExpression[] = await Promise.race([
+                extractionPromise,
+                timeoutPromise
+              ]) as ExtractedExpression[];
+              
+              // Transform AI expressions to VocalQuizWord format
+              const quizWordsFromAI: VocalQuizWord[] = aiExpressions.map((expr, index) => ({
+                id: Date.now() + index,
+                dialogue_id: safeDialogueId,
+                entry_in_en: targetLanguage === 'en' ? expr.target : expr.mother,
+                entry_in_ru: targetLanguage === 'ru' ? expr.target : (motherLanguage === 'ru' ? expr.mother : ''),
+                entry_in_es: targetLanguage === 'es' ? expr.target : (motherLanguage === 'es' ? expr.mother : ''),
+                entry_in_fr: targetLanguage === 'fr' ? expr.target : (motherLanguage === 'fr' ? expr.mother : ''),
+                entry_in_de: targetLanguage === 'de' ? expr.target : (motherLanguage === 'de' ? expr.mother : ''),
+                entry_in_it: targetLanguage === 'it' ? expr.target : (motherLanguage === 'it' ? expr.mother : ''),
+                entry_in_pt: targetLanguage === 'pt' ? expr.target : (motherLanguage === 'pt' ? expr.mother : ''),
+                entry_in_ar: targetLanguage === 'ar' ? expr.target : (motherLanguage === 'ar' ? expr.mother : ''),
+                entry_in_ch: targetLanguage === 'CH' ? expr.target : (motherLanguage === 'CH' ? expr.mother : ''),
+                entry_in_ja: targetLanguage === 'ja' ? expr.target : (motherLanguage === 'ja' ? expr.mother : ''),
+                entry_in_tr: targetLanguage === 'tr' ? expr.target : (motherLanguage === 'tr' ? expr.mother : ''),
+                [`entry_in_${targetLanguage}`]: expr.target,
+                [`entry_in_${motherLanguage}`]: expr.mother,
+                is_from_500: false
+              }));
+              
+              if (quizWordsFromAI.length > 0) {
+                console.log('✅ Mission AI extracted', quizWordsFromAI.length, 'expressions from actual conversation');
+                
+                // Cache the results
+                try {
+                  sessionStorage.setItem(cacheKey, JSON.stringify(quizWordsFromAI));
+                  console.log('💾 Cached mission AI expressions for future use');
+                } catch (e) {
+                  console.warn('Failed to cache mission AI expressions (storage full?)');
+                }
+                
+                setQuizWords(quizWordsFromAI);
+                setIsLoading(false);
+                return;
+              }
+            } catch (aiError) {
+              console.warn('⚠️ Mission AI extraction failed:', aiError instanceof Error ? aiError.message : 'Unknown error');
+              logger.info('Mission AI extraction failed', { error: aiError });
+            }
+          }
+          
           // TIER 1: Try pre-curated expressions from Supabase
           console.log('💬 Tier 1: Attempting to fetch pre-curated expressions from Supabase...');
           

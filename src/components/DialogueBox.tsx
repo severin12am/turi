@@ -4461,6 +4461,7 @@ Keep it simple, practical, and focused only on structure. No extra examples need
         isScenario={isScenario}
         scenarioNumber={scenarioNumber}
         isMission={isMissionMode}
+        missionConversation={isMissionMode ? conversationHistory.map(e => e.phrase).join(' ') : undefined}
       />
     );
   }
