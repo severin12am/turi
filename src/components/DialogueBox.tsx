@@ -4208,9 +4208,9 @@ Keep it simple, practical, and focused only on structure. No extra examples need
   }
 
   /**
-   * Error state
+   * Error state - skip this check in mission mode (missions don't need dialogues)
    */
-  if (dialogues.length === 0) {
+  if (dialogues.length === 0 && !isMissionMode) {
     return (
       <div className="dialogue-box-container">
         <div className="dialogue-error">
