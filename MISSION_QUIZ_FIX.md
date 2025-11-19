@@ -139,9 +139,20 @@ Mission 3 completes → conversationHistory → AI extracts actual expressions �
 - **Timeout**: 10 seconds max
 
 ### Caching Strategy
-- **Key**: `ai_expressions_mission_${dialogueId}_${targetLanguage}_${motherLanguage}`
+
+**Important**: Mission expressions are NOT cached!
+
+Unlike regular dialogues (which have fixed content), missions use AI-generated conversations that are **unique every time**. Therefore:
+- ❌ No caching for mission expressions
+- ✅ Fresh extraction from actual conversation each time
+- 🎯 Each mission attempt gets expressions from its unique conversation
+
+This ensures the quiz always tests what was actually discussed in that specific mission conversation.
+
+**Regular dialogues** (scenarios) still use caching:
+- **Key**: `ai_expressions_${characterId}_${dialogueId}_${targetLanguage}_${motherLanguage}`
 - **Storage**: sessionStorage (per session)
-- **Purpose**: Avoid re-extracting on quiz retries
+- **Purpose**: Avoid re-extracting for retries (dialogue content is fixed)
 
 ### Fallback Chain
 For missions with conversation:
@@ -180,6 +191,31 @@ Now:
 - etc. (1-150)
 
 Each mission now has completely unique quiz expressions! ✅
+
+### Additional Bug Fix: Remove Caching for Missions
+
+**Problem**: Mission expressions were being cached, so repeating the same mission showed expressions from the first attempt, not the new conversation.
+
+Example:
+1. Complete Mission 1 in Scenario 1 (first time) → AI extracts expressions → Cached
+2. Complete Mission 1 in Scenario 1 (second time with NEW conversation) → Found cache → Used OLD expressions ❌
+
+**Solution**: Removed caching for missions since each conversation is unique.
+
+**File**: `src/components/VocalQuizComponent.tsx` (lines ~250-305)
+
+```typescript
+// For missions with conversation text, skip Tier 1 and go directly to AI extraction
+if (isMission && missionConversation) {
+  console.log('🎯 Mission mode with conversation text: Using AI extraction directly');
+  console.log('📝 Note: Mission conversations are unique - extracting fresh expressions each time');
+  
+  // Don't use cache - each mission conversation is unique
+  // Extract fresh expressions every time
+}
+```
+
+Now every mission attempt extracts expressions from the actual new conversation! ✅
 
 ## Files Modified
 

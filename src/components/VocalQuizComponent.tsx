@@ -249,23 +249,9 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
           // For missions with conversation text, skip Tier 1 and go directly to AI extraction
           if (isMission && missionConversation) {
             console.log('🎯 Mission mode with conversation text: Using AI extraction directly');
+            console.log('📝 Note: Mission conversations are unique - extracting fresh expressions each time');
             
-            // Check cache first
-            const cacheKey = `ai_expressions_mission_${safeDialogueId}_${targetLanguage}_${motherLanguage}`;
-            const cachedExpressions = sessionStorage.getItem(cacheKey);
-            
-            if (cachedExpressions) {
-              try {
-                const parsedCache = JSON.parse(cachedExpressions);
-                console.log('✅ Found', parsedCache.length, 'cached mission AI expressions');
-                setQuizWords(parsedCache as VocalQuizWord[]);
-                setIsLoading(false);
-                return;
-              } catch (e) {
-                console.warn('Failed to parse cached expressions, will regenerate');
-              }
-            }
-            
+            // Don't use cache for missions - each conversation is unique and AI-generated
             // Extract expressions from mission conversation with AI
             try {
               console.log('🤖 Calling AI to extract expressions from mission conversation...');
@@ -308,14 +294,7 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
               if (quizWordsFromAI.length > 0) {
                 console.log('✅ Mission AI extracted', quizWordsFromAI.length, 'expressions from actual conversation');
                 
-                // Cache the results
-                try {
-                  sessionStorage.setItem(cacheKey, JSON.stringify(quizWordsFromAI));
-                  console.log('💾 Cached mission AI expressions for future use');
-                } catch (e) {
-                  console.warn('Failed to cache mission AI expressions (storage full?)');
-                }
-                
+                // Don't cache mission expressions - each mission conversation is unique
                 setQuizWords(quizWordsFromAI);
                 setIsLoading(false);
                 return;
