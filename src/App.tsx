@@ -660,15 +660,7 @@ function App() {
           </div>
         )}
 
-        {/* Helper robot instructions */}
-        {showInstructions && (
-          <HelperRobotInstructions
-            instructionType={instructionType}
-            level={instructionLevel}
-            characterId={instructionCharacterId}
-            onClose={handleCloseInstructions}
-          />
-        )}
+        {/* Tips removed - replaced by Turi during missions */}
 
         {/* Login Panel - Higher z-index to ensure it appears above the language selection */}
         {showLogin && (

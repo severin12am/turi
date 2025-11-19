@@ -32,6 +32,9 @@ interface UserState {
   instructionLevel: number;
   instructionCharacterId: number;
   
+  // Mission mode state
+  isMissionMode: boolean;
+  
   // Actions
   setUser: (user: User | null) => void;
   setLanguageLevel: (level: LanguageLevel | null) => void;
@@ -54,6 +57,7 @@ interface UserState {
     characterId?: number
   ) => void;
   hideInstructions: () => void;
+  setMissionMode: (isMissionMode: boolean) => void;
   
   // Debug utilities
   setTestUser: () => void;
@@ -81,7 +85,10 @@ const initialState = {
   instructionType: null,
   showInstructions: false,
   instructionLevel: 1,
-  instructionCharacterId: 1
+  instructionCharacterId: 1,
+  
+  // Mission mode initial state
+  isMissionMode: false
 };
 
 export const useStore = create<UserState>((set) => ({
@@ -166,6 +173,14 @@ export const useStore = create<UserState>((set) => ({
   hideInstructions: () => {
     set({ showInstructions: false });
     logger.info('Hide helper robot instructions');
+  },
+  
+  setMissionMode: (isMissionMode: boolean) => {
+    set({ isMissionMode });
+    if (isMissionMode) {
+      set({ showInstructions: false }); // Hide tips during missions
+    }
+    logger.info('Set mission mode', { isMissionMode });
   },
   
   resetState: () => {

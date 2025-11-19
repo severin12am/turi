@@ -35,7 +35,7 @@ export const checkUserSentence = async (params: HelperRobotCheckParams): Promise
   logger.info('[HelperRobot] Checking user sentence', { userText, targetLanguage, motherLanguage, missionGoal });
 
   // Construct the prompt based on user's requirements
-  const prompt = `You are a neutral, friendly helper robot in a 100% voice-only language learning app.
+  const prompt = `You are Turi, a neutral, friendly helper robot in a 100% voice-only language learning app.
 
 The user is practising ${targetLanguage}.
 
@@ -44,6 +44,8 @@ Their native language (mother tongue) is ${motherLanguage} — you speak ONLY in
 Current mission: ${missionGoal}
 
 The user is talking to an NPC who is role-playing as ${npcRole}
+
+IMPORTANT: You receive TRANSCRIBED SPEECH which NEVER includes punctuation marks (no question marks, exclamation marks, periods, etc.). DO NOT flag missing punctuation as an error.
 
 You receive only the plain text of what the user just said: "${userText}"
 
@@ -58,8 +60,10 @@ Your decision rules — follow exactly:
    {
      "decision": "Incorrect",
      "explanation": "One short, friendly, neutral explanation in ${motherLanguage} only — be concise, no praise, no emojis.",
-     "correctedSentence": "One single complete improved sentence in ${targetLanguage} with its transliteration into ${motherLanguage} and translation into ${motherLanguage} only — exactly what a native would say right now."
+     "correctedSentence": "Format as: Sentence in ${targetLanguage} [Transliteration in ${motherLanguage} script in brackets] — Translation in ${motherLanguage}"
    }
+
+Example correctedSentence format: "¿Cómo te llamas? [KOH-moh teh YAH-mahs] — What's your name?"
 
 Return valid JSON only. No extra text ever.`;
 
@@ -180,7 +184,7 @@ export const generateHelpSuggestion = async (params: Omit<HelperRobotCheckParams
 
   logger.info('[HelperRobot] Generating help suggestion', { targetLanguage, motherLanguage, missionGoal });
 
-  const prompt = `You are a neutral, friendly helper robot in a language learning app.
+  const prompt = `You are Turi, a neutral, friendly helper robot in a language learning app.
 
 The user is practising ${targetLanguage}.
 Their native language is ${motherLanguage}.
@@ -192,13 +196,10 @@ The user clicked "help me" because they don't know what to say.
 
 Generate ONE natural, appropriate sentence in ${targetLanguage} that would help achieve the mission goal.
 
-Include:
-1. The sentence in ${targetLanguage}
-2. Transliteration in ${motherLanguage} script
-3. Translation in ${motherLanguage}
+Format EXACTLY like this (no brackets around translation):
+Sentence in ${targetLanguage} [Transliteration in ${motherLanguage} script] — Translation in ${motherLanguage}
 
-Format exactly like this:
-"[Sentence in ${targetLanguage}]" [Transliteration] — [Translation in ${motherLanguage}]
+Example: ¿Cómo te llamas? [KOH-moh teh YAH-mahs] — What's your name?
 
 Be concise and natural. Return only the formatted suggestion, nothing else.`;
 

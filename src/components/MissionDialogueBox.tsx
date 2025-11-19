@@ -266,25 +266,26 @@ const MissionDialogueBox: React.FC<MissionDialogueBoxProps> = ({
         </div>
       </div>
 
-      {/* Helper Robot Panel */}
+      {/* Turi Panel - Replaces tips panel during missions */}
       {helperMessage && (
-        <div className="fixed top-[50%] transform -translate-y-1/2 left-8 z-50 max-w-md">
+        <div className="fixed top-[50%] transform -translate-y-1/2 left-8 z-50 max-w-sm">
           <div style={{
             backgroundColor: 'rgba(30, 41, 59, 0.95)',
             borderRadius: '12px',
-            padding: '16px',
+            padding: '20px',
             boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
-            border: '1px solid rgba(148, 163, 184, 0.3)'
+            border: '1px solid rgba(148, 163, 184, 0.3)',
+            width: '340px'
           }}>
             <div style={{
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
-              marginBottom: '12px'
+              marginBottom: '14px'
             }}>
               <span style={{ fontSize: '20px' }}>🤖</span>
-              <span style={{ color: 'white', fontWeight: 'bold', fontSize: '14px' }}>
-                Helper Robot
+              <span style={{ color: 'white', fontWeight: 'bold', fontSize: '15px' }}>
+                Turi:
               </span>
               {awaitingApproval && (
                 <span style={{ 
@@ -299,8 +300,8 @@ const MissionDialogueBox: React.FC<MissionDialogueBoxProps> = ({
             </div>
             <div style={{
               color: 'rgba(226, 232, 240, 0.95)',
-              fontSize: '13px',
-              lineHeight: '1.6',
+              fontSize: '14px',
+              lineHeight: '1.7',
               whiteSpace: 'pre-wrap'
             }}>
               {helperMessage}

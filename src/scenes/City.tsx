@@ -1679,10 +1679,18 @@ const CityScene: React.FC = () => {
     setIsDialogueActive(false);
     setAiDialogue(null); // Clear AI dialogue when closing
     
-    // Save the scenario flag BEFORE clearing it
+    // Save the scenario and mission flags BEFORE clearing them
     const wasScenario = isScenarioDialogue;
+    const wasMission = isMissionMode;
     
-    logger.info('Dialogue closed', { wasScenario });
+    logger.info('Dialogue closed', { wasScenario, wasMission });
+    
+    // Re-enable tips when exiting mission mode
+    if (wasMission) {
+      useStore.getState().setMissionMode(false);
+      setIsMissionMode(false);
+      setSelectedMission(null);
+    }
     
     // Show appropriate dialogue selection panel based on what type of dialogue just closed
     if (wasScenario) {
@@ -1693,7 +1701,7 @@ const CityScene: React.FC = () => {
     
     // Clear scenario flag AFTER deciding which panel to show
     setIsScenarioDialogue(false);
-  }, [isScenarioDialogue]); // Only recreate if isScenarioDialogue changes
+  }, [isScenarioDialogue, isMissionMode]); // Only recreate if these change
   
   // Handle scenario button click (opens scenario selection)
   const handleScenarioClick = (scenarioNumber: number) => {
@@ -1741,6 +1749,8 @@ const CityScene: React.FC = () => {
     dialogueOpenedAt.current = Date.now(); // Track when dialogue opened
     setIsDialogueActive(true);
     setShowMissionSelection(false);
+    // Hide tips panel during missions
+    useStore.getState().setMissionMode(true);
     logger.info('[Missions] Mission started', { 
       missionId: mission.id, 
       goal: mission.goal, 
