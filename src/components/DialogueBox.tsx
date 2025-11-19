@@ -14,6 +14,10 @@ import { fetchDialoguesWithFallback } from '../services/translationFallback';
 import WordExplanationModal from './WordExplanationModal';
 import { generateWordExplanation, WordExplanationData, speakWithAI, generateSpeechWithGemini, translateWord } from '../services/gemini';
 import { addWordToDictionary } from '../services/dictionary';
+// Mission imports
+import { Mission } from '../constants/missions';
+import { checkUserSentence, generateHelpSuggestion } from '../services/missionHelperRobot';
+import { generateNPCResponse } from '../services/missionNPC';
 
 // Map supported languages to their speech recognition codes
 const getRecognitionLanguage = (lang: SupportedLanguage): string => {
@@ -153,6 +157,7 @@ interface DialogueBoxProps {
   aiDialogue?: AIDialogueStep[] | null; // AI-generated dialogue
   isScenario?: boolean; // Flag to indicate if this is a scenario dialogue
   scenarioNumber?: number; // Which scenario (1, 2, 3, etc.)
+  mission?: Mission; // Mission mode - uses Turi checking instead of phrase matching
 }
 
 /**
@@ -220,7 +225,9 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
   aiDialogue = null, // AI-generated dialogue
   isScenario = false, // Default to false (regular dialogue)
   scenarioNumber = 1, // Default to scenario 1
+  mission, // Mission mode
 }) => {
+  const isMissionMode = !!mission; // True if mission prop is provided
   // State variables for dialogue management
   const [dialogues, setDialogues] = useState<DialoguePhrase[]>([]); // Raw dialogue data from database
   const [currentStep, setCurrentStep] = useState(1); // Current step in conversation
@@ -309,6 +316,13 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
   // State for dictionary functionality
   const [addingWordToDictionary, setAddingWordToDictionary] = useState<string | null>(null);
   const [wordAddedFeedback, setWordAddedFeedback] = useState<string | null>(null);
+  
+  // Mission mode state
+  const [missionHelperMessage, setMissionHelperMessage] = useState<string>('');
+  const [awaitingMissionApproval, setAwaitingMissionApproval] = useState(false);
+  const [missionCompleted, setMissionCompleted] = useState(false);
+  const [currentUserInput, setCurrentUserInput] = useState<string>(''); // Current unapproved user input
+  const [showHelpMe, setShowHelpMe] = useState(true); // Show "Help Me" button
   
   // Cleanup cached audio URLs on unmount to prevent memory leaks
   useEffect(() => {
@@ -1318,6 +1332,25 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
       try {
         setIsLoading(true);
         
+        // Mission mode: Skip dialogue loading, initialize empty conversation
+        if (isMissionMode && mission) {
+          logger.info('[Missions] Mission mode active', { missionId: mission.id, goal: mission.goal });
+          console.log('[Missions] Initializing mission mode');
+          
+          // Show initial helper message
+          const initMsg = motherLanguage === 'ru' 
+            ? `Миссия: ${mission.goal}\n\nНажмите кнопку или начните говорить`
+            : `Mission: ${mission.goal}\n\nClick button or start speaking`;
+          setMissionHelperMessage(initMsg);
+          
+          // Initialize empty conversation
+          setDialogues([]);
+          setConversationHistory([]);
+          setIsLoading(false);
+          setIsInputEnabled(true); // Enable input immediately
+          return;
+        }
+        
         // If AI dialogue is provided, use it instead of fetching from database
         if (aiDialogue && aiDialogue.length > 0) {
           logger.info('Using AI-generated dialogue', { count: aiDialogue.length, dialogueId });
@@ -1543,7 +1576,7 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
       dialogInitialized.current = false;
       conversationInitializedRef.current = false;
     };
-  }, [characterId, dialogueId]); // Only re-run when characterId or dialogueId changes, not when aiDialogue prop updates
+  }, [characterId, dialogueId, isMissionMode, mission]); // Re-run when mission changes
 
   /**
    * Initializes the conversation with first NPC dialogue
@@ -1761,6 +1794,99 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
           }
         }, speakingDelay);
       }, 300);
+  };
+  
+  /**
+   * Handle "Help Me" button click in mission mode
+   */
+  const handleHelpMe = async () => {
+    if (!mission) return;
+    
+    try {
+      console.log('[Missions] Help Me clicked');
+      setMissionHelperMessage('Generating suggestion...');
+
+      const suggestion = await generateHelpSuggestion({
+        targetLanguage,
+        motherLanguage,
+        missionGoal: mission.goal,
+        npcRole: mission.npcRole
+      });
+
+      console.log('[Missions] Suggestion generated');
+      setMissionHelperMessage(suggestion);
+      setShowHelpMe(false); // Hide button after use
+    } catch (error) {
+      console.error('[Missions] Error generating help:', error);
+      setMissionHelperMessage('Error generating suggestion. Please try again.');
+    }
+  };
+  
+  /**
+   * Handle NPC response in mission mode
+   */
+  const handleMissionNPCResponse = async (userText: string) => {
+    try {
+      console.log('[Missions] Sending approved text to NPC:', userText);
+      setCurrentUserInput(''); // Clear unapproved input
+      
+      // Add approved user message to history
+      const userEntry: ConversationEntry = {
+        id: Date.now(), // Use timestamp as ID
+        step: conversationHistory.length + 1,
+        speaker: 'User',
+        phrase: userText,
+        transcription: '', // Mission mode doesn't pre-define these
+        translation: '',
+        isCompleted: true
+      };
+      
+      const newHistory = [...conversationHistory, userEntry];
+      setConversationHistory(newHistory);
+      
+      // Get NPC response
+      const npcResponse = await generateNPCResponse({
+        targetLanguage,
+        motherLanguage,
+        missionGoal: mission!.goal,
+        npcRole: mission!.npcRole,
+        userLevel: 'A2',
+        conversationHistory: newHistory.map(e => ({ 
+          speaker: e.speaker.toLowerCase() as 'user' | 'npc', 
+          text: e.phrase 
+        })),
+        userLatestMessage: userText
+      });
+      
+      console.log('[Missions] NPC responded:', npcResponse.response);
+      
+      // Add NPC response to history
+      const npcEntry: ConversationEntry = {
+        id: Date.now() + 1,
+        step: newHistory.length + 1,
+        speaker: 'NPC',
+        phrase: npcResponse.response,
+        transcription: npcResponse.transcription || '',
+        translation: npcResponse.translation || '',
+        isCompleted: true
+      };
+      
+      const finalHistory = [...newHistory, npcEntry];
+      setConversationHistory(finalHistory);
+      
+      // Play NPC audio with Gemini TTS
+      await playAudio(npcResponse.response);
+      
+      // Check completion
+      if (npcResponse.missionCompleted) {
+        console.log('[Missions] Mission completed!');
+        setMissionCompleted(true);
+        setMissionHelperMessage(getTranslation(motherLanguage, 'taskCompletedMessage') || 'Task completed! You\'re one step closer to fluency!');
+      }
+    } catch (error) {
+      console.error('[Missions] Error getting NPC response:', error);
+      setMissionHelperMessage('Error getting response. Please try again.');
+    }
   };
   
   /**
@@ -3439,8 +3565,65 @@ Keep it simple, practical, and focused only on structure. No extra examples need
   /**
    * Process successful speech recognition and progress dialogue
    */
-  const handleSuccessfulSpeechRecognition = (transcript: string, confidence: number) => {
+  const handleSuccessfulSpeechRecognition = async (transcript: string, confidence: number) => {
     
+    // MISSION MODE: Use Turi checking instead of phrase matching
+    if (isMissionMode && mission) {
+      console.log('[Missions] Processing user speech:', transcript);
+      setAwaitingMissionApproval(true);
+      setCurrentUserInput(transcript);
+      setMissionHelperMessage(getTranslation(motherLanguage, 'helperRobotChecking') || 'Checking...');
+      
+      // Stop listening
+      try {
+        if (recognitionRef.current) {
+          recognitionRef.current.stop();
+        }
+      } catch (e) {
+        console.error('Error stopping recognition:', e);
+      }
+      setIsListening(false);
+      stopRecording();
+      
+      try {
+        // Send to Turi for approval
+        const decision = await checkUserSentence({
+          userText: transcript,
+          targetLanguage,
+          motherLanguage,
+          missionGoal: mission.goal,
+          npcRole: mission.npcRole
+        });
+        
+        console.log('[Missions] Turi decision:', decision.decision);
+        
+        if (decision.decision === 'No errors') {
+          // Approved! Send to NPC
+          setAwaitingMissionApproval(false);
+          setMissionHelperMessage(getTranslation(motherLanguage, 'sentenceApproved') || 'Approved!');
+          
+          setTimeout(() => {
+            handleMissionNPCResponse(transcript);
+          }, 800);
+        } else {
+          // Rejected - show correction
+          setAwaitingMissionApproval(false);
+          const correctionMsg = `${decision.explanation}\n\n${decision.correctedSentence}`;
+          setMissionHelperMessage(correctionMsg);
+          setCurrentUserInput(''); // Clear unapproved input
+        }
+      } catch (error) {
+        console.error('[Missions] Error checking sentence:', error);
+        setAwaitingMissionApproval(false);
+        setMissionHelperMessage('Error checking sentence. Please try again.');
+        setCurrentUserInput('');
+      }
+      
+      processingRecognitionRef.current = false;
+      return;
+    }
+    
+    // REGULAR DIALOGUE MODE: Original phrase matching logic
     // Get the latest state values from refs
     const currentStepValue = currentStepRef.current;
     const currentConversationHistory = conversationHistoryRef.current;
@@ -4079,30 +4262,7 @@ Keep it simple, practical, and focused only on structure. No extra examples need
   try {
     return (
       <div className="dialogue-box-container" style={{ pointerEvents: 'auto' }}>
-        {/* Success feedback notification */}
-        {wordAddedFeedback && (
-          <div style={{
-            position: 'fixed',
-            top: '20px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            backgroundColor: '#10b981',
-            color: 'white',
-            padding: '12px 24px',
-            borderRadius: '8px',
-            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-            zIndex: 1000000,
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            animation: 'fadeInOut 2s ease-in-out'
-          }}>
-            <span>✓</span>
-            <span>"{wordAddedFeedback}" added to dictionary!</span>
-          </div>
-        )}
-        
-        {/* Mission Mode: Display mission goal */}
+        {/* Mission Goal Banner */}
         {isMissionMode && mission && (
           <div style={{
             position: 'fixed',
@@ -4126,42 +4286,43 @@ Keep it simple, practical, and focused only on structure. No extra examples need
             </div>
           </div>
         )}
-        
-        {/* Mission Mode: Helper Robot Message Panel (replaces tips) */}
+
+        {/* Turi Panel - Mission Mode Helper */}
         {isMissionMode && missionHelperMessage && (
-          <div className="fixed top-[50%] transform -translate-y-1/2 left-8 z-50 max-w-md">
+          <div className="fixed top-[50%] transform -translate-y-1/2 left-8 z-50 max-w-sm">
             <div style={{
               backgroundColor: 'rgba(30, 41, 59, 0.95)',
               borderRadius: '12px',
-              padding: '16px',
+              padding: '20px',
               boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
-              border: '1px solid rgba(148, 163, 184, 0.3)'
+              border: '1px solid rgba(148, 163, 184, 0.3)',
+              width: '340px'
             }}>
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: '8px',
-                marginBottom: '12px'
+                marginBottom: '14px'
               }}>
                 <span style={{ fontSize: '20px' }}>🤖</span>
-                <span style={{ color: 'white', fontWeight: 'bold', fontSize: '14px' }}>
-                  {getTranslation(motherLanguage, 'tipTitle')}
+                <span style={{ color: 'white', fontWeight: 'bold', fontSize: '15px' }}>
+                  Turi:
                 </span>
-                {awaitingApproval && (
+                {awaitingMissionApproval && (
                   <span style={{ 
                     marginLeft: 'auto',
                     fontSize: '12px',
                     color: 'rgba(251, 191, 36, 1)',
                     fontWeight: '500'
                   }}>
-                    {getTranslation(motherLanguage, 'waitingForApproval')}...
+                    Checking...
                   </span>
                 )}
               </div>
               <div style={{
                 color: 'rgba(226, 232, 240, 0.95)',
-                fontSize: '13px',
-                lineHeight: '1.6',
+                fontSize: '14px',
+                lineHeight: '1.7',
                 whiteSpace: 'pre-wrap'
               }}>
                 {missionHelperMessage}
@@ -4169,45 +4330,8 @@ Keep it simple, practical, and focused only on structure. No extra examples need
             </div>
           </div>
         )}
-        
-        {/* Mission Mode: Help Me Button */}
-        {isMissionMode && mission && showHelpMe && !missionCompleted && (
-          <div style={{
-            position: 'fixed',
-            bottom: '120px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            zIndex: 999998
-          }}>
-            <button
-              onClick={handleHelpMe}
-              style={{
-                backgroundColor: 'rgba(59, 130, 246, 0.95)',
-                color: 'white',
-                padding: '12px 24px',
-                borderRadius: '8px',
-                border: 'none',
-                cursor: 'pointer',
-                fontSize: '14px',
-                fontWeight: '600',
-                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
-                transition: 'all 0.2s'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'rgba(37, 99, 235, 0.95)';
-                e.currentTarget.style.transform = 'scale(1.05)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.95)';
-                e.currentTarget.style.transform = 'scale(1)';
-              }}
-            >
-              💡 {getTranslation(motherLanguage, 'helpMe')}
-            </button>
-          </div>
-        )}
-        
-        {/* Mission Mode: Completion Message */}
+
+        {/* Mission Completion Overlay */}
         {isMissionMode && missionCompleted && (
           <div style={{
             position: 'fixed',
@@ -4220,16 +4344,52 @@ Keep it simple, practical, and focused only on structure. No extra examples need
             borderRadius: '16px',
             boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)',
             zIndex: 1000001,
-            textAlign: 'center',
-            animation: 'fadeInScale 0.5s ease-out'
+            textAlign: 'center'
           }}>
             <div style={{ fontSize: '48px', marginBottom: '16px' }}>🎉</div>
             <div style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '8px' }}>
               {getTranslation(motherLanguage, 'taskCompleted')}
             </div>
-            <div style={{ fontSize: '14px', opacity: 0.95 }}>
-              {getTranslation(motherLanguage, 'taskCompletedMessage')}
+            <div style={{ fontSize: '14px', opacity: 0.95, marginBottom: '16px' }}>
+              {missionHelperMessage}
             </div>
+            <button
+              onClick={onClose}
+              style={{
+                backgroundColor: 'white',
+                color: 'rgb(16, 185, 129)',
+                padding: '12px 24px',
+                borderRadius: '8px',
+                border: 'none',
+                cursor: 'pointer',
+                fontWeight: '600'
+              }}
+            >
+              Close
+            </button>
+          </div>
+        )}
+
+        {/* Success feedback notification */}
+        {wordAddedFeedback && (
+          <div style={{
+            position: 'fixed',
+            top: '20px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            backgroundColor: '#10b981',
+            color: 'white',
+            padding: '12px 24px',
+            borderRadius: '8px',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+            zIndex: 1000000,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            animation: 'fadeInOut 2s ease-in-out'
+          }}>
+            <span>✓</span>
+            <span>"{wordAddedFeedback}" added to dictionary!</span>
           </div>
         )}
         

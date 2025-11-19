@@ -9,7 +9,6 @@ import Character from './Character';
 import { supabase } from '../services/supabase';
 import type { Character as CharacterType } from '../types';
 import DialogueBox from '../components/DialogueBox';
-import MissionDialogueBox from '../components/MissionDialogueBox';
 import DialogueSelectionPanel from '../components/DialogueSelectionPanel';
 import ScenarioSelectionPanel from '../components/ScenarioSelectionPanel';
 import MissionSelectionPanel from '../components/MissionSelectionPanel';
@@ -2117,7 +2116,7 @@ const CityScene: React.FC = () => {
         </div>
       )}
 
-      {isDialogueActive && !isMissionMode && (
+      {isDialogueActive && (
         <DialogueBox
           characterId={activeCharacterId}
           onClose={handleCloseDialogue}
@@ -2159,48 +2158,7 @@ const CityScene: React.FC = () => {
           aiDialogue={aiDialogue}
           isScenario={isScenarioDialogue}
           scenarioNumber={selectedScenarioNumber}
-        />
-      )}
-      
-      {isDialogueActive && isMissionMode && selectedMission && (
-        <MissionDialogueBox
-          mission={selectedMission}
-          characterId={activeCharacterId}
-          onClose={handleCloseDialogue}
-          distance={
-            activeCharacterId === 1 ? distanceToCharacter :
-            activeCharacterId === 2 ? distanceToCharacter2 :
-            activeCharacterId === 3 ? distanceToCharacter3 :
-            activeCharacterId === 4 ? distanceToCharacter4 :
-            activeCharacterId === 5 ? distanceToCharacter5 :
-            activeCharacterId === 6 ? distanceToCharacter6 :
-            activeCharacterId === 7 ? distanceToCharacter7 :
-            activeCharacterId === 8 ? distanceToCharacter8 :
-            activeCharacterId === 9 ? distanceToCharacter9 :
-            activeCharacterId === 10 ? distanceToCharacter10 :
-            activeCharacterId === 11 ? distanceToCharacter11 :
-            activeCharacterId === 12 ? distanceToCharacter12 :
-            activeCharacterId === 13 ? distanceToCharacter13 :
-            activeCharacterId === 14 ? distanceToCharacter14 :
-            activeCharacterId === 15 ? distanceToCharacter15 :
-            activeCharacterId === 16 ? distanceToCharacter16 :
-            activeCharacterId === 17 ? distanceToCharacter17 :
-            activeCharacterId === 18 ? distanceToCharacter18 :
-            activeCharacterId === 19 ? distanceToCharacter19 :
-            activeCharacterId === 20 ? distanceToCharacter20 :
-            activeCharacterId === 21 ? distanceToCharacter21 :
-            activeCharacterId === 22 ? distanceToCharacter22 :
-            activeCharacterId === 23 ? distanceToCharacter23 :
-            activeCharacterId === 24 ? distanceToCharacter24 :
-            activeCharacterId === 25 ? distanceToCharacter25 :
-            activeCharacterId === 26 ? distanceToCharacter26 :
-            activeCharacterId === 27 ? distanceToCharacter27 :
-            activeCharacterId === 28 ? distanceToCharacter28 :
-            activeCharacterId === 29 ? distanceToCharacter29 :
-            distanceToCharacter30
-          }
-          onNpcSpeakStart={() => setIsNpcSpeaking(true)}
-          onNpcSpeakEnd={() => setIsNpcSpeaking(false)}
+          mission={isMissionMode ? selectedMission : undefined}
         />
       )}
       
