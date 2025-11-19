@@ -197,6 +197,11 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
   const [addingWordToDictionary, setAddingWordToDictionary] = useState(false);
   const [wordAddedFeedback, setWordAddedFeedback] = useState<string | null>(null);
   
+  // Helper function to remove accents/diacritics for comparison
+  const removeAccents = (str: string): string => {
+    return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  };
+  
   // Cleanup cached audio URLs on unmount to prevent memory leaks
   useEffect(() => {
     return () => {
@@ -969,11 +974,11 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
     }
     
     // Clean up both strings for comparison
-    const userClean = transcript.toLowerCase().trim()
+    const userClean = removeAccents(transcript.toLowerCase().trim())
       .replace(/[.,?!;:]/g, '')
       .replace(/\s+/g, ' ');
     
-    const expectedClean = expected.toLowerCase().trim()
+    const expectedClean = removeAccents(expected.toLowerCase().trim())
       .replace(/[.,?!;:]/g, '')
       .replace(/\s+/g, ' ');
     
