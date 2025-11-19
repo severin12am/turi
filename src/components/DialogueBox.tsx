@@ -3569,7 +3569,8 @@ Keep it simple, practical, and focused only on structure. No extra examples need
     
     // MISSION MODE: Use Turi checking instead of phrase matching
     if (isMissionMode && mission) {
-      console.log('[Missions] Processing user speech:', transcript);
+      console.log('[Missions] 🎯 Processing user speech:', transcript);
+      console.log('[Missions] Confidence:', confidence);
       setAwaitingMissionApproval(true);
       setCurrentUserInput(transcript);
       setMissionHelperMessage(getTranslation(motherLanguage, 'helperRobotChecking') || 'Checking...');
@@ -3580,7 +3581,7 @@ Keep it simple, practical, and focused only on structure. No extra examples need
           recognitionRef.current.stop();
         }
       } catch (e) {
-        console.error('Error stopping recognition:', e);
+        console.error('[Missions] Error stopping recognition:', e);
       }
       setIsListening(false);
       stopRecording();
@@ -4262,9 +4263,16 @@ Keep it simple, practical, and focused only on structure. No extra examples need
   try {
     return (
       <div className="dialogue-box-container" style={{ pointerEvents: 'auto' }}>
-        {/* Turi Panel - Mission Mode Helper (stays on left like tips were) */}
+        {/* Turi Panel - Mission Mode Helper (on left like tips were) */}
         {isMissionMode && missionHelperMessage && (
-          <div className="fixed top-[50%] transform -translate-y-1/2 left-8 z-50 max-w-sm">
+          <div style={{
+            position: 'fixed',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            left: '32px',
+            zIndex: 50,
+            maxWidth: '340px'
+          }}>
             <div style={{
               backgroundColor: 'rgba(30, 41, 59, 0.95)',
               borderRadius: '12px',
@@ -4609,7 +4617,34 @@ Keep it simple, practical, and focused only on structure. No extra examples need
             
             {/* Speak Button */}
             <button
-              onClick={() => setIsListening(!isListening)}
+              onClick={() => {
+                console.log('[Missions] 🎤 Speak button clicked, current state:', { isListening, isMissionMode, hasRecognition: !!recognitionRef.current });
+                if (!isListening) {
+                  console.log('[Missions] Starting speech recognition...');
+                  try {
+                    if (recognitionRef.current) {
+                      recognitionRef.current.start();
+                      setIsListening(true);
+                      console.log('[Missions] ✅ Speech recognition started');
+                    } else {
+                      console.error('[Missions] ❌ Recognition ref is null!');
+                    }
+                  } catch (error) {
+                    console.error('[Missions] ❌ Error starting recognition:', error);
+                  }
+                } else {
+                  console.log('[Missions] Stopping speech recognition...');
+                  try {
+                    if (recognitionRef.current) {
+                      recognitionRef.current.stop();
+                      setIsListening(false);
+                      console.log('[Missions] ✅ Speech recognition stopped');
+                    }
+                  } catch (error) {
+                    console.error('[Missions] ❌ Error stopping recognition:', error);
+                  }
+                }
+              }}
               style={{
                 padding: '14px 32px',
                 backgroundColor: isListening ? 'rgba(239, 68, 68, 0.8)' : 'rgba(16, 185, 129, 0.8)',
