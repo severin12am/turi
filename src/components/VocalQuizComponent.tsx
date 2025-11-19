@@ -1,18 +1,20 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
   CheckCircle, XCircle, HelpCircle, Volume, Mic, MicOff, 
-  ArrowRight, Loader2 
+  ArrowRight, Loader2, BookMarked 
 } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { useStore } from '../store';
 import { logger } from '../services/logger';
 import { trackCompletedDialogue, saveAnonymousProgress } from '../services/auth';
 import { trackCompletedScenarioDialogue } from '../services/progress';
-import { speakWithAI, generateSpeechWithGemini } from '../services/gemini';
+import { speakWithAI, generateSpeechWithGemini, translateWord } from '../services/gemini';
 import { fetchScenarioQuizWords } from '../services/scenarioQuiz';
 import { fetchScenarioExpressions } from '../services/scenarioExpressions';
 import { extractExpressionsFromDialogue } from '../services/expressionExtraction';
 import type { ExtractedExpression } from '../services/expressionExtraction';
+import { addWordToDictionary } from '../services/dictionary';
+import { getTranslation } from '../constants/translations';
 
 // Add WebSpeechAPI type definitions
 declare global {
@@ -108,7 +110,11 @@ const translations: Record<string, Partial<Record<SupportedLanguage, string>>> =
   'Turi believes in you! A little more practice and you\'ll master these words.': {
     en: 'Turi believes in you! A little more practice and you\'ll master these words.',
     ru: 'Тури верит в вас! Ещё немного практики, и вы освоите эти слова.'
-  }
+  },
+  'Save to Dictionary': { en: 'Save to Dictionary', ru: 'Сохранить в словарь' },
+  'Word saved!': { en: 'Word saved!', ru: 'Слово сохранено!' },
+  'Saving...': { en: 'Saving...', ru: 'Сохранение...' },
+  'pleaseSignIn': { en: 'Please sign in to save words to your dictionary.', ru: 'Пожалуйста, войдите, чтобы сохранять слова в словарь.' }
 };
 
 function t(key: string, lang: SupportedLanguage) {
@@ -184,6 +190,10 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
   // Add this line with other state declarations
   const [recognitionActive, setRecognitionActive] = useState(false);
   const recognitionActiveRef = useRef(false);
+  
+  // Dictionary state
+  const [addingWordToDictionary, setAddingWordToDictionary] = useState(false);
+  const [wordAddedFeedback, setWordAddedFeedback] = useState<string | null>(null);
   
   // Cleanup cached audio URLs on unmount to prevent memory leaks
   useEffect(() => {
@@ -1778,6 +1788,62 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
     }, 1000);
   };
   
+  // Add current word to dictionary
+  const handleAddWordToDictionary = async () => {
+    if (!currentWord || !answerWord) return;
+    
+    // Check if user is logged in
+    if (!user || !user.id) {
+      console.log('📚 User not logged in, cannot add word to dictionary');
+      alert(getTranslation(motherLanguage, 'pleaseSignIn') || t('pleaseSignIn', motherLanguage));
+      return;
+    }
+    
+    const normalizedWord = answerWord.trim().replace(/[.,?!;:]/g, '');
+    
+    // Set loading state
+    setAddingWordToDictionary(true);
+    
+    try {
+      // Get translation for the word
+      console.log(`📚 Translating "${normalizedWord}" from ${targetLanguage} to ${motherLanguage}`);
+      const translation = await translateWord({
+        word: normalizedWord,
+        fromLanguage: targetLanguage,
+        toLanguage: motherLanguage
+      });
+      
+      console.log(`📚 Translation result: "${translation}"`);
+      
+      // Add word to dictionary with translation
+      const result = await addWordToDictionary(
+        user.id,
+        normalizedWord,
+        targetLanguage,
+        motherLanguage,
+        translation || undefined
+      );
+      
+      if (result) {
+        // Show success feedback
+        setWordAddedFeedback(normalizedWord);
+        console.log(`📚 Word "${normalizedWord}" added to dictionary with translation "${translation}"`);
+        
+        // Clear feedback after 2 seconds
+        setTimeout(() => {
+          setWordAddedFeedback(null);
+        }, 2000);
+      } else {
+        console.warn(`📚 Failed to add word "${normalizedWord}" to dictionary`);
+      }
+    } catch (error) {
+      console.error('Error adding word to dictionary:', error);
+      logger.error('Error adding word to dictionary', { error, word: normalizedWord });
+    } finally {
+      setAddingWordToDictionary(false);
+    }
+  };
+  
   // Debug check of user and character info at component mount
   useEffect(() => {
     console.log("VocalQuizComponent - Component mounted with:", {
@@ -2374,8 +2440,17 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
                   </div>
                 )}
         
+        {/* Success feedback for saved word */}
+        {wordAddedFeedback && (
+          <div className="mb-4 text-center animate-fade-in">
+            <div className="inline-block px-4 py-2 bg-green-900/30 border border-green-700 rounded-lg">
+              <p className="text-green-400 font-medium">{t('Word saved!', motherLanguage)}</p>
+            </div>
+          </div>
+        )}
+        
         {/* Action buttons */}
-                <div className="flex items-center justify-center gap-3 relative z-10">
+                <div className="flex items-center justify-center gap-3 relative z-10 flex-wrap">
           <button
                     onClick={(e) => { e.stopPropagation(); toggleHint(); }}
                     className="px-5 py-2.5 flex items-center gap-1 rounded-lg bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 transition-colors text-white font-medium shadow-md"
@@ -2384,6 +2459,18 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
           >
             <HelpCircle className="w-5 h-5" />
                     {showHint ? t('Hide hint', motherLanguage) : t('Show hint', motherLanguage)}
+          </button>
+          
+          {/* Save to Dictionary button */}
+          <button
+            onClick={(e) => { e.stopPropagation(); handleAddWordToDictionary(); }}
+            className="px-5 py-2.5 flex items-center gap-1 rounded-lg bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 transition-colors text-white font-medium shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{ minHeight: '44px' }}
+            type="button"
+            disabled={addingWordToDictionary}
+          >
+            <BookMarked className="w-5 h-5" />
+            {addingWordToDictionary ? t('Saving...', motherLanguage) : t('Save to Dictionary', motherLanguage)}
           </button>
           
                   {/* Debug Accept button */}
