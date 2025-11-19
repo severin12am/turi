@@ -1337,10 +1337,10 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
           logger.info('[Missions] Mission mode active', { missionId: mission.id, goal: mission.goal });
           console.log('[Missions] Initializing mission mode');
           
-          // Show initial helper message
+          // Show initial helper message (mission goal is already shown in banner at top)
           const initMsg = motherLanguage === 'ru' 
-            ? `Миссия: ${mission.goal}\n\nНажмите кнопку или начните говорить`
-            : `Mission: ${mission.goal}\n\nClick button or start speaking`;
+            ? `Нажмите кнопку или начните говорить`
+            : `Click button or start speaking`;
           setMissionHelperMessage(initMsg);
           
           // Initialize empty conversation
