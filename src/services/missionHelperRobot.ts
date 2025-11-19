@@ -24,15 +24,23 @@ export interface HelperRobotCheckParams {
   motherLanguage: SupportedLanguage;
   missionGoal: string;
   npcRole: string;
+  conversationHistory?: Array<{ speaker: 'user' | 'npc'; text: string }>;
 }
 
 /**
  * Helper robot checks user sentence and decides if it needs correction
  */
 export const checkUserSentence = async (params: HelperRobotCheckParams): Promise<HelperRobotDecision> => {
-  const { userText, targetLanguage, motherLanguage, missionGoal, npcRole } = params;
+  const { userText, targetLanguage, motherLanguage, missionGoal, npcRole, conversationHistory } = params;
 
   logger.info('[HelperRobot] Checking user sentence', { userText, targetLanguage, motherLanguage, missionGoal });
+
+  // Build conversation context if history exists
+  const contextSection = conversationHistory && conversationHistory.length > 0 
+    ? `\n\nCONVERSATION SO FAR:\n${conversationHistory.map(entry => 
+        `${entry.speaker === 'user' ? 'User' : 'NPC'}: ${entry.text}`
+      ).join('\n')}\n`
+    : '';
 
   // Construct the prompt based on user's requirements
   const prompt = `You are Turi, a friendly helper robot in a language learning app.
@@ -42,8 +50,7 @@ CONTEXT:
 - The user's native language is ${motherLanguage}
 - You MUST speak ONLY in ${motherLanguage} (never in ${targetLanguage} except in the correctedSentence)
 - Current mission: ${missionGoal}
-- The user is talking to: ${npcRole}
-
+- The user is talking to: ${npcRole}${contextSection}
 CRITICAL RULES:
 1. This is VOICE-ONLY. The text you receive is transcribed speech which NEVER has punctuation marks
 2. NEVER flag missing punctuation (?, !, ¿, ¡, etc.) as an error - people don't speak punctuation
@@ -51,6 +58,7 @@ CRITICAL RULES:
 4. APPROVE sentences that communicate the meaning correctly, even if not perfect
 5. Minor word order variations that are still grammatically acceptable = APPROVE
 6. Your explanation must be in ${motherLanguage} only
+7. Consider the conversation context - the user's sentence should make sense in the ongoing conversation
 
 The user just said in ${targetLanguage}: "${userText}"
 

@@ -1901,6 +1901,10 @@ Return ONLY the transliteration, nothing else.`;
       console.log('[Missions] Sending approved text to NPC:', userText);
       setCurrentUserInput(''); // Clear unapproved input
       
+      // Use ref to get the most current conversation history
+      const currentHistory = conversationHistoryRef.current;
+      console.log('[Missions] 📊 Current history before adding user entry:', currentHistory.length);
+      
       // Generate translation and transliteration for user's text
       const userTranslation = await translateWithAI({
         sourceText: userText,
@@ -1919,7 +1923,7 @@ Return ONLY the transliteration, nothing else.`;
       // Add approved user message to history with translation and transliteration
       const userEntry: ConversationEntry = {
         id: Date.now(), // Use timestamp as ID
-        step: conversationHistory.length + 1,
+        step: currentHistory.length + 1,
         speaker: 'User',
         phrase: userText,
         transcription: userTransliteration,
@@ -1927,8 +1931,9 @@ Return ONLY the transliteration, nothing else.`;
         isCompleted: true
       };
       
-      const newHistory = [...conversationHistory, userEntry];
+      const newHistory = [...currentHistory, userEntry];
       setConversationHistory(newHistory);
+      console.log('[Missions] 📊 History after adding user:', newHistory.length);
       
       // Get NPC response
       const npcResponse = await generateNPCResponse({
@@ -3691,13 +3696,21 @@ Keep it simple, practical, and focused only on structure. No extra examples need
       stopRecording();
       
       try {
-        // Send to Turi for approval
+        // Get current conversation history for context
+        const currentHistory = conversationHistoryRef.current;
+        console.log('[Missions] 💭 Sending to Turi with conversation history:', currentHistory.length, 'entries');
+        
+        // Send to Turi for approval with conversation context
         const decision = await checkUserSentence({
           userText: transcript,
           targetLanguage,
           motherLanguage,
           missionGoal: mission.goal,
-          npcRole: mission.npcRole
+          npcRole: mission.npcRole,
+          conversationHistory: currentHistory.map(e => ({
+            speaker: e.speaker.toLowerCase() as 'user' | 'npc',
+            text: e.phrase
+          }))
         });
         
         console.log('[Missions] Turi decision:', decision.decision);
