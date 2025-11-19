@@ -51,9 +51,9 @@ export const checkUserSentence = async (params: HelperRobotCheckParams): Promise
   - Current mission/goal: ${missionGoal}${contextSection}
   
   Important notes about the user's input:
-  - The text comes from voice recognition of spoken ${targetLanguage} and doesnot have punctuation, capitalization and  ¿ ¡ ? ! . ,; which, therefore, must be ignored.  Two correct sentences may be joined without pause.
+  - The text comes from voice recognition of spoken ${targetLanguage} and doesnot have punctuation, capitalization and  ¿ ¡ ? ! . ,; which, therefore, must be ignored. Two correct sentences may be joined without pause. Do not worry about sentence order. Do not worry about politeness.
   
-  Your only job: decide if the sentence of the learner contains MAJOR errors that make it incomprehensible or seriously wrong in the context of talking to "${npcRole}".
+  Your only job: decide if the sentence of the learner contains MAJOR errors that make it incomprehensible or seriously wrong in the context of talking to "${npcRole}". Be lenient, your friend is learning a new language.
   
   Definitions:
   - MAJOR error = completely wrong grammar/structure, wrong vocabulary, completely irrelevant to the current mission of the learner.
