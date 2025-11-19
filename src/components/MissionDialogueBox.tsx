@@ -1,6 +1,6 @@
 /**
  * MissionDialogueBox - Dedicated component for mission mode
- * Separate from regular DialogueBox to avoid circular dependencies
+ * Uses the same UI and features as regular DialogueBox
  */
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -9,7 +9,48 @@ import { Mission } from '../constants/missions';
 import { checkUserSentence, generateHelpSuggestion } from '../services/missionHelperRobot';
 import { generateNPCResponse } from '../services/missionNPC';
 import { getTranslation } from '../constants/translations';
+import { generateSpeechWithGemini } from '../services/gemini';
 import type { SupportedLanguage } from '../constants/translations';
+import './DialogueBox.css'; // Reuse existing dialogue styles
+
+// Language mapping for speech recognition
+const getRecognitionLanguage = (lang: SupportedLanguage): string => {
+  const languageMap: Record<string, string> = {
+    'en': 'en-US',
+    'ru': 'ru-RU',
+    'es': 'es-ES',
+    'fr': 'fr-FR',
+    'de': 'de-DE',
+    'it': 'it-IT',
+    'ar': 'ar-SA',
+    'CH': 'zh-CN',
+    'ja': 'ja-JP',
+    'tr': 'tr-TR',
+    'ko': 'ko-KR',
+    'hi': 'hi-IN',
+    'th': 'th-TH',
+    'pl': 'pl-PL',
+    'nl': 'nl-NL',
+    'sv': 'sv-SE',
+    'da': 'da-DK',
+    'fi': 'fi-FI',
+    'no': 'nb-NO',
+    'pt': 'pt-PT',
+    'cs': 'cs-CZ',
+    'el': 'el-GR',
+    'ro': 'ro-RO',
+    'hu': 'hu-HU',
+    'bg': 'bg-BG',
+    'hr': 'hr-HR',
+    'sk': 'sk-SK',
+    'uk': 'uk-UA',
+    'he': 'he-IL',
+    'id': 'id-ID',
+    'vi': 'vi-VN',
+    'ms': 'ms-MY'
+  };
+  return languageMap[lang] || 'en-US';
+};
 
 interface MissionDialogueBoxProps {
   mission: Mission;
@@ -21,8 +62,12 @@ interface MissionDialogueBoxProps {
 }
 
 interface ConversationEntry {
-  speaker: 'user' | 'npc';
-  text: string;
+  speaker: 'User' | 'NPC';
+  phrase: string;
+  transcription: string;
+  translation: string;
+  isApproved: boolean; // For missions: approved by Turi
+  audioUrl?: string;
 }
 
 const MissionDialogueBox: React.FC<MissionDialogueBoxProps> = ({
@@ -43,6 +88,8 @@ const MissionDialogueBox: React.FC<MissionDialogueBoxProps> = ({
   const [showHelpMe, setShowHelpMe] = useState(true);
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState('');
+  const [currentUserPhrase, setCurrentUserPhrase] = useState<string>(''); // Current unapproved phrase
+  const [isNpcSpeaking, setIsNpcSpeaking] = useState(false);
   
   const recognitionRef = useRef<any>(null);
 
@@ -66,13 +113,7 @@ const MissionDialogueBox: React.FC<MissionDialogueBoxProps> = ({
     const recognition = new SpeechRecognition();
     recognition.continuous = false;
     recognition.interimResults = false;
-    recognition.lang = targetLanguage === 'ru' ? 'ru-RU' : 
-                      targetLanguage === 'es' ? 'es-ES' : 
-                      targetLanguage === 'fr' ? 'fr-FR' : 
-                      targetLanguage === 'de' ? 'de-DE' : 
-                      targetLanguage === 'it' ? 'it-IT' : 
-                      targetLanguage === 'ja' ? 'ja-JP' : 
-                      targetLanguage === 'CH' ? 'zh-CN' : 'en-US';
+    recognition.lang = getRecognitionLanguage(targetLanguage);
 
     recognition.onresult = (event: any) => {
       const result = event.results[0][0];
@@ -109,6 +150,7 @@ const MissionDialogueBox: React.FC<MissionDialogueBoxProps> = ({
     try {
       console.log('[Missions] Processing user speech:', userText);
       setAwaitingApproval(true);
+      setCurrentUserPhrase(userText); // Show unapproved phrase
       setHelperMessage(getTranslation(motherLanguage, 'helperRobotChecking') || 'Checking...');
 
       const decision = await checkUserSentence({
@@ -125,13 +167,16 @@ const MissionDialogueBox: React.FC<MissionDialogueBoxProps> = ({
         setAwaitingApproval(false);
         setHelperMessage(getTranslation(motherLanguage, 'sentenceApproved') || 'Approved!');
         
+        // Move current phrase to history as approved
         setTimeout(() => {
           sendToNPC(userText);
+          setCurrentUserPhrase(''); // Clear current phrase
         }, 800);
       } else {
         setAwaitingApproval(false);
         const correctionMsg = `${decision.explanation}\n\n${decision.correctedSentence}`;
         setHelperMessage(correctionMsg);
+        // Keep currentUserPhrase visible but unapproved
       }
     } catch (error) {
       console.error('[Missions] Error checking sentence:', error);
@@ -140,13 +185,20 @@ const MissionDialogueBox: React.FC<MissionDialogueBoxProps> = ({
     }
   };
 
-  // Send to NPC
+  // Send to NPC with Gemini TTS
   const sendToNPC = async (userText: string) => {
     try {
       console.log('[Missions] Sending to NPC:', userText);
       
-      // Add user message to history
-      const newHistory = [...conversationHistory, { speaker: 'user' as const, text: userText }];
+      // Add approved user message to history
+      const userEntry: ConversationEntry = {
+        speaker: 'User',
+        phrase: userText,
+        transcription: '', // Will be filled by AI if needed
+        translation: '', // Will be filled by AI if needed
+        isApproved: true
+      };
+      const newHistory = [...conversationHistory, userEntry];
       setConversationHistory(newHistory);
 
       // Get NPC response
@@ -156,32 +208,25 @@ const MissionDialogueBox: React.FC<MissionDialogueBoxProps> = ({
         missionGoal: mission.goal,
         npcRole: mission.npcRole,
         userLevel: 'A2',
-        conversationHistory: newHistory,
+        conversationHistory: newHistory.map(e => ({ speaker: e.speaker.toLowerCase() as 'user' | 'npc', text: e.phrase })),
         userLatestMessage: userText
       });
 
       console.log('[Missions] NPC responded:', npcResponse.response);
 
       // Add NPC response
-      const finalHistory = [...newHistory, { speaker: 'npc' as const, text: npcResponse.response }];
+      const npcEntry: ConversationEntry = {
+        speaker: 'NPC',
+        phrase: npcResponse.response,
+        transcription: npcResponse.transcription || '',
+        translation: npcResponse.translation || '',
+        isApproved: true
+      };
+      const finalHistory = [...newHistory, npcEntry];
       setConversationHistory(finalHistory);
 
-      // Speak NPC response (simple TTS)
-      if ('speechSynthesis' in window) {
-        const utterance = new SpeechSynthesisUtterance(npcResponse.response);
-        utterance.lang = targetLanguage === 'ru' ? 'ru-RU' : 
-                        targetLanguage === 'es' ? 'es-ES' : 
-                        targetLanguage === 'fr' ? 'fr-FR' : 
-                        targetLanguage === 'de' ? 'de-DE' : 
-                        targetLanguage === 'it' ? 'it-IT' : 
-                        targetLanguage === 'ja' ? 'ja-JP' : 
-                        targetLanguage === 'CH' ? 'zh-CN' : 'en-US';
-        if (onNpcSpeakStart) onNpcSpeakStart();
-        utterance.onend = () => {
-          if (onNpcSpeakEnd) onNpcSpeakEnd();
-        };
-        window.speechSynthesis.speak(utterance);
-      }
+      // Play NPC response with Gemini TTS (fallback to browser)
+      await playNPCAudio(npcResponse.response);
 
       // Check completion
       if (npcResponse.missionCompleted) {
@@ -192,6 +237,66 @@ const MissionDialogueBox: React.FC<MissionDialogueBoxProps> = ({
     } catch (error) {
       console.error('[Missions] Error getting NPC response:', error);
       setHelperMessage('Error getting response. Please try again.');
+    }
+  };
+
+  // Play NPC audio with Gemini TTS and fallback
+  const playNPCAudio = async (text: string) => {
+    try {
+      console.log('[Missions] Playing NPC audio with Gemini TTS');
+      setIsNpcSpeaking(true);
+      if (onNpcSpeakStart) onNpcSpeakStart();
+
+      try {
+        const audio = await generateSpeechWithGemini(text, targetLanguage);
+        
+        audio.onended = () => {
+          console.log('[Missions] Gemini TTS completed');
+          setIsNpcSpeaking(false);
+          if (onNpcSpeakEnd) onNpcSpeakEnd();
+        };
+
+        audio.onerror = (error) => {
+          console.error('[Missions] Gemini TTS error, falling back to browser:', error);
+          performBrowserSpeech(text);
+        };
+
+        await audio.play();
+        console.log('[Missions] Gemini TTS playing');
+      } catch (error) {
+        console.error('[Missions] Gemini TTS failed, using browser TTS:', error);
+        performBrowserSpeech(text);
+      }
+    } catch (error) {
+      console.error('[Missions] Audio playback error:', error);
+      setIsNpcSpeaking(false);
+      if (onNpcSpeakEnd) onNpcSpeakEnd();
+    }
+  };
+
+  // Browser TTS fallback
+  const performBrowserSpeech = (text: string) => {
+    if (!window.speechSynthesis) return;
+
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = getRecognitionLanguage(targetLanguage);
+    
+    utterance.onend = () => {
+      setIsNpcSpeaking(false);
+      if (onNpcSpeakEnd) onNpcSpeakEnd();
+    };
+
+    window.speechSynthesis.speak(utterance);
+  };
+
+  // Replay audio for an entry
+  const replayAudio = async (entry: ConversationEntry) => {
+    if (entry.audioUrl) {
+      const audio = new Audio(entry.audioUrl);
+      await audio.play();
+    } else {
+      await playNPCAudio(entry.phrase);
     }
   };
 
@@ -224,6 +329,7 @@ const MissionDialogueBox: React.FC<MissionDialogueBoxProps> = ({
       setIsListening(false);
     } else {
       try {
+        setCurrentUserPhrase(''); // Clear previous unapproved phrase
         recognitionRef.current?.start();
         setIsListening(true);
         setTranscript('');
@@ -242,8 +348,8 @@ const MissionDialogueBox: React.FC<MissionDialogueBoxProps> = ({
   }, [distance, onClose]);
 
   return (
-    <div style={{ pointerEvents: 'auto' }}>
-      {/* Mission Goal */}
+    <div className="dialogue-box-container" style={{ pointerEvents: 'auto' }}>
+      {/* Mission Goal Banner */}
       <div style={{
         position: 'fixed',
         top: '20px',
@@ -310,93 +416,126 @@ const MissionDialogueBox: React.FC<MissionDialogueBoxProps> = ({
         </div>
       )}
 
-      {/* Conversation History */}
-      <div style={{
-        position: 'fixed',
-        top: '100px',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        width: '600px',
-        maxHeight: '400px',
-        overflowY: 'auto',
-        zIndex: 999998
-      }}>
-        {conversationHistory.map((entry, index) => (
-          <div key={index} style={{
-            marginBottom: '12px',
-            padding: '12px',
-            backgroundColor: entry.speaker === 'user' 
-              ? 'rgba(59, 130, 246, 0.2)' 
-              : 'rgba(16, 185, 129, 0.2)',
-            borderRadius: '8px',
-            border: `1px solid ${entry.speaker === 'user' ? 'rgba(59, 130, 246, 0.4)' : 'rgba(16, 185, 129, 0.4)'}`,
-            color: 'white'
-          }}>
-            <div style={{ fontWeight: 'bold', marginBottom: '4px', fontSize: '12px' }}>
-              {entry.speaker === 'user' ? 'You' : mission.npcRole}
+      {/* Current unapproved phrase (purple/transparent) */}
+      {currentUserPhrase && !awaitingApproval && (
+        <div className="dialogue-box-entry" style={{ 
+          background: 'rgba(147, 51, 234, 0.3)',
+          border: '2px solid rgba(147, 51, 234, 0.5)'
+        }}>
+          <div className="dialogue-entry user">
+            <div className="dialogue-content">
+              <div className="dialogue-phrase">
+                {currentUserPhrase}
+              </div>
+              <div className="dialogue-translation" style={{ opacity: 0.8 }}>
+                Waiting for Turi's approval...
+              </div>
             </div>
-            <div style={{ fontSize: '14px' }}>
-              {entry.text}
+            <div className="dialogue-buttons">
+              <button className="sound-button" onClick={toggleListening} title="Retry">
+                🔄
+              </button>
             </div>
           </div>
-        ))}
-      </div>
+        </div>
+      )}
 
-      {/* Help Me Button */}
-      {showHelpMe && !missionCompleted && (
-        <div style={{
-          position: 'fixed',
-          bottom: '120px',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          zIndex: 999998
-        }}>
+      {/* Conversation History (approved messages - white background) */}
+      {conversationHistory.map((entry, index) => (
+        <div key={index} className="dialogue-box-entry">
+          <div className={`dialogue-entry ${entry.speaker.toLowerCase()}`}>
+            <div className="dialogue-content">
+              <div className="dialogue-phrase" dir={targetLanguage === 'ar' ? 'rtl' : 'ltr'} lang={targetLanguage}>
+                {entry.phrase}
+              </div>
+              {entry.transcription && (
+                <div className="dialogue-transcription" dir={motherLanguage === 'ar' ? 'rtl' : 'ltr'}>
+                  [{entry.transcription}]
+                </div>
+              )}
+              {entry.translation && (
+                <div className="dialogue-translation" dir={motherLanguage === 'ar' ? 'rtl' : 'ltr'}>
+                  {entry.translation}
+                </div>
+              )}
+            </div>
+            <div className="dialogue-buttons">
+              <button 
+                className="sound-button"
+                onClick={() => replayAudio(entry)}
+                title="Play audio"
+              >
+                🔊
+              </button>
+            </div>
+          </div>
+        </div>
+      ))}
+
+      {/* Control Panel */}
+      <div style={{ 
+        marginTop: '15px',
+        display: 'flex',
+        gap: '10px',
+        flexWrap: 'wrap',
+        justifyContent: 'center',
+        padding: '10px'
+      }}>
+        {/* Help Me Button */}
+        {showHelpMe && !missionCompleted && (
           <button
             onClick={handleHelpMe}
             style={{
-              backgroundColor: 'rgba(59, 130, 246, 0.95)',
+              backgroundColor: 'rgba(59, 130, 246, 0.8)',
               color: 'white',
-              padding: '12px 24px',
+              padding: '10px 20px',
               borderRadius: '8px',
               border: 'none',
               cursor: 'pointer',
               fontSize: '14px',
-              fontWeight: '600',
-              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)'
+              fontWeight: '600'
             }}
           >
             💡 {getTranslation(motherLanguage, 'helpMe')}
           </button>
-        </div>
-      )}
+        )}
 
-      {/* Microphone Button */}
-      {!missionCompleted && (
-        <div style={{
-          position: 'fixed',
-          bottom: '40px',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          zIndex: 999998
-        }}>
+        {/* Microphone Button */}
+        {!missionCompleted && (
           <button
             onClick={toggleListening}
             style={{
-              backgroundColor: isListening ? 'rgba(239, 68, 68, 0.95)' : 'rgba(16, 185, 129, 0.95)',
+              backgroundColor: isListening ? 'rgba(239, 68, 68, 0.8)' : 'rgba(16, 185, 129, 0.8)',
               color: 'white',
-              padding: '16px 32px',
+              padding: '12px 32px',
               borderRadius: '50px',
               border: 'none',
               cursor: 'pointer',
               fontSize: '16px',
-              fontWeight: '600',
-              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)'
+              fontWeight: '600'
             }}
           >
-            🎤 {isListening ? 'Stop' : 'Speak'}
+            🎤 {isListening ? 'Stop' : getTranslation(motherLanguage, 'speak')}
           </button>
-        </div>
-      )}
+        )}
+
+        {/* Close Button */}
+        <button
+          onClick={onClose}
+          style={{
+            backgroundColor: 'rgba(239, 68, 68, 0.8)',
+            color: 'white',
+            padding: '10px 20px',
+            borderRadius: '8px',
+            border: 'none',
+            cursor: 'pointer',
+            fontSize: '14px',
+            fontWeight: '600'
+          }}
+        >
+          ✕ Close
+        </button>
+      </div>
 
       {/* Completion Overlay */}
       {missionCompleted && (
@@ -436,29 +575,8 @@ const MissionDialogueBox: React.FC<MissionDialogueBoxProps> = ({
           </button>
         </div>
       )}
-
-      {/* Close Button */}
-      <button
-        onClick={onClose}
-        style={{
-          position: 'fixed',
-          top: '20px',
-          right: '20px',
-          backgroundColor: 'rgba(239, 68, 68, 0.95)',
-          color: 'white',
-          padding: '8px 16px',
-          borderRadius: '8px',
-          border: 'none',
-          cursor: 'pointer',
-          zIndex: 1000000,
-          fontWeight: '600'
-        }}
-      >
-        ✕ Close
-      </button>
     </div>
   );
 };
 
 export default MissionDialogueBox;
-
