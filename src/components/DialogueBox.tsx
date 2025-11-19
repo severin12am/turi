@@ -4566,83 +4566,149 @@ Keep it simple, practical, and focused only on structure. No extra examples need
           );
         })}
         
-        {/* Control Panel - Always visible */}
-        <div style={{ 
-          marginTop: '15px',
-          display: 'flex',
-          gap: '10px',
-          flexWrap: 'wrap',
-          justifyContent: 'center',
-          padding: '10px'
-        }}>
-          {/* Replay Full Dialogue Button */}
-          <button 
-            disabled={!dialogueComplete || isPlayingFullDialogue}
-            style={{
-              padding: '10px 20px',
-              backgroundColor: isPlayingFullDialogue ? 'rgba(239, 68, 68, 0.7)' : 'rgba(124, 58, 237, 0.6)',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: (dialogueComplete && !isPlayingFullDialogue) ? 'pointer' : 'not-allowed',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              fontSize: '16px',
-              fontWeight: 'bold',
-              opacity: dialogueComplete ? 1 : 0.5
-            }}
-            onClick={isPlayingFullDialogue ? stopFullDialogue : playFullDialogue}
-            title={!dialogueComplete ? 'Complete dialogue first' : (isPlayingFullDialogue ? 'Stop playback' : 'Replay full dialogue')}
-          >
-            {isPlayingFullDialogue ? 'Stop Playback' : 'Replay Full Dialogue'}
-          </button>
-          
-          {/* Speed Control Button */}
-          <button 
-            style={{
-              padding: '10px 20px',
-              backgroundColor: 'rgba(124, 58, 237, 0.6)',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              fontSize: '16px',
-              fontWeight: 'bold'
-            }}
-            onClick={togglePlaybackSpeed}
-            title={`Current speed: ${playbackSpeed}x. Click to change.`}
-          >
-            <span>{playbackSpeed}x</span>
-          </button>
-          
-          {/* Visibility Mode Button */}
-          <button 
-            style={{
-              padding: '10px 20px',
-              backgroundColor: 'rgba(124, 58, 237, 0.6)',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              fontSize: '16px',
-              fontWeight: 'bold'
-            }}
-            onClick={toggleVisibilityMode}
-            title={`Text visibility: ${getVisibilityLabel(visibilityMode)}. Click to change.`}
-          >
-            <span>{getVisibilityLabel(visibilityMode)}</span>
-          </button>
-        </div>
+        {/* Control Panel - Only for regular dialogues, not missions */}
+        {!isMissionMode && (
+          <div style={{ 
+            marginTop: '15px',
+            display: 'flex',
+            gap: '10px',
+            flexWrap: 'wrap',
+            justifyContent: 'center',
+            padding: '10px'
+          }}>
+            {/* Replay Full Dialogue Button */}
+            <button 
+              disabled={!dialogueComplete || isPlayingFullDialogue}
+              style={{
+                padding: '10px 20px',
+                backgroundColor: isPlayingFullDialogue ? 'rgba(239, 68, 68, 0.7)' : 'rgba(124, 58, 237, 0.6)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: (dialogueComplete && !isPlayingFullDialogue) ? 'pointer' : 'not-allowed',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontSize: '16px',
+                fontWeight: 'bold',
+                opacity: dialogueComplete ? 1 : 0.5
+              }}
+              onClick={isPlayingFullDialogue ? stopFullDialogue : playFullDialogue}
+              title={!dialogueComplete ? 'Complete dialogue first' : (isPlayingFullDialogue ? 'Stop playback' : 'Replay full dialogue')}
+            >
+              {isPlayingFullDialogue ? 'Stop Playback' : 'Replay Full Dialogue'}
+            </button>
+            
+            {/* Speed Control Button */}
+            <button 
+              style={{
+                padding: '10px 20px',
+                backgroundColor: 'rgba(124, 58, 237, 0.6)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontSize: '16px',
+                fontWeight: 'bold'
+              }}
+              onClick={togglePlaybackSpeed}
+              title={`Current speed: ${playbackSpeed}x. Click to change.`}
+            >
+              <span>{playbackSpeed}x</span>
+            </button>
+            
+            {/* Visibility Mode Button */}
+            <button 
+              style={{
+                padding: '10px 20px',
+                backgroundColor: 'rgba(124, 58, 237, 0.6)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontSize: '16px',
+                fontWeight: 'bold'
+              }}
+              onClick={toggleVisibilityMode}
+              title={`Text visibility: ${getVisibilityLabel(visibilityMode)}. Click to change.`}
+            >
+              <span>{getVisibilityLabel(visibilityMode)}</span>
+            </button>
+          </div>
+        )}
+        
+        {/* Mission Mode: Simple Speak button */}
+        {isMissionMode && !missionCompleted && (
+          <div style={{ 
+            marginTop: '15px',
+            display: 'flex',
+            gap: '10px',
+            justifyContent: 'center',
+            padding: '10px'
+          }}>
+            {/* Help Me Button */}
+            {showHelpMe && (
+              <button
+                onClick={handleHelpMe}
+                style={{
+                  padding: '12px 24px',
+                  backgroundColor: 'rgba(59, 130, 246, 0.8)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '600'
+                }}
+              >
+                💡 {getTranslation(motherLanguage, 'helpMe')}
+              </button>
+            )}
+            
+            {/* Speak Button */}
+            <button
+              onClick={() => setIsListening(!isListening)}
+              style={{
+                padding: '14px 32px',
+                backgroundColor: isListening ? 'rgba(239, 68, 68, 0.8)' : 'rgba(16, 185, 129, 0.8)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '50px',
+                cursor: 'pointer',
+                fontSize: '16px',
+                fontWeight: '600'
+              }}
+            >
+              🎤 {isListening ? 'Stop' : getTranslation(motherLanguage, 'speak')}
+            </button>
+            
+            {/* Close Button */}
+            <button
+              onClick={onClose}
+              style={{
+                padding: '12px 24px',
+                backgroundColor: 'rgba(239, 68, 68, 0.8)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: '600'
+              }}
+            >
+              ✕ Close
+            </button>
+          </div>
+        )}
         
         {/* Continue to Quiz button - shown when dialogue is complete */}
-        {dialogueComplete && !showQuiz && (
+        {!isMissionMode && dialogueComplete && !showQuiz && (
           <div style={{
             marginTop: '10px',
             padding: '20px',
