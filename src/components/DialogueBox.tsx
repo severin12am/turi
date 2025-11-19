@@ -1368,7 +1368,7 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
           // Show initial helper message with mission goal (no banner needed)
           const initMsg = motherLanguage === 'ru' 
             ? `Миссия: ${mission.goal}\n\nНажмите кнопку или начните говорить`
-            : `Mission: ${mission.goal}\n\nClick button or start speaking`;
+            : `Mission: ${mission.goal}\n\nClick "help me and I will make up a sentence for you! Or click "Speak" and start the conversation`;
           setMissionHelperMessage(initMsg);
           
           // Initialize empty conversation
