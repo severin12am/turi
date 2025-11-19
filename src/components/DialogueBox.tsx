@@ -1851,6 +1851,49 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
   };
   
   /**
+   * Generate phonetic transliteration using Gemini API
+   */
+  const generateTransliteration = async (text: string, fromLang: SupportedLanguage, toLangScript: SupportedLanguage): Promise<string> => {
+    try {
+      const prompt = `Transliterate the following ${fromLang} text into phonetic ${toLangScript} script.
+
+Text: "${text}"
+
+Provide ONLY the phonetic transliteration using ${toLangScript} letters (lowercase, no punctuation).
+For example, Spanish "cómo te llamas" should become "koh-moh teh yah-mahs" in English phonetics.
+
+Return ONLY the transliteration, nothing else.`;
+
+      const response = await fetch('/.netlify/functions/gemini-dialogue', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          modelName: 'gemini-2.0-flash-exp',
+          requestBody: {
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: {
+              temperature: 0.3,
+              maxOutputTokens: 200,
+            }
+          }
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Transliteration API error');
+      }
+
+      const data = await response.json();
+      const transliteration = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+      console.log('[Missions] Generated transliteration:', transliteration);
+      return transliteration;
+    } catch (error) {
+      console.error('[Missions] Error generating transliteration:', error);
+      return '';
+    }
+  };
+
+  /**
    * Handle NPC response in mission mode
    */
   const handleMissionNPCResponse = async (userText: string) => {
@@ -1864,10 +1907,14 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
         sourceLanguage: targetLanguage,
         targetLanguage: motherLanguage,
         motherLanguage: motherLanguage,
-        includeTransliteration: true
+        includeTransliteration: false // Don't use the buggy transliteration
       });
       
+      // Generate proper phonetic transliteration
+      const userTransliteration = await generateTransliteration(userText, targetLanguage, motherLanguage);
+      
       console.log('[Missions] User text translation:', userTranslation);
+      console.log('[Missions] User text transliteration:', userTransliteration);
       
       // Add approved user message to history with translation and transliteration
       const userEntry: ConversationEntry = {
@@ -1875,7 +1922,7 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
         step: conversationHistory.length + 1,
         speaker: 'User',
         phrase: userText,
-        transcription: userTranslation.transliteration || '',
+        transcription: userTransliteration,
         translation: userTranslation.translation || '',
         isCompleted: true
       };
@@ -1905,10 +1952,14 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
         sourceLanguage: targetLanguage,
         targetLanguage: motherLanguage,
         motherLanguage: motherLanguage,
-        includeTransliteration: true
+        includeTransliteration: false // Don't use the buggy transliteration
       });
       
+      // Generate proper phonetic transliteration for NPC
+      const npcTransliteration = await generateTransliteration(npcResponse.response, targetLanguage, motherLanguage);
+      
       console.log('[Missions] NPC response translation:', npcTranslation);
+      console.log('[Missions] NPC response transliteration:', npcTransliteration);
       
       // Add NPC response to history with translation and transliteration
       const npcEntry: ConversationEntry = {
@@ -1916,7 +1967,7 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
         step: newHistory.length + 1,
         speaker: 'NPC',
         phrase: npcResponse.response,
-        transcription: npcTranslation.transliteration || '',
+        transcription: npcTransliteration,
         translation: npcTranslation.translation || '',
         isCompleted: true
       };
@@ -4312,8 +4363,8 @@ Keep it simple, practical, and focused only on structure. No extra examples need
   
   try {
     return (
-      <div className="dialogue-box-container" style={{ pointerEvents: 'auto' }}>
-        {/* Turi Panel - Mission Mode Helper (on left like tips were) */}
+      <>
+        {/* Turi Panel - Mission Mode Helper (positioned on left, OUTSIDE centered container) */}
         {isMissionMode && missionHelperMessage && (
           <div style={{
             position: 'fixed',
@@ -4363,6 +4414,8 @@ Keep it simple, practical, and focused only on structure. No extra examples need
             </div>
           </div>
         )}
+        
+        <div className="dialogue-box-container" style={{ pointerEvents: 'auto' }}>
 
         {/* Success feedback notification */}
         {wordAddedFeedback && (
@@ -4712,23 +4765,6 @@ Keep it simple, practical, and focused only on structure. No extra examples need
             >
               🎤 {isListening ? 'Stop' : getTranslation(motherLanguage, 'speak')}
             </button>
-            
-            {/* Close Button */}
-            <button
-              onClick={onClose}
-              style={{
-                padding: '12px 24px',
-                backgroundColor: 'rgba(239, 68, 68, 0.8)',
-                color: 'white',
-                border: 'none',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                fontSize: '14px',
-                fontWeight: '600'
-              }}
-            >
-              ✕ Close
-            </button>
           </div>
         )}
         
@@ -4898,6 +4934,7 @@ Keep it simple, practical, and focused only on structure. No extra examples need
           </div>
         )}
       </div>
+      </>
     );
   } catch (error) {
     console.error("Critical error rendering DialogueBox:", error);
