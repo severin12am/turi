@@ -14,10 +14,6 @@ import { fetchDialoguesWithFallback } from '../services/translationFallback';
 import WordExplanationModal from './WordExplanationModal';
 import { generateWordExplanation, WordExplanationData, speakWithAI, generateSpeechWithGemini, translateWord } from '../services/gemini';
 import { addWordToDictionary } from '../services/dictionary';
-// Mission mode imports
-import { Mission } from '../constants/missions';
-import { checkUserSentence, generateHelpSuggestion, HelperRobotDecision } from '../services/missionHelperRobot';
-import { generateNPCResponse, evaluateMissionCompletion } from '../services/missionNPC';
 
 // Map supported languages to their speech recognition codes
 const getRecognitionLanguage = (lang: SupportedLanguage): string => {
@@ -157,8 +153,6 @@ interface DialogueBoxProps {
   aiDialogue?: AIDialogueStep[] | null; // AI-generated dialogue
   isScenario?: boolean; // Flag to indicate if this is a scenario dialogue
   scenarioNumber?: number; // Which scenario (1, 2, 3, etc.)
-  isMissionMode?: boolean; // Flag to indicate mission mode
-  mission?: Mission | null; // Mission data for mission mode
 }
 
 /**
@@ -226,8 +220,6 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
   aiDialogue = null, // AI-generated dialogue
   isScenario = false, // Default to false (regular dialogue)
   scenarioNumber = 1, // Default to scenario 1
-  isMissionMode = false, // Default to false (regular dialogue)
-  mission = null, // Mission data for mission mode
 }) => {
   // State variables for dialogue management
   const [dialogues, setDialogues] = useState<DialoguePhrase[]>([]); // Raw dialogue data from database
@@ -260,26 +252,6 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
   const [recognitionAttempts, setRecognitionAttempts] = useState(0);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   
-  // Mission mode states - initialized with empty/default values to avoid hoisting issues
-  const [missionHelperMessage, setMissionHelperMessage] = useState<string>('');
-  const [awaitingApproval, setAwaitingApproval] = useState<boolean>(false);
-  const [missionConversationHistory, setMissionConversationHistory] = useState<Array<{ speaker: 'user' | 'npc'; text: string }>>([]);
-  const [missionCompleted, setMissionCompleted] = useState<boolean>(false);
-  const [showHelpMe, setShowHelpMe] = useState<boolean>(true);
-  
-  // Mission mode initialization - deferred to avoid circular dependency
-  useEffect(() => {
-    if (isMissionMode && mission) {
-      setTimeout(() => {
-        console.log('[Missions] Mission mode active', mission.goal);
-        const initMsg = motherLanguage === 'ru' 
-          ? `Миссия: ${mission.goal}\n\nНажмите "Помогите мне" или начните говорить`
-          : `Mission: ${mission.goal}\n\nClick "Help Me" or start speaking`;
-        setMissionHelperMessage(initMsg);
-        setIsLoading(false);
-      }, 0);
-    }
-  }, [isMissionMode, mission, motherLanguage]);
   
   const currentPhraseRef = useRef<string>("");
   
@@ -3465,156 +3437,9 @@ Keep it simple, practical, and focused only on structure. No extra examples need
   };
 
   /**
-   * Mission Mode: Handle speech recognition for missions
-   */
-  const handleMissionSpeechRecognition = async (userText: string) => {
-    if (!mission) return;
-    
-    try {
-      logger.info('[Missions] User spoke in mission mode', { userText, missionGoal: mission.goal });
-      setAwaitingApproval(true);
-      setMissionHelperMessage(getTranslation(motherLanguage, 'helperRobotChecking'));
-      
-      // Check with helper robot
-      const decision = await checkUserSentence({
-        userText,
-        targetLanguage,
-        motherLanguage,
-        missionGoal: mission.goal,
-        npcRole: mission.npcRole
-      });
-      
-      logger.info('[Missions] Helper robot decision', { decision: decision.decision });
-      
-      if (decision.decision === 'No errors') {
-        // Approved! Send to NPC
-        setAwaitingApproval(false);
-        setMissionHelperMessage(getTranslation(motherLanguage, 'sentenceApproved'));
-        
-        // Brief pause to show approval, then send to NPC
-        setTimeout(() => {
-          sendToMissionNPC(userText);
-        }, 800);
-      } else {
-        // Show correction
-        setAwaitingApproval(false);
-        const correctionMessage = `${decision.explanation}\n\n${decision.correctedSentence}`;
-        setMissionHelperMessage(correctionMessage);
-        logger.info('[Missions] Showing correction', { correction: correctionMessage });
-      }
-    } catch (error) {
-      logger.error('[Missions] Error checking sentence', { error });
-      setAwaitingApproval(false);
-      setMissionHelperMessage('Error checking sentence. Please try again.');
-    }
-  };
-
-  /**
-   * Mission Mode: Send approved sentence to NPC
-   */
-  const sendToMissionNPC = async (userText: string) => {
-    if (!mission) return;
-    
-    try {
-      logger.info('[Missions] Sending to NPC', { userText });
-      
-      // Add user message to conversation display
-      const userEntry: ConversationEntry = {
-        speaker: 'User',
-        text: userText,
-        transcription: '',
-        translation: '',
-        audioUrl: null
-      };
-      setConversationHistory(prev => [...prev, userEntry]);
-      
-      // Add to mission history
-      const newHistory = [...missionConversationHistory, { speaker: 'user' as const, text: userText }];
-      setMissionConversationHistory(newHistory);
-      
-      // Get NPC response
-      const npcResponse = await generateNPCResponse({
-        targetLanguage,
-        motherLanguage,
-        missionGoal: mission.goal,
-        npcRole: mission.npcRole,
-        userLevel: 'A2', // Could be dynamic based on user progress
-        conversationHistory: newHistory,
-        userLatestMessage: userText
-      });
-      
-      logger.info('[Missions] NPC responded', { 
-        response: npcResponse.response, 
-        missionCompleted: npcResponse.missionCompleted 
-      });
-      
-      // Add NPC response to conversation display
-      const npcEntry: ConversationEntry = {
-        speaker: 'NPC',
-        text: npcResponse.response,
-        transcription: '',
-        translation: '',
-        audioUrl: null
-      };
-      setConversationHistory(prev => [...prev, npcEntry]);
-      
-      // Add to mission history
-      const finalHistory = [...newHistory, { speaker: 'npc' as const, text: npcResponse.response }];
-      setMissionConversationHistory(finalHistory);
-      
-      // Speak NPC response
-      if (onNpcSpeakStart) onNpcSpeakStart();
-      speakText(npcResponse.response, targetLanguage, () => {
-        if (onNpcSpeakEnd) onNpcSpeakEnd();
-      });
-      
-      // Check if mission is complete
-      if (npcResponse.missionCompleted) {
-        logger.info('[Missions] Mission completed!', { missionId: mission.id });
-        setMissionCompleted(true);
-        setMissionHelperMessage(getTranslation(motherLanguage, 'taskCompletedMessage'));
-      }
-    } catch (error) {
-      logger.error('[Missions] Error getting NPC response', { error });
-      setMissionHelperMessage('Error getting response. Please try again.');
-    }
-  };
-
-  /**
-   * Mission Mode: Handle "Help Me" button click
-   */
-  const handleHelpMe = async () => {
-    if (!mission) return;
-    
-    try {
-      logger.info('[Missions] User clicked Help Me', { missionGoal: mission.goal });
-      setMissionHelperMessage(getTranslation(motherLanguage, 'helperRobotChecking'));
-      
-      const suggestion = await generateHelpSuggestion({
-        targetLanguage,
-        motherLanguage,
-        missionGoal: mission.goal,
-        npcRole: mission.npcRole
-      });
-      
-      logger.info('[Missions] Generated suggestion', { suggestion });
-      setMissionHelperMessage(suggestion);
-      setShowHelpMe(false); // Hide button after first use (user should try themselves)
-    } catch (error) {
-      logger.error('[Missions] Error generating help', { error });
-      setMissionHelperMessage('Error generating suggestion. Please try again.');
-    }
-  };
-
-  /**
    * Process successful speech recognition and progress dialogue
    */
   const handleSuccessfulSpeechRecognition = (transcript: string, confidence: number) => {
-    // Mission mode: Use different flow
-    if (isMissionMode && mission) {
-      handleMissionSpeechRecognition(transcript);
-      return;
-    }
     
     // Get the latest state values from refs
     const currentStepValue = currentStepRef.current;
@@ -4249,48 +4074,7 @@ Keep it simple, practical, and focused only on structure. No extra examples need
   /**
    * Main render - dialogue box UI
    */
-  console.log(`📲 ACTUAL RENDER: Showing dialogue box`, { isMissionMode, hasMission: !!mission });
-  
-  // Safety check for mission mode
-  if (isMissionMode && !mission) {
-    console.error('[Missions] Mission mode enabled but no mission data provided');
-    return (
-      <div style={{
-        position: 'fixed',
-        top: '50%',
-        left: '50%',
-        transform: 'translate(-50%, -50%)',
-        backgroundColor: 'rgba(239, 68, 68, 0.95)',
-        color: 'white',
-        padding: '24px',
-        borderRadius: '12px',
-        textAlign: 'center',
-        zIndex: 999999
-      }}>
-        <div style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '8px' }}>
-          Mission Error
-        </div>
-        <div style={{ fontSize: '14px' }}>
-          No mission data available. Please try again.
-        </div>
-        <button
-          onClick={onClose}
-          style={{
-            marginTop: '16px',
-            padding: '8px 16px',
-            backgroundColor: 'white',
-            color: 'rgb(239, 68, 68)',
-            border: 'none',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            fontWeight: '600'
-          }}
-        >
-          Close
-        </button>
-      </div>
-    );
-  }
+  console.log(`📲 ACTUAL RENDER: Showing dialogue box`);
   
   try {
     return (
