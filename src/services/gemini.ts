@@ -462,32 +462,40 @@ export const generateWordExplanation = async (params: GenerateWordExplanationPar
  * Generate speech using Google Cloud Text-to-Speech API
  * Returns an Audio element with the generated speech
  */
-export const generateSpeechWithGemini = async (text: string, languageCode: SupportedLanguage): Promise<HTMLAudioElement> => {
+export const generateSpeechWithGemini = async (
+  text: string, 
+  languageCode: SupportedLanguage, 
+  gender: 'male' | 'female' = 'male'
+): Promise<HTMLAudioElement> => {
   console.log('🔊 GEMINI TTS: Attempting to generate speech with Google Cloud TTS API');
-  logger.info('Generating speech with Gemini TTS', { text, languageCode });
+  logger.info('Generating speech with Gemini TTS', { text, languageCode, gender });
 
   try {
     // Map language codes to Google TTS language codes and voices
-    const languageMap: Record<string, { code: string; name: string }> = {
-      'en': { code: 'en-US', name: 'en-US-Neural2-D' },
-      'ru': { code: 'ru-RU', name: 'ru-RU-Wavenet-D' },
-      'es': { code: 'es-ES', name: 'es-ES-Neural2-F' },
-      'fr': { code: 'fr-FR', name: 'fr-FR-Neural2-D' },
-      'de': { code: 'de-DE', name: 'de-DE-Neural2-D' },
-      'it': { code: 'it-IT', name: 'it-IT-Neural2-C' },
-      'ar': { code: 'ar-XA', name: 'ar-XA-Wavenet-D' },
-      'CH': { code: 'cmn-CN', name: 'cmn-CN-Wavenet-D' },
-      'ja': { code: 'ja-JP', name: 'ja-JP-Neural2-D' },
-      'tr': { code: 'tr-TR', name: 'tr-TR-Wavenet-E' }
+    // Google voice naming: A, C, E, F = female | B, D = male
+    const languageMap: Record<string, { code: string; male: string; female: string }> = {
+      'en': { code: 'en-US', male: 'en-US-Neural2-D', female: 'en-US-Neural2-F' },
+      'ru': { code: 'ru-RU', male: 'ru-RU-Wavenet-B', female: 'ru-RU-Wavenet-A' },
+      'es': { code: 'es-ES', male: 'es-ES-Neural2-B', female: 'es-ES-Neural2-A' },
+      'fr': { code: 'fr-FR', male: 'fr-FR-Neural2-B', female: 'fr-FR-Neural2-A' },
+      'de': { code: 'de-DE', male: 'de-DE-Neural2-B', female: 'de-DE-Neural2-A' },
+      'it': { code: 'it-IT', male: 'it-IT-Neural2-D', female: 'it-IT-Neural2-A' },
+      'ar': { code: 'ar-XA', male: 'ar-XA-Wavenet-B', female: 'ar-XA-Wavenet-A' },
+      'CH': { code: 'cmn-CN', male: 'cmn-CN-Wavenet-B', female: 'cmn-CN-Wavenet-A' },
+      'ja': { code: 'ja-JP', male: 'ja-JP-Neural2-D', female: 'ja-JP-Neural2-A' },
+      'tr': { code: 'tr-TR', male: 'tr-TR-Wavenet-B', female: 'tr-TR-Wavenet-A' }
     };
 
     const language = languageMap[languageCode] || languageMap['en'];
+    const voiceName = gender === 'female' ? language.female : language.male;
+    
+    console.log(`🔊 GEMINI TTS: Using ${gender} voice: ${voiceName}`);
     
     const requestBody = {
       input: { text },
       voice: {
         languageCode: language.code,
-        name: language.name
+        name: voiceName
       },
       audioConfig: {
         audioEncoding: 'MP3',

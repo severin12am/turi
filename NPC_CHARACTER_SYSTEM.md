@@ -146,10 +146,11 @@ Perfect 50/50 balance between male and female characters.
 
 ## Files Modified
 
-1. ✅ `src/constants/characters.ts` (NEW)
-2. ✅ `src/scenes/City.tsx` (updated character setup)
+1. ✅ `src/constants/characters.ts` (NEW - centralized character database)
+2. ✅ `src/scenes/City.tsx` (updated all 30 character setups)
 3. ✅ `src/services/missionNPC.ts` (added name/gender to interface and prompt)
-4. ✅ `src/components/DialogueBox.tsx` (passes character data to NPC service)
+4. ✅ `src/components/DialogueBox.tsx` (passes character data to NPC service + gender to TTS)
+5. ✅ `src/services/gemini.ts` (added gender parameter to TTS, male/female voice selection)
 
 ## Testing Recommendations
 
@@ -158,6 +159,61 @@ Perfect 50/50 balance between male and female characters.
 3. Check voice synthesis matches character gender
 4. Confirm character consistency across all 5 missions in each scenario
 
+## TTS Gender Voice Fix (CRITICAL UPDATE)
+
+### Problem Identified
+The Google Cloud Text-to-Speech API **DOES support gender-specific voices**, but we were hardcoding mostly male voices! For example:
+- Character 30 (Ava, female) was using male voice
+- Most voices were set to `-D` or `-B` suffix (male voices)
+
+### Solution Implemented
+
+#### Updated `src/services/gemini.ts`
+**Added gender parameter to TTS function:**
+```typescript
+export const generateSpeechWithGemini = async (
+  text: string, 
+  languageCode: SupportedLanguage, 
+  gender: 'male' | 'female' = 'male'  // NEW PARAMETER
+): Promise<HTMLAudioElement>
+```
+
+**Google Voice Naming Convention:**
+- Voices ending in **A, C, E, F** = Female
+- Voices ending in **B, D** = Male
+
+**Updated voice map with both genders:**
+```typescript
+const languageMap: Record<string, { code: string; male: string; female: string }> = {
+  'en': { code: 'en-US', male: 'en-US-Neural2-D', female: 'en-US-Neural2-F' },
+  'ru': { code: 'ru-RU', male: 'ru-RU-Wavenet-B', female: 'ru-RU-Wavenet-A' },
+  'es': { code: 'es-ES', male: 'es-ES-Neural2-B', female: 'es-ES-Neural2-A' },
+  // ... all 10 languages now have both male and female voices
+};
+```
+
+#### Updated `src/components/DialogueBox.tsx`
+**Determines character gender and passes to TTS:**
+```typescript
+// Get character gender for TTS voice
+const characterGender: 'male' | 'female' = (() => {
+  if (mission) {
+    const character = getCharacterByScenario(mission.scenarioNumber);
+    return character?.gender || 'male';
+  }
+  // ... handles scenario and regular dialogue modes
+})();
+
+// Pass gender to TTS
+const audio = await generateSpeechWithGemini(text, targetLanguage, characterGender);
+```
+
+### Result
+✅ Female characters (like Ava) now use female voices  
+✅ Male characters use male voices  
+✅ All 10 languages supported (en, ru, es, fr, de, it, ar, CH, ja, tr)  
+✅ Backwards compatible - quiz mode still works with default voice  
+
 ## Future Enhancements
 
 - Add character personality traits
@@ -165,4 +221,5 @@ Perfect 50/50 balance between male and female characters.
 - Add character backstories for richer interactions
 - Support for character portraits/avatars
 - Voice preference settings per character
+- Expand to more languages with gendered voices
 

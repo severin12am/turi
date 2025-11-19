@@ -229,6 +229,22 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
   mission, // Mission mode
 }) => {
   const isMissionMode = !!mission; // True if mission prop is provided
+  
+  // Get character gender for TTS voice
+  const characterGender: 'male' | 'female' = (() => {
+    if (mission) {
+      // Mission mode - use character from scenario
+      const character = getCharacterByScenario(mission.scenarioNumber);
+      return character?.gender || 'male';
+    } else if (isScenario) {
+      // Scenario mode - use character from scenario
+      const character = getCharacterByScenario(scenarioNumber);
+      return character?.gender || 'male';
+    }
+    // Regular dialogue - use character ID
+    const character = getCharacterByScenario(characterId);
+    return character?.gender || 'male';
+  })();
   // State variables for dialogue management
   const [dialogues, setDialogues] = useState<DialoguePhrase[]>([]); // Raw dialogue data from database
   const [currentStep, setCurrentStep] = useState(1); // Current step in conversation
@@ -2215,12 +2231,12 @@ Return ONLY the transliteration, nothing else.`;
       }
       
       // Try Gemini TTS first for all languages
-      console.log('🔊 DIALOGUE Attempting Gemini TTS');
+      console.log('🔊 DIALOGUE Attempting Gemini TTS with gender:', characterGender);
       setIsNpcSpeaking(true);
       if (typeof onNpcSpeakStart === 'function') onNpcSpeakStart();
       
       try {
-        const audio = await generateSpeechWithGemini(text, targetLanguage);
+        const audio = await generateSpeechWithGemini(text, targetLanguage, characterGender);
         
         // Cache the audio URL if we have a step number
         if (stepNumber && audio.src) {
@@ -2733,8 +2749,8 @@ Return ONLY the transliteration, nothing else.`;
     
     // Try Gemini TTS first
     try {
-      console.log('🔊 FULL DIALOGUE: Generating new audio with Gemini TTS');
-      const audio = await generateSpeechWithGemini(text, targetLanguage);
+      console.log('🔊 FULL DIALOGUE: Generating new audio with Gemini TTS, gender:', characterGender);
+      const audio = await generateSpeechWithGemini(text, targetLanguage, characterGender);
       
       // Check if playback was stopped while generating
       if (!isPlayingFullDialogueRef.current) {
