@@ -1742,6 +1742,7 @@ const CityScene: React.FC = () => {
   const handleMissionSelect = (mission: Mission) => {
     console.log('Mission selected:', mission);
     setSelectedMission(mission);
+    setSelectedDialogueId(mission.id); // Use unique mission ID (1-150) to avoid cache conflicts
     setIsMissionMode(true);
     setIsScenarioDialogue(false); // Mission mode is separate from scenario dialogue
     setAiDialogue(null); // Clear any AI dialogue

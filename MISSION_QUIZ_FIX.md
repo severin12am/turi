@@ -150,28 +150,73 @@ For missions with conversation:
 3. **Word matching** → Use existing algorithm (if AI fails)
 4. **Auto-complete** → Skip quiz if all tiers fail
 
+## Critical Bug Fix: Unique Mission IDs
+
+### Problem Discovered
+After initial implementation, missions were sharing cached expressions because all missions used `dialogueId=1`. For example:
+- Mission 1 in Scenario 1 → dialogueId = 1 → cache: `ai_expressions_mission_1_en_ru`
+- Mission 1 in Scenario 2 → dialogueId = 1 → cache: `ai_expressions_mission_1_en_ru` (SAME!)
+
+Result: Different missions showed the same quiz expressions.
+
+### Solution
+Each mission already has a unique ID (1-150). We just needed to use it!
+
+**File**: `src/scenes/City.tsx` (line ~1744)
+
+```typescript
+const handleMissionSelect = (mission: Mission) => {
+  setSelectedDialogueId(mission.id); // Use unique mission ID (1-150)
+  // ... rest of logic
+}
+```
+
+Now:
+- Mission 1 in Scenario 1 → dialogueId = 1 → unique cache
+- Mission 2 in Scenario 1 → dialogueId = 2 → unique cache
+- Mission 3 in Scenario 1 → dialogueId = 3 → unique cache
+- Mission 1 in Scenario 2 → dialogueId = 6 → unique cache
+- Mission 1 in Scenario 3 → dialogueId = 11 → unique cache
+- etc. (1-150)
+
+Each mission now has completely unique quiz expressions! ✅
+
 ## Files Modified
 
 1. ✅ `src/components/VocalQuizComponent.tsx` - Added missionConversation prop and AI extraction logic
 2. ✅ `src/components/DialogueBox.tsx` - Pass conversation history to quiz component
-3. ✅ `MISSION_QUIZ_FIX.md` - This documentation
+3. ✅ `src/scenes/City.tsx` - Use unique mission ID as dialogueId to prevent cache conflicts
+4. ✅ `MISSION_QUIZ_FIX.md` - This documentation
 
 ## Testing
 
+### Important: Clear Cache First!
+Before testing, clear your browser's sessionStorage to remove old cached expressions:
+```javascript
+// In browser console:
+sessionStorage.clear();
+```
+
+Or just use incognito/private browsing mode.
+
 ### Manual Test Steps
 
-1. Start a mission (e.g., Mission 1: "Find out the person's full name")
-2. Have a conversation with the NPC
-3. Complete the mission
-4. Check console logs for:
+1. **Clear sessionStorage** (important!)
+2. Start Mission 1 in Scenario 1 (ID = 1)
+3. Have a conversation with the NPC
+4. Complete the mission
+5. Check console logs for:
    ```
+   [Missions] Mission started { missionId: 1, goal: "...", npcRole: "..." }
    🎯 Mission mode with conversation text: Using AI extraction directly
    🤖 Calling AI to extract expressions from mission conversation...
    ✅ Mission AI extracted X expressions from actual conversation
    ```
-5. Verify quiz shows expressions from the actual conversation
-6. Complete Mission 2 and verify different expressions
-7. Complete Mission 3 and verify different expressions again
+6. Note the expressions in the quiz
+7. Complete Mission 1 in Scenario 2 (ID = 6)
+8. Verify the quiz shows **different expressions** from the new conversation
+9. Complete Mission 2 in Scenario 1 (ID = 2)
+10. Verify the quiz shows **different expressions** again
 
 ### Expected Console Output
 
