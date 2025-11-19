@@ -43,7 +43,7 @@ export const checkUserSentence = async (params: HelperRobotCheckParams): Promise
     : '';
 
   // Construct the prompt based on user's requirements
-  const prompt = `You are a friend who checks his friend`s speech and corrects him if necessary. You are NOT part of the conversation — the learner (your friend who is trying to learn ${targetLanguage} )  is speaking directly to the NPC named "${npcRole}", never to you.
+  const prompt = `You are a person who checks the speech of his friend and corrects him if necessary. You are NOT part of the conversation — the learner (your friend who is trying to learn ${targetLanguage} )  is speaking directly to the NPC named "${npcRole}", never to you.
 
   Context:
   - Target language: ${targetLanguage}
