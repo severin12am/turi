@@ -260,39 +260,27 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
   const [recognitionAttempts, setRecognitionAttempts] = useState(0);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   
-  // Mission mode states
+  // Mission mode states - initialized with empty/default values to avoid hoisting issues
   const [missionHelperMessage, setMissionHelperMessage] = useState<string>('');
   const [awaitingApproval, setAwaitingApproval] = useState<boolean>(false);
   const [missionConversationHistory, setMissionConversationHistory] = useState<Array<{ speaker: 'user' | 'npc'; text: string }>>([]);
   const [missionCompleted, setMissionCompleted] = useState<boolean>(false);
   const [showHelpMe, setShowHelpMe] = useState<boolean>(true);
   
-  // Mission mode initialization - moved after all refs are defined
-  React.useEffect(() => {
+  // Mission mode initialization - deferred to avoid circular dependency
+  useEffect(() => {
     if (isMissionMode && mission) {
-      console.log('[Missions] Mission mode initialized', {
-        missionId: mission.id,
-        goal: mission.goal,
-        npcRole: mission.npcRole
-      });
-      
-      // Set initial helper message
-      try {
-        const missionText = motherLanguage === 'ru' ? 'Миссия' : 'Mission';
-        const helpText = motherLanguage === 'ru' ? 'Помогите мне' : 'Help Me';
-        
-        setMissionHelperMessage(
-          `${missionText}: ${mission.goal}\n\n${helpText}`
-        );
-      } catch (e) {
-        console.error('[Missions] Error setting initial message', e);
-        setMissionHelperMessage(`Mission: ${mission.goal}\n\nClick Help Me to start`);
-      }
-      
-      // Skip normal dialogue loading in mission mode
-      setIsLoading(false);
+      setTimeout(() => {
+        console.log('[Missions] Mission mode active', mission.goal);
+        const initMsg = motherLanguage === 'ru' 
+          ? `Миссия: ${mission.goal}\n\nНажмите "Помогите мне" или начните говорить`
+          : `Mission: ${mission.goal}\n\nClick "Help Me" or start speaking`;
+        setMissionHelperMessage(initMsg);
+        setIsLoading(false);
+      }, 0);
     }
   }, [isMissionMode, mission, motherLanguage]);
+  
   const currentPhraseRef = useRef<string>("");
   
   // Add a ref to track if conversation is initialized
@@ -4261,7 +4249,48 @@ Keep it simple, practical, and focused only on structure. No extra examples need
   /**
    * Main render - dialogue box UI
    */
-  console.log(`📲 ACTUAL RENDER: Showing dialogue box`);
+  console.log(`📲 ACTUAL RENDER: Showing dialogue box`, { isMissionMode, hasMission: !!mission });
+  
+  // Safety check for mission mode
+  if (isMissionMode && !mission) {
+    console.error('[Missions] Mission mode enabled but no mission data provided');
+    return (
+      <div style={{
+        position: 'fixed',
+        top: '50%',
+        left: '50%',
+        transform: 'translate(-50%, -50%)',
+        backgroundColor: 'rgba(239, 68, 68, 0.95)',
+        color: 'white',
+        padding: '24px',
+        borderRadius: '12px',
+        textAlign: 'center',
+        zIndex: 999999
+      }}>
+        <div style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '8px' }}>
+          Mission Error
+        </div>
+        <div style={{ fontSize: '14px' }}>
+          No mission data available. Please try again.
+        </div>
+        <button
+          onClick={onClose}
+          style={{
+            marginTop: '16px',
+            padding: '8px 16px',
+            backgroundColor: 'white',
+            color: 'rgb(239, 68, 68)',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontWeight: '600'
+          }}
+        >
+          Close
+        </button>
+      </div>
+    );
+  }
   
   try {
     return (
