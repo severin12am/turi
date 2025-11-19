@@ -1975,6 +1975,9 @@ Return ONLY the transliteration, nothing else.`;
       const finalHistory = [...newHistory, npcEntry];
       setConversationHistory(finalHistory);
       
+      console.log('[Missions] 📚 Updated conversation history:', finalHistory.map(e => `${e.speaker}:${e.phrase.substring(0, 20)}`));
+      console.log('[Missions] 📚 Total entries in history:', finalHistory.length);
+      
       // Play NPC audio with Gemini TTS
       await playAudio(npcResponse.response);
       
@@ -4456,6 +4459,9 @@ Keep it simple, practical, and focused only on structure. No extra examples need
         )}
         
         {conversationHistory.map((entry, index) => {
+          if (index === 0 && isMissionMode) {
+            console.log('[Missions] 🎨 Rendering conversation history:', conversationHistory.length, 'entries');
+          }
           const previousUserPhrases = conversationHistory
             .filter(e => e.speaker === 'User' && e.isCompleted && e.step < entry.step)
             .sort((a, b) => b.step - a.step);
