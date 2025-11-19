@@ -17,6 +17,8 @@ export interface MissionNPCParams {
   motherLanguage: SupportedLanguage;
   missionGoal: string;
   npcRole: string;
+  npcName: string;
+  npcGender: 'male' | 'female';
   userLevel: string; // A1, A2, B1, B2, etc.
   conversationHistory: Array<{ speaker: 'user' | 'npc'; text: string }>;
   userLatestMessage: string;
@@ -31,12 +33,14 @@ export interface MissionNPCResponse {
  * Generate NPC response for mission conversation
  */
 export const generateNPCResponse = async (params: MissionNPCParams): Promise<MissionNPCResponse> => {
-  const { targetLanguage, motherLanguage, missionGoal, npcRole, userLevel, conversationHistory, userLatestMessage } = params;
+  const { targetLanguage, motherLanguage, missionGoal, npcRole, npcName, npcGender, userLevel, conversationHistory, userLatestMessage } = params;
 
   logger.info('[MissionNPC] Generating response', { 
     targetLanguage, 
     missionGoal, 
-    npcRole, 
+    npcRole,
+    npcName,
+    npcGender,
     conversationHistory: conversationHistory.length,
     userLatestMessage 
   });
@@ -54,13 +58,17 @@ export const generateNPCResponse = async (params: MissionNPCParams): Promise<Mis
   IMPORTANT RULES:
   1. Speak ONLY in ${targetLanguage}
   2. Stay 100% in character as ${npcRole}
-  3. NEVER mention the learner's goal
-  4. Make conversation last at least 2-4 natural exchanges
-  5. Be natural, conversational, but keep responses short, and use simpler words and more common sentence structures. 
-  6. After 2-4 exchanges, gently help the language learner complete his mission.
+  3. Your name is ${npcName} and you are ${npcGender}
+  4. NEVER mention the learner's goal
+  5. Make conversation last at least 2-4 natural exchanges
+  6. Be natural, conversational, but keep responses short, and use simpler words and more common sentence structures. 
+  7. After 2-4 exchanges, gently help the language learner complete their mission.
   
-  Your role: ${npcRole}
-  Language: ${targetLanguage}
+  Your character:
+  - Name: ${npcName}
+  - Role: ${npcRole}
+  - Gender: ${npcGender}
+  - Language: ${targetLanguage}
   
   Previous conversation:
   ${historyText}

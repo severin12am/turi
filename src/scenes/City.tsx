@@ -15,6 +15,7 @@ import MissionSelectionPanel from '../components/MissionSelectionPanel';
 import { AIDialogueStep } from '../services/gemini';
 import { Mission } from '../constants/missions';
 import MobileControls from '../components/MobileControls';
+import { NPC_CHARACTERS } from '../constants/characters';
 
 // Preload the character models
 useGLTF.preload('/models/character1.glb');
@@ -324,453 +325,426 @@ const CityScene: React.FC = () => {
 
   // Fetch character data
   useEffect(() => {
-    // Set up character1
+    // Set up all 30 characters using centralized character data
+    // Position and scale are kept from original setup
+    
     setCharacter({
       id: 1,
-      name: 'Tom',
-      role: 'Taxi Driver',
+      name: NPC_CHARACTERS[1].name,
+      role: NPC_CHARACTERS[1].role,
       position_x: 53,
       position_y: -0.3,
       position_z: 17,
       scale_x: 0.6,
       scale_y: 0.6,
       scale_z: 0.6,
-      rotation_y: Math.PI * 1, // Default forward facing
+      rotation_y: Math.PI * 1,
       is_active: true
     } as CharacterType);
     
-    // Set up character2
     setCharacter2({
       id: 2,
-      name: 'Noah',
-      role: 'Shop Clerk',
+      name: NPC_CHARACTERS[2].name,
+      role: NPC_CHARACTERS[2].role,
       position_x: 34,
       position_y: 0,
       position_z: 12.55,
       scale_x: 1,
       scale_y: 1,
       scale_z: 1,
-      rotation_y: Math.PI * 0.5, // 90-degree rotation to face towards the street/player
+      rotation_y: Math.PI * 0.5,
       is_active: true
     } as CharacterType);
 
-    // Set up character3
     setCharacter3({
       id: 3,
-      name: 'Eli',
-      role: 'Bus Driver',
+      name: NPC_CHARACTERS[3].name,
+      role: NPC_CHARACTERS[3].role,
       position_x: 64,
       position_y: -0.25,
       position_z: -47,
       scale_x: 1,
       scale_y: 1,
       scale_z: 1,
-      rotation_y: Math.PI * 1.5, // 270-degree rotation to face towards the street/player
+      rotation_y: Math.PI * 1.5,
       is_active: true
     } as CharacterType);
     
-    // Set up character4
     setCharacter4({
       id: 4,
-      name: 'Rover',
-      role: 'Talking Dog',
+      name: NPC_CHARACTERS[4].name,
+      role: NPC_CHARACTERS[4].role,
       position_x: -6.5,
       position_y: 0,
       position_z: -34,
       scale_x: 0.4,
       scale_y: 0.4,
       scale_z: 0.4,
-      rotation_y: Math.PI * 0.25, // 45-degree rotation to face towards the path/player
+      rotation_y: Math.PI * 0.25,
       is_active: true
     } as CharacterType);
     
-    // Set up character5
     setCharacter5({
       id: 5,
-      name: 'Navi-1',
-      role: 'Info Robot',
+      name: NPC_CHARACTERS[5].name,
+      role: NPC_CHARACTERS[5].role,
       position_x: -7.25,
       position_y: 0,
       position_z: -21,
       scale_x: 0.7,
       scale_y: 0.7,
       scale_z: 0.7,
-      rotation_y: Math.PI * 0.8, // Default forward facing
+      rotation_y: Math.PI * 0.8,
       is_active: true
     } as CharacterType);
 
-    // Set up character6
     setCharacter6({
       id: 6,
-      name: 'Ava',
-      role: 'Librarian',
+      name: NPC_CHARACTERS[6].name,
+      role: NPC_CHARACTERS[6].role,
       position_x: 50,
       position_y: 0.8,
       position_z: -40,
       scale_x: 1,
       scale_y: 1,
       scale_z: 1,
-      rotation_y: Math.PI * 2, // 270 degrees to face towards the street/player
+      rotation_y: Math.PI * 2,
       is_active: true
     } as CharacterType);
 
-    // Set up character7
     setCharacter7({
       id: 7,
-      name: 'Owen',
-      role: 'Food Vendor',
+      name: NPC_CHARACTERS[7].name,
+      role: NPC_CHARACTERS[7].role,
       position_x: 2.5,
       position_y: 0,
       position_z: -6,
       scale_x: 1.3,
       scale_y: 1.3,
       scale_z: 1.3,
-      rotation_y: Math.PI * 1, // Default forward facing
+      rotation_y: Math.PI * 1,
       is_active: true
     } as CharacterType);
 
-    // Set up character8
     setCharacter8({
       id: 8,
-      name: 'Cody',
-      role: 'Park Keeper',
+      name: NPC_CHARACTERS[8].name,
+      role: NPC_CHARACTERS[8].role,
       position_x: -16,
       position_y: 0,
       position_z: -34,
       scale_x: 0.7,
       scale_y: 0.7,
       scale_z: 0.7,
-      rotation_y: Math.PI * 1, // Default forward facing
+      rotation_y: Math.PI * 1,
       is_active: true
     } as CharacterType);
 
-    // Set up character9
     setCharacter9({
       id: 9,
-      name: 'Navi-2',
-      role: 'Gallery Bot',
+      name: NPC_CHARACTERS[9].name,
+      role: NPC_CHARACTERS[9].role,
       position_x: 20,
       position_y: 0,
       position_z: -60,
       scale_x: 0.1,
       scale_y: 0.1,
       scale_z: 0.1,
-      rotation_y: Math.PI * 2, // 180 degrees to face towards the player
+      rotation_y: Math.PI * 2,
       is_active: true
     } as CharacterType);
 
-    // Set up character10
     setCharacter10({
       id: 10,
-      name: 'Jack',
-      role: 'Trainer',
+      name: NPC_CHARACTERS[10].name,
+      role: NPC_CHARACTERS[10].role,
       position_x: -14,
       position_y: 0,
       position_z: -52,
       scale_x: 1.2,
       scale_y: 1.2,
       scale_z: 1.2,
-      rotation_y: Math.PI * 1.5, // Default forward facing
+      rotation_y: Math.PI * 1.5,
       is_active: true
     } as CharacterType);
 
-    // Set up character11
     setCharacter11({
       id: 11,
-      name: 'Character11',
-      role: 'New Character',
+      name: NPC_CHARACTERS[11].name,
+      role: NPC_CHARACTERS[11].role,
       position_x: 52,
       position_y: 0,
       position_z: -63.8,
       scale_x: 0.1,
       scale_y: 0.1,
       scale_z: 0.1,
-      rotation_y: Math.PI * 0.5, // Default forward facing
+      rotation_y: Math.PI * 0.5,
       is_active: true
     } as CharacterType);
 
-    // Set up character12
     setCharacter12({
       id: 12,
-      name: 'Character12',
-      role: 'New Character',
+      name: NPC_CHARACTERS[12].name,
+      role: NPC_CHARACTERS[12].role,
       position_x: -19.2,
       position_y: 0,
       position_z: -77.4,
       scale_x: 1.3,
       scale_y: 1.3,
       scale_z: 1.3,
-      rotation_y: Math.PI * 0, // Default forward facing
+      rotation_y: Math.PI * 0,
       is_active: true
     } as CharacterType);
 
-    // Set up character13
     setCharacter13({
       id: 13,
-      name: 'Character13',
-      role: 'New Character',
+      name: NPC_CHARACTERS[13].name,
+      role: NPC_CHARACTERS[13].role,
       position_x: 21.41,
       position_y: -0.8,
       position_z: -7.6,
       scale_x: 1,
       scale_y: 1,
       scale_z: 1,
-      rotation_y: Math.PI * 1, // Default forward facing
+      rotation_y: Math.PI * 1,
       is_active: true
     } as CharacterType);
 
-    // Set up character14
     setCharacter14({
       id: 14,
-      name: 'Character14',
-      role: 'New Character',
+      name: NPC_CHARACTERS[14].name,
+      role: NPC_CHARACTERS[14].role,
       position_x: -1.5,
       position_y: 0,
       position_z: -63.5,
       scale_x: 0.1,
       scale_y: 0.1,
       scale_z: 0.1,
-      rotation_y: Math.PI * 1, // Default forward facing
+      rotation_y: Math.PI * 1,
       is_active: true
     } as CharacterType);
 
-    // Set up character15
     setCharacter15({
       id: 15,
-      name: 'Character15',
-      role: 'New Character',
+      name: NPC_CHARACTERS[15].name,
+      role: NPC_CHARACTERS[15].role,
       position_x: -13,
       position_y: 0,
       position_z: -44,
       scale_x: 0.05,
       scale_y: 0.05,
       scale_z: 0.05,
-      rotation_y: Math.PI * -0.5, // Default forward facing
+      rotation_y: Math.PI * -0.5,
       is_active: true
     } as CharacterType);
 
-    // Set up character16
     setCharacter16({
       id: 16,
-      name: 'Character16',
-      role: 'New Character',
+      name: NPC_CHARACTERS[16].name,
+      role: NPC_CHARACTERS[16].role,
       position_x: 8,
       position_y: 0,
       position_z: 13,
       scale_x: 0.15,
       scale_y: 0.15,
       scale_z: 0.15,
-      rotation_y: Math.PI * 0, // Default forward facing
+      rotation_y: Math.PI * 0,
       is_active: true
     } as CharacterType);
 
-    // Set up character17
     setCharacter17({
       id: 17,
-      name: 'Character17',
-      role: 'New Character',
+      name: NPC_CHARACTERS[17].name,
+      role: NPC_CHARACTERS[17].role,
       position_x: 18.3,
       position_y: 0,
       position_z: 12,
       scale_x: 0.006,
       scale_y: 0.006,
-      scale_z: 0.006, 
-      rotation_y: Math.PI * 0, // Default forward facing
+      scale_z: 0.006,
+      rotation_y: Math.PI * 0,
       is_active: true
     } as CharacterType);
 
-    // Set up character18
     setCharacter18({
       id: 18,
-      name: 'Character18',
-      role: 'New Character',
+      name: NPC_CHARACTERS[18].name,
+      role: NPC_CHARACTERS[18].role,
       position_x: 50,
       position_y: 1.1,
       position_z: -17,
       scale_x: 0.15,
       scale_y: 0.15,
       scale_z: 0.15,
-      rotation_y: Math.PI * 0, // Default forward facing
+      rotation_y: Math.PI * 0,
       is_active: true
     } as CharacterType);
 
-    // Set up character19
     setCharacter19({
       id: 19,
-      name: 'Character19',
-      role: 'New Character',
+      name: NPC_CHARACTERS[19].name,
+      role: NPC_CHARACTERS[19].role,
       position_x: 7,
       position_y: 0.6,
       position_z: -74,
       scale_x: 0.3,
       scale_y: 0.3,
       scale_z: 0.3,
-      rotation_y: Math.PI * 0, // Default forward facing
+      rotation_y: Math.PI * 0,
       is_active: true
     } as CharacterType);
 
-    // Set up character20
     setCharacter20({
       id: 20,
-      name: 'Character20',
-      role: 'New Character',
+      name: NPC_CHARACTERS[20].name,
+      role: NPC_CHARACTERS[20].role,
       position_x: -4,
       position_y: 0,
       position_z: -40,
       scale_x: 0.01,
       scale_y: 0.01,
       scale_z: 0.01,
-      rotation_y: Math.PI * -0.5, // Default forward facing
+      rotation_y: Math.PI * -0.5,
       is_active: true
     } as CharacterType);
 
-    // Set up character21
     setCharacter21({
       id: 21,
-      name: 'Character21',
-      role: 'New Character',
+      name: NPC_CHARACTERS[21].name,
+      role: NPC_CHARACTERS[21].role,
       position_x: 25,
       position_y: 0,
       position_z: -17,
       scale_x: 1,
       scale_y: 1,
       scale_z: 1,
-      rotation_y: Math.PI * 0, // Default forward facing
+      rotation_y: Math.PI * 0,
       is_active: true
     } as CharacterType);
 
-    // Set up character22
     setCharacter22({
       id: 22,
-      name: 'Character22',
-      role: 'New Character',
+      name: NPC_CHARACTERS[22].name,
+      role: NPC_CHARACTERS[22].role,
       position_x: -9,
       position_y: 0,
       position_z: -91,
       scale_x: 1.5,
       scale_y: 1.5,
       scale_z: 1.5,
-      rotation_y: Math.PI * 1, // Default forward facing
+      rotation_y: Math.PI * 1,
       is_active: true
     } as CharacterType);
 
-    // Set up character23
     setCharacter23({
       id: 23,
-      name: 'Character23',
-      role: 'New Character',
+      name: NPC_CHARACTERS[23].name,
+      role: NPC_CHARACTERS[23].role,
       position_x: 66,
       position_y: 0,
       position_z: -3,
       scale_x: 0.8,
       scale_y: 0.8,
       scale_z: 0.8,
-      rotation_y: Math.PI * -0.5, // Default forward facing
+      rotation_y: Math.PI * -0.5,
       is_active: true
     } as CharacterType);
 
-    // Set up character24
     setCharacter24({
       id: 24,
-      name: 'Character24',
-      role: 'New Character',
+      name: NPC_CHARACTERS[24].name,
+      role: NPC_CHARACTERS[24].role,
       position_x: 34,
       position_y: 2,
       position_z: -44,
       scale_x: 0.5,
       scale_y: 0.5,
       scale_z: 0.5,
-      rotation_y: Math.PI * 0, // Default forward facing
+      rotation_y: Math.PI * 0,
       is_active: true
     } as CharacterType);
 
-    // Set up character25
     setCharacter25({
       id: 25,
-      name: 'Character25',
-      role: 'New Character',
+      name: NPC_CHARACTERS[25].name,
+      role: NPC_CHARACTERS[25].role,
       position_x: -16,
       position_y: 0,
       position_z: 3,
       scale_x: 0.5,
       scale_y: 0.5,
       scale_z: 0.5,
-      rotation_y: Math.PI * 0.5, // Default forward facing
+      rotation_y: Math.PI * 0.5,
       is_active: true
     } as CharacterType);
 
-    // Set up character26
     setCharacter26({
       id: 26,
-      name: 'Character26',
-      role: 'New Character',
+      name: NPC_CHARACTERS[26].name,
+      role: NPC_CHARACTERS[26].role,
       position_x: 73,
       position_y: -0.1,
       position_z: -20,
       scale_x: 0.1,
       scale_y: 0.1,
       scale_z: 0.1,
-      rotation_y: Math.PI * 0.5, // Default forward facing
+      rotation_y: Math.PI * 0.5,
       is_active: true
     } as CharacterType);
 
-    // Set up character27
     setCharacter27({
       id: 27,
-      name: 'Character27',
-      role: 'New Character',
+      name: NPC_CHARACTERS[27].name,
+      role: NPC_CHARACTERS[27].role,
       position_x: 40,
       position_y: 0,
       position_z: -83,
       scale_x: 1,
       scale_y: 1,
       scale_z: 1,
-      rotation_y: Math.PI * 0.5, // Default forward facing
+      rotation_y: Math.PI * 0.5,
       is_active: true
     } as CharacterType);
 
-    // Set up character28
     setCharacter28({
       id: 28,
-      name: 'Character28',
-      role: 'New Character',
+      name: NPC_CHARACTERS[28].name,
+      role: NPC_CHARACTERS[28].role,
       position_x: -4,
       position_y: -0.2,
       position_z: -10,
       scale_x: 1.3,
       scale_y: 1.3,
       scale_z: 1.3,
-      rotation_y: Math.PI * 1, // Default forward facing
+      rotation_y: Math.PI * 1,
       is_active: true
     } as CharacterType);
 
-    // Set up character29
     setCharacter29({
       id: 29,
-      name: 'Character29',
-      role: 'New Character',
+      name: NPC_CHARACTERS[29].name,
+      role: NPC_CHARACTERS[29].role,
       position_x: 37,
       position_y: 0,
       position_z: -40,
       scale_x: 0.6,
       scale_y: 0.6,
       scale_z: 0.6,
-      rotation_y: Math.PI * 0, // Default forward facing
+      rotation_y: Math.PI * 0,
       is_active: true
     } as CharacterType);
 
-    // Set up character30
     setCharacter30({
       id: 30,
-      name: 'Character30',
-      role: 'New Character',
+      name: NPC_CHARACTERS[30].name,
+      role: NPC_CHARACTERS[30].role,
       position_x: 35,
       position_y: 0,
       position_z: -25,
       scale_x: 8,
       scale_y: 8,
       scale_z: 8,
-      rotation_y: Math.PI * 1, // Default forward facing
+      rotation_y: Math.PI * 1,
       is_active: true
     } as CharacterType);
   }, []);

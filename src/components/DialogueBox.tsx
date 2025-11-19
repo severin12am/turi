@@ -18,6 +18,7 @@ import { addWordToDictionary } from '../services/dictionary';
 import { Mission } from '../constants/missions';
 import { checkUserSentence, generateHelpSuggestion } from '../services/missionHelperRobot';
 import { generateNPCResponse } from '../services/missionNPC';
+import { getCharacterByScenario } from '../constants/characters';
 
 // Map supported languages to their speech recognition codes
 const getRecognitionLanguage = (lang: SupportedLanguage): string => {
@@ -1951,12 +1952,17 @@ Return ONLY the transliteration, nothing else.`;
       setConversationHistory(newHistory);
       console.log('[Missions] 📊 History after adding user:', newHistory.length);
       
+      // Get character data for this mission
+      const character = getCharacterByScenario(mission!.scenarioNumber);
+      
       // Get NPC response
       const npcResponse = await generateNPCResponse({
         targetLanguage,
         motherLanguage,
         missionGoal: mission!.goal,
         npcRole: mission!.npcRole,
+        npcName: character?.name || 'NPC',
+        npcGender: character?.gender || 'male',
         userLevel: 'A2',
         conversationHistory: newHistory.map(e => ({ 
           speaker: e.speaker.toLowerCase() as 'user' | 'npc', 
