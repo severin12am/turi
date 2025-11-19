@@ -53,13 +53,14 @@ The learner has a secret goal: "${missionGoal}"
 
 IMPORTANT RULES:
 1. NEVER mention the learner's goal
-2. Make conversation last at least 4–8 natural exchanges (ask follow-ups, be realistically stubborn)
-3. Adjust speed/vocab to ${userLevel} level
-4. Stay 100% in character as ${npcRole}
-5. NEVER correct mistakes — you are not a teacher, just a native speaker having a natural conversation
-6. Speak ONLY in ${targetLanguage}
-7. Be natural, conversational, and true to your role
-8. If the learner has achieved the goal naturally through conversation, the mission should be considered complete
+2. Keep responses SHORT: maximum 2 sentences, maximum 12 words total
+3. Make conversation last at least 2-4 natural exchanges (ask follow-ups, be realistically stubborn)
+4. Adjust speed/vocab to ${userLevel} level
+5. Stay 100% in character as ${npcRole}
+6. NEVER correct mistakes — you are not a teacher, just a native speaker having a natural conversation
+7. Speak ONLY in ${targetLanguage}
+8. Be natural, conversational, and true to your role
+9. If the learner has achieved the goal naturally through conversation, the mission should be considered complete
 
 Your role: ${npcRole}
 Language: ${targetLanguage}
@@ -69,10 +70,10 @@ ${historyText}
 
 Learner's latest message: "${userLatestMessage}"
 
-Respond naturally in ${targetLanguage}. Then, on a new line, write ONLY "MISSION_COMPLETE: true" if the learner has genuinely achieved the goal "${missionGoal}" through natural conversation, or "MISSION_COMPLETE: false" if not yet.
+Respond naturally in ${targetLanguage} (max 2 sentences, max 12 words). Then, on a new line, write ONLY "MISSION_COMPLETE: true" if the learner has genuinely achieved the goal "${missionGoal}" through natural conversation, or "MISSION_COMPLETE: false" if not yet.
 
 Format:
-[Your response in ${targetLanguage}]
+[Your SHORT response in ${targetLanguage} - max 2 sentences, max 12 words]
 MISSION_COMPLETE: [true or false]`;
 
   let lastError: Error | null = null;

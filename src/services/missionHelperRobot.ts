@@ -56,15 +56,13 @@ CONTEXT:
 YOUR ROLE:
 - You are a CHECKER, not a conversation participant
 - The user is talking to the NPC (${npcRole}), NOT to you
-- Only flag sentences that are SERIOUSLY wrong or incomprehensible
-- If the meaning is clear and grammar is acceptable, APPROVE IT
 
 RULES:
 1. VOICE-ONLY: No punctuation in transcribed speech - NEVER flag missing punctuation
 2. ONLY flag MAJOR errors: completely wrong grammar, wrong words, incomprehensible
 3. If the sentence communicates clearly, APPROVE even if not textbook perfect
-4. "hola cuál es tu nombre completo" = CORRECT (word order variations are fine)
-5. Minor stylistic issues = APPROVE
+4. Word order variations are fine
+5. 
 6. The user is asking the NPC questions, NOT you
 
 The user said to the NPC: "${userText}"
@@ -80,10 +78,8 @@ If there are major errors (wrong grammar, wrong words, incomprehensible):
 {
   "decision": "Incorrect",
   "explanation": "Brief friendly explanation in ${motherLanguage}",
-  "correctedSentence": "Corrected sentence in ${targetLanguage} [phonetic-transliteration] — Translation in ${motherLanguage}"
+  "correctedSentence": "Say: Corrected sentence in ${targetLanguage} [phonetic-transliteration] — Translation in ${motherLanguage}"
 }
-
-Example correctedSentence format: "¿Cómo te llamas? [KOH-moh teh YAH-mahs] — What's your name?"
 
 Return ONLY the JSON, nothing else.`;
 
