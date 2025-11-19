@@ -1368,7 +1368,7 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
           // Show initial helper message with mission goal (no banner needed)
           const initMsg = motherLanguage === 'ru' 
             ? `Миссия: ${mission.goal}\n\nНажмите кнопку или начните говорить`
-            : `Mission: ${mission.goal}\n\nClick "help me and I will make up a sentence for you! Or click "Speak" and start the conversation`;
+            : `Mission: ${mission.goal}\n\nClick "Help me" and I will make up a sentence for you! Or click "Speak" and start the conversation`;
           setMissionHelperMessage(initMsg);
           
           // Initialize empty conversation
@@ -4799,6 +4799,84 @@ Keep it simple, practical, and focused only on structure. No extra examples need
             >
               {isListening ? 'Stop' : getTranslation(motherLanguage, 'speak')}
             </button>
+          </div>
+        )}
+        
+        {/* Mission Completion Buttons - shown when mission is complete */}
+        {isMissionMode && missionCompleted && !showQuiz && (
+          <div style={{
+            marginTop: '15px',
+            padding: '20px',
+            textAlign: 'center',
+            borderTop: '2px solid rgba(255, 255, 255, 0.2)'
+          }}>
+            <div style={{
+              display: 'flex',
+              gap: '15px',
+              justifyContent: 'center',
+              flexWrap: 'wrap'
+            }}>
+              {/* Replay Full Dialogue Button */}
+              <button 
+                disabled={isPlayingFullDialogue}
+                style={{
+                  padding: '15px 30px',
+                  fontSize: '16px',
+                  fontWeight: 'bold',
+                  backgroundColor: isPlayingFullDialogue ? 'rgba(239, 68, 68, 0.8)' : 'rgba(124, 58, 237, 0.8)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '12px',
+                  cursor: isPlayingFullDialogue ? 'not-allowed' : 'pointer',
+                  transition: 'all 0.3s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+                onClick={isPlayingFullDialogue ? stopFullDialogue : playFullDialogue}
+                onMouseEnter={(e) => {
+                  if (!isPlayingFullDialogue) {
+                    e.currentTarget.style.transform = 'scale(1.05)';
+                    e.currentTarget.style.boxShadow = '0 8px 16px rgba(0, 0, 0, 0.2)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'scale(1)';
+                  e.currentTarget.style.boxShadow = 'none';
+                }}
+              >
+                <span>{isPlayingFullDialogue ? '⏹️ Stop Playback' : '🔄 Replay Full Dialogue'}</span>
+              </button>
+              
+              {/* Go to Quiz Button */}
+              <button
+                onClick={handleContinueToQuiz}
+                style={{
+                  padding: '15px 30px',
+                  fontSize: '16px',
+                  fontWeight: 'bold',
+                  backgroundColor: '#10b981',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '12px',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'scale(1.05)';
+                  e.currentTarget.style.boxShadow = '0 8px 16px rgba(0, 0, 0, 0.2)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'scale(1)';
+                  e.currentTarget.style.boxShadow = 'none';
+                }}
+              >
+                <span>🎮 Go to Quiz</span>
+              </button>
+            </div>
           </div>
         )}
         
