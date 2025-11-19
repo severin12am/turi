@@ -267,24 +267,30 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
   const [missionCompleted, setMissionCompleted] = useState<boolean>(false);
   const [showHelpMe, setShowHelpMe] = useState<boolean>(true);
   
-  // Mission mode initialization
-  useEffect(() => {
+  // Mission mode initialization - moved after all refs are defined
+  React.useEffect(() => {
     if (isMissionMode && mission) {
-      logger.info('[Missions] Mission mode initialized', {
+      console.log('[Missions] Mission mode initialized', {
         missionId: mission.id,
         goal: mission.goal,
         npcRole: mission.npcRole
       });
       
       // Set initial helper message
-      setMissionHelperMessage(
-        `${getTranslation(motherLanguage, 'mission')}: ${mission.goal}\n\n` +
-        `${getTranslation(motherLanguage, 'helpMe')} ${getTranslation(motherLanguage, 'next').toLowerCase()}.`
-      );
+      try {
+        const missionText = motherLanguage === 'ru' ? 'Миссия' : 'Mission';
+        const helpText = motherLanguage === 'ru' ? 'Помогите мне' : 'Help Me';
+        
+        setMissionHelperMessage(
+          `${missionText}: ${mission.goal}\n\n${helpText}`
+        );
+      } catch (e) {
+        console.error('[Missions] Error setting initial message', e);
+        setMissionHelperMessage(`Mission: ${mission.goal}\n\nClick Help Me to start`);
+      }
       
       // Skip normal dialogue loading in mission mode
       setIsLoading(false);
-      dialogInitialized.current = true;
     }
   }, [isMissionMode, mission, motherLanguage]);
   const currentPhraseRef = useRef<string>("");
