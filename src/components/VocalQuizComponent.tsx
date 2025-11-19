@@ -50,6 +50,7 @@ interface VocalQuizProps {
   characterId?: number;
   isScenario?: boolean;
   scenarioNumber?: number;
+  isMission?: boolean;
 }
 
 import type { SupportedLanguage } from '../constants/translations';
@@ -149,13 +150,14 @@ const getLanguageName = (lang: SupportedLanguage, displayLang: SupportedLanguage
   return languageNames[lang]?.[displayLang] || lang;
 };
 
-const VocalQuizComponent: React.FC<VocalQuizProps> = ({
-  dialogueId,
-  onComplete,
-  onClose,
+const VocalQuizComponent: React.FC<VocalQuizProps> = ({ 
+  dialogueId, 
+  onComplete, 
+  onClose, 
   characterId = 1,
   isScenario = false,
-  scenarioNumber = 1
+  scenarioNumber = 1,
+  isMission = false
 }) => {
   // Get languages from store
   const { motherLanguage, targetLanguage, user, setIsQuizActive, setIsMovementDisabled } = useStore();
@@ -219,18 +221,23 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
         console.log('🔍 QUIZ SYSTEM CHECK:', {
           dialogueId: safeDialogueId,
           isScenario,
+          isMission,
           scenarioNumber,
           characterId,
-          system: isScenario ? '✅ NEW (quiz table - exact matching)' : '❌ LEGACY (words_quiz table)'
+          system: (isScenario || isMission) ? '✅ NEW (expressions table - exact matching)' : '❌ LEGACY (words_quiz table)'
         });
         
-        // For scenarios, use 3-tier fallback: Supabase → AI → Words
-        if (isScenario) {
+        // For scenarios OR missions, use 3-tier fallback: Supabase → AI → Words
+        if (isScenario || isMission) {
           // TIER 1: Try pre-curated expressions from Supabase
           console.log('💬 Tier 1: Attempting to fetch pre-curated expressions from Supabase...');
           
+          // For missions, always use expressions_1 table (characterId = 1)
+          const effectiveCharacterId = isMission ? 1 : characterId;
+          console.log(isMission ? '🎯 Mission mode: using expressions_1 table' : `📚 Scenario mode: using expressions_${characterId} table`);
+          
           const scenarioExpressions = await fetchScenarioExpressions(
-            characterId,
+            effectiveCharacterId,
             safeDialogueId,
             scenarioNumber,
             targetLanguage,
@@ -240,7 +247,7 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
           // If expressions found, use them (fastest path)
           if (scenarioExpressions && scenarioExpressions.length > 0) {
             console.log('✅ Tier 1: Found', scenarioExpressions.length, 'pre-curated expressions');
-            setQuizWords(scenarioExpressions as VocalQuizWord[]);
+            setQuizWords(scenarioExpressions as unknown as VocalQuizWord[]);
             setIsLoading(false);
             return;
           }

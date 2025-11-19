@@ -2566,21 +2566,33 @@ Return ONLY the transliteration, nothing else.`;
           // Add a small pause after NPC speaks
           await new Promise(resolve => setTimeout(resolve, 500));
         } else if (entry.speaker === 'User') {
-          // Play user's recording if available
-          const recording = userRecordings.get(entry.step);
-          
-          if (recording) {
-            await playRecordingWithPromise(recording);
+          // In mission mode, generate TTS for user phrases (no recordings)
+          if (isMissionMode) {
+            console.log(`Mission mode: generating TTS for user phrase "${entry.phrase}"`);
+            await playAudioWithPromise(entry.phrase, entry);
             
             // Check again after async operation
             if (!isPlayingFullDialogueRef.current) break;
             
-            // Add a small pause after user recording
+            // Add a small pause after user phrase
             await new Promise(resolve => setTimeout(resolve, 500));
           } else {
-            console.log(`No recording found for user step ${entry.step}, skipping`);
-            // Still add a pause to maintain rhythm
-            await new Promise(resolve => setTimeout(resolve, 300));
+            // Play user's recording if available (regular dialogue mode)
+            const recording = userRecordings.get(entry.step);
+            
+            if (recording) {
+              await playRecordingWithPromise(recording);
+              
+              // Check again after async operation
+              if (!isPlayingFullDialogueRef.current) break;
+              
+              // Add a small pause after user recording
+              await new Promise(resolve => setTimeout(resolve, 500));
+            } else {
+              console.log(`No recording found for user step ${entry.step}, skipping`);
+              // Still add a pause to maintain rhythm
+              await new Promise(resolve => setTimeout(resolve, 300));
+            }
           }
         }
 
@@ -4353,6 +4365,7 @@ Keep it simple, practical, and focused only on structure. No extra examples need
         onClose={handleQuizClose}
         isScenario={isScenario}
         scenarioNumber={scenarioNumber}
+        isMission={isMissionMode}
       />
     );
   }
@@ -4845,7 +4858,7 @@ Keep it simple, practical, and focused only on structure. No extra examples need
                   e.currentTarget.style.boxShadow = 'none';
                 }}
               >
-                <span>{isPlayingFullDialogue ? '⏹️ Stop Playback' : '🔄 Replay Full Dialogue'}</span>
+                <span>{isPlayingFullDialogue ? ' Stop Playback' : 'Replay Full Dialogue'}</span>
               </button>
               
               {/* Go to Quiz Button */}
@@ -4874,7 +4887,7 @@ Keep it simple, practical, and focused only on structure. No extra examples need
                   e.currentTarget.style.boxShadow = 'none';
                 }}
               >
-                <span>🎮 Go to Quiz</span>
+                <span> Go to Quiz</span>
               </button>
             </div>
           </div>
