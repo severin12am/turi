@@ -312,6 +312,7 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
   const [audioStream, setAudioStream] = useState<MediaStream | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const isPlayingFullDialogueRef = useRef<boolean>(false);
+  const currentAudioRef = useRef<HTMLAudioElement | null>(null);
   
   // State for dictionary functionality
   const [addingWordToDictionary, setAddingWordToDictionary] = useState<string | null>(null);
@@ -2606,9 +2607,18 @@ Return ONLY the transliteration, nothing else.`;
     setIsPlayingFullDialogue(false);
     isPlayingFullDialogueRef.current = false;
     
+    // Stop any currently playing audio
+    if (currentAudioRef.current) {
+      currentAudioRef.current.pause();
+      currentAudioRef.current.currentTime = 0;
+      currentAudioRef.current = null;
+      console.log("⏹️ Stopped currently playing audio element");
+    }
+    
     // Stop any active speech synthesis
     if (window.speechSynthesis) {
       window.speechSynthesis.cancel();
+      console.log("⏹️ Cancelled speech synthesis");
     }
   };
 
@@ -2617,27 +2627,43 @@ Return ONLY the transliteration, nothing else.`;
    * Uses cached audio if available, otherwise generates new audio with Gemini TTS (falls back to browser TTS)
    */
   const playAudioWithPromise = async (text: string, entry?: ConversationEntry): Promise<void> => {
+    // Check if playback was stopped
+    if (!isPlayingFullDialogueRef.current) {
+      console.log('🛑 Playback stopped, aborting audio');
+      return Promise.resolve();
+    }
+    
     // Check if we have cached audio URL for this entry
     if (entry?.audioUrl) {
       console.log('🔊 FULL DIALOGUE: Using cached audio URL');
       try {
         const audio = new Audio(entry.audioUrl);
         audio.playbackRate = playbackSpeed;
+        currentAudioRef.current = audio;
         
         return new Promise((resolve, reject) => {
           audio.onended = () => {
             console.log('✅ FULL DIALOGUE: Cached audio completed');
+            if (currentAudioRef.current === audio) {
+              currentAudioRef.current = null;
+            }
             resolve();
           };
           
           audio.onerror = (error) => {
             console.error('❌ FULL DIALOGUE: Cached audio playback error, regenerating:', error);
+            if (currentAudioRef.current === audio) {
+              currentAudioRef.current = null;
+            }
             // If cached audio fails, regenerate
             playAudioWithPromise(text).then(resolve).catch(resolve);
           };
           
           audio.play().catch((error) => {
             console.error('❌ FULL DIALOGUE: Failed to play cached audio, regenerating:', error);
+            if (currentAudioRef.current === audio) {
+              currentAudioRef.current = null;
+            }
             // If cached audio fails, regenerate
             playAudioWithPromise(text).then(resolve).catch(resolve);
           });
@@ -2662,6 +2688,12 @@ Return ONLY the transliteration, nothing else.`;
       console.log('🔊 FULL DIALOGUE: Generating new audio with Gemini TTS');
       const audio = await generateSpeechWithGemini(text, targetLanguage);
       
+      // Check if playback was stopped while generating
+      if (!isPlayingFullDialogueRef.current) {
+        console.log('🛑 Playback stopped during audio generation');
+        return Promise.resolve();
+      }
+      
       // Cache the audio URL if we have an entry reference
       if (entry && audio.src) {
         console.log('💾 FULL DIALOGUE: Caching audio URL for future replays');
@@ -2674,21 +2706,31 @@ Return ONLY the transliteration, nothing else.`;
       
       // Set playback speed
       audio.playbackRate = playbackSpeed;
+      currentAudioRef.current = audio;
       
       return new Promise((resolve, reject) => {
         audio.onended = () => {
           console.log('✅ FULL DIALOGUE: Gemini TTS completed');
+          if (currentAudioRef.current === audio) {
+            currentAudioRef.current = null;
+          }
           resolve();
         };
         
         audio.onerror = (error) => {
           console.error('❌ FULL DIALOGUE: Gemini TTS playback error, falling back:', error);
+          if (currentAudioRef.current === audio) {
+            currentAudioRef.current = null;
+          }
           // Fallback to browser TTS
           playBrowserTTSWithPromise(text).then(resolve).catch(resolve);
         };
         
         audio.play().catch((error) => {
           console.error('❌ FULL DIALOGUE: Failed to play Gemini audio, falling back:', error);
+          if (currentAudioRef.current === audio) {
+            currentAudioRef.current = null;
+          }
           // Fallback to browser TTS
           playBrowserTTSWithPromise(text).then(resolve).catch(resolve);
         });
@@ -2737,27 +2779,43 @@ Return ONLY the transliteration, nothing else.`;
    * Play a recording blob and return a promise that resolves when done
    */
   const playRecordingWithPromise = (recording: Blob): Promise<void> => {
+    // Check if playback was stopped
+    if (!isPlayingFullDialogueRef.current) {
+      console.log('🛑 Playback stopped, skipping recording');
+      return Promise.resolve();
+    }
+    
     return new Promise((resolve, reject) => {
       const audioUrl = URL.createObjectURL(recording);
       const audio = new Audio(audioUrl);
       
       // Set playback speed
       audio.playbackRate = playbackSpeed;
+      currentAudioRef.current = audio;
 
       audio.onended = () => {
         URL.revokeObjectURL(audioUrl);
+        if (currentAudioRef.current === audio) {
+          currentAudioRef.current = null;
+        }
         resolve();
       };
 
       audio.onerror = (error) => {
         console.error("Error playing recording:", error);
         URL.revokeObjectURL(audioUrl);
+        if (currentAudioRef.current === audio) {
+          currentAudioRef.current = null;
+        }
         resolve(); // Resolve anyway to continue playback
       };
 
       audio.play().catch(error => {
         console.error("Error starting recording playback:", error);
         URL.revokeObjectURL(audioUrl);
+        if (currentAudioRef.current === audio) {
+          currentAudioRef.current = null;
+        }
         resolve();
       });
     });
@@ -4762,12 +4820,16 @@ Keep it simple, practical, and focused only on structure. No extra examples need
               onClick={() => {
                 console.log('[Missions] Speak button clicked, current state:', { isListening, isMissionMode, hasRecognition: !!recognitionRef.current });
                 if (!isListening) {
-                  console.log('[Missions] Starting speech recognition...');
+                  console.log('[Missions] Starting speech recognition and recording...');
                   try {
+                    // Start recording audio
+                    startRecording(currentStep);
+                    
+                    // Start speech recognition
                     if (recognitionRef.current) {
                       recognitionRef.current.start();
                       setIsListening(true);
-                      console.log('[Missions] ✅ Speech recognition started');
+                      console.log('[Missions] ✅ Speech recognition and recording started');
                     } else {
                       console.error('[Missions] ❌ Recognition ref is null!');
                     }
@@ -4775,8 +4837,15 @@ Keep it simple, practical, and focused only on structure. No extra examples need
                     console.error('[Missions] ❌ Error starting recognition:', error);
                   }
                 } else {
-                  console.log('[Missions] Stopping speech recognition...');
+                  console.log('[Missions] Stopping speech recognition and recording...');
                   try {
+                    // Stop recording audio
+                    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+                      mediaRecorderRef.current.stop();
+                      console.log('[Missions] ✅ Recording stopped');
+                    }
+                    
+                    // Stop speech recognition
                     if (recognitionRef.current) {
                       recognitionRef.current.stop();
                       setIsListening(false);
