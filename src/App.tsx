@@ -608,36 +608,37 @@ function App() {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [user, isLoggedIn]);
 
-  // Show loading screen on initial mount
-  if (!initialLoadComplete) {
-    return (
-      <TuriLoadingScreen 
-        onLoadingComplete={() => setInitialLoadComplete(true)}
-        minimumLoadTime={2000}
-      />
-    );
-  }
-
   // Check if we should show language selection immediately
   const needsLanguageSelection = !isLanguageSelected && !isLoading;
 
-  // If languages aren't selected, show HelperRobot with language selection immediately
+  // If languages aren't selected, show HelperRobot with language selection
   if (needsLanguageSelection) {
     return (
-      <div className="relative min-h-screen bg-gray-900">
-        {/* Minimal background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900"></div>
-        
-        {/* HelperRobot with language selection - no heavy 3D scene needed */}
-        <div className="fixed top-10 left-10 z-50">
-          <HelperRobot
-            instructions={{ mode: "language_selection" }}
-            onLanguageSelect={handleLanguageSelectRobot}
-            onLogin={handleLoginClickRobot}
-            onClick={handleRobotClick}
+      <>
+        {/* Loading screen overlay - shown initially while HelperRobot initializes */}
+        {!initialLoadComplete && (
+          <TuriLoadingScreen 
+            onLoadingComplete={() => setInitialLoadComplete(true)}
+            minimumLoadTime={2500}
           />
+        )}
+        
+        {/* HelperRobot is mounted underneath the loading screen so it can initialize */}
+        <div className="relative min-h-screen bg-gray-900">
+          {/* Minimal background */}
+          <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900"></div>
+          
+          {/* HelperRobot with language selection - mounts immediately but hidden by loading screen */}
+          <div className="fixed top-10 left-10 z-50">
+            <HelperRobot
+              instructions={{ mode: "language_selection" }}
+              onLanguageSelect={handleLanguageSelectRobot}
+              onLogin={handleLoginClickRobot}
+              onClick={handleRobotClick}
+            />
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
