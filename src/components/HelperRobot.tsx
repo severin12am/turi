@@ -490,17 +490,14 @@ const HelperRobot: React.FC<HelperRobotProps> = ({
   };
 
   useEffect(() => {
-    // Add 1 second delay for the first text animation to prevent glitches when deployed online
-    const timer = setTimeout(() => {
-      const whatLanguage = allTranslations.en.whatLanguage || "Hi! I'm Turi, I will guide you on your language learning journey! Firstly, what language do you already speak?";
-      const haveAccount = allTranslations.en.alreadyHaveAccount || "Already have an account?";
-      animateAllTexts(whatLanguage, haveAccount);
-    }, 1000);
+    // Show first text immediately on mount (no delay)
+    const whatLanguage = allTranslations.en.whatLanguage || "Hi! I'm Turi, I will guide you on your language learning journey! Firstly, what language do you already speak?";
+    const haveAccount = allTranslations.en.alreadyHaveAccount || "Already have an account?";
+    animateAllTexts(whatLanguage, haveAccount);
     
     // Debug mount/unmount
     console.log("🤖 HelperRobot component MOUNTED");
     return () => {
-      clearTimeout(timer);
       console.log("🤖 HelperRobot component UNMOUNTED");
     };
   }, []);
