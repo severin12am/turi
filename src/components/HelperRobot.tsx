@@ -508,7 +508,9 @@ const HelperRobot: React.FC<HelperRobotProps> = ({
   useEffect(() => {
     // Add 1 second delay for the first text animation to prevent glitches when deployed online
     const timer = setTimeout(() => {
-      animateAllTexts(translations.en.whatLanguage, translations.en.haveAccount);
+      const whatLanguage = allTranslations.en.whatLanguage || "Hi! I'm Turi, I will guide you on your language learning journey! Firstly, what language do you already speak?";
+      const haveAccount = allTranslations.en.alreadyHaveAccount || "Already have an account?";
+      animateAllTexts(whatLanguage, haveAccount);
     }, 1000);
     
     // Debug mount/unmount
@@ -530,21 +532,31 @@ const HelperRobot: React.FC<HelperRobotProps> = ({
     const lang = e.target.value;
     if (!lang) return;
     
+    // Update selected language first
     setSelectedMotherLang(lang);
     
     // Load translations first if not English
     if (lang !== 'en') {
       try {
         await loadTranslations(lang as SupportedLanguage);
+        console.log(`✅ Translations loaded for ${lang}`);
       } catch (error) {
         console.error(`Failed to load translations for ${lang}:`, error);
       }
     }
     
+    // Small delay to ensure state is updated
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
     // Now move to next step and get translations (which are now cached)
     setStep('target');
+    
+    // Get translated text from cache
     const whatToLearn = getHelperTranslation(lang, 'whatToLearn');
     const haveAccount = getHelperTranslation(lang, 'alreadyHaveAccount');
+    
+    console.log(`Using translations: whatToLearn="${whatToLearn.substring(0, 50)}..."`);
+    
     animateAllTexts(whatToLearn, haveAccount);
   };
 
