@@ -2381,17 +2381,26 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
             </p>
             
             {/* Warning message if mission wasn't counted due to help usage */}
+            {(() => {
+              console.log('[Quiz Results] Warning check:', {
+                isMission,
+                usedHelpInMission,
+                passed,
+                shouldShow: isMission && usedHelpInMission && passed
+              });
+              return null;
+            })()}
             {isMission && usedHelpInMission && passed && (
-              <div className="w-full bg-yellow-900/30 border border-yellow-600/50 p-4 rounded-lg">
+              <div className="w-full bg-yellow-900/40 border-2 border-yellow-500/70 p-5 rounded-xl shadow-lg">
                 <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0 text-2xl">
+                  <div className="flex-shrink-0 text-3xl">
                     ⚠️
                   </div>
                   <div className="flex-1">
-                    <p className="text-sm text-yellow-200 font-medium mb-1">
+                    <p className="text-base text-yellow-100 font-bold mb-2">
                       Mission not counted
                     </p>
-                    <p className="text-xs text-yellow-300/80">
+                    <p className="text-sm text-yellow-200/90 leading-relaxed">
                       You used Turi's help during this mission, so it wasn't counted as completed. Try again without help to unlock the next mission!
                     </p>
                   </div>
