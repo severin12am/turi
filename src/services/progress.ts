@@ -788,4 +788,224 @@ export const trackCompletedDialogue = async (
     logger.error('Error in trackCompletedDialogue', { error });
     throw error;
   }
+};
+
+/**
+ * Track a completed mission and update user progress
+ * Only counts as completed if:
+ * 1. User completed conversation without help
+ * 2. User passed the quiz
+ */
+export const trackCompletedMission = async (
+  userId: string,
+  scenarioNumber: number,
+  missionNumber: number,
+  usedHelp: boolean,
+  quizPassed: boolean,
+  score: number
+) => {
+  try {
+    logger.info('Tracking mission completion', { 
+      userId, 
+      scenarioNumber, 
+      missionNumber, 
+      usedHelp, 
+      quizPassed, 
+      score 
+    });
+    
+    // Validate input parameters
+    if (!Number.isInteger(scenarioNumber) || scenarioNumber < 1 || scenarioNumber > 30) {
+      throw new SecurityError('Invalid scenario number', 'INVALID_PARAMETER');
+    }
+    
+    if (!Number.isInteger(missionNumber) || missionNumber < 1 || missionNumber > 5) {
+      throw new SecurityError('Invalid mission number', 'INVALID_PARAMETER');
+    }
+    
+    if (typeof score !== 'number' || score < 0 || score > 100) {
+      throw new SecurityError('Invalid score', 'INVALID_PARAMETER');
+    }
+    
+    // CRITICAL: Mission only counts if NO HELP and QUIZ PASSED
+    const missionActuallyCompleted = !usedHelp && quizPassed;
+    
+    if (!missionActuallyCompleted) {
+      logger.warn('Mission not counted as completed', { 
+        reason: usedHelp ? 'Used help' : 'Quiz not passed',
+        usedHelp,
+        quizPassed,
+        scenarioNumber,
+        missionNumber
+      });
+      return false; // Don't update progress
+    }
+    
+    // Get target language from current user with security validation
+    const userResult = await secureQuery(
+      'get_user_for_mission_tracking',
+      userId,
+      async () => {
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select('target_language')
+          .eq('id', userId)
+          .single();
+        
+        return { data: userData, error: userError };
+      }
+    );
+    
+    const { data: userData, error: userError } = userResult;
+    
+    // Handle case when user record doesn't exist
+    let targetLanguage: SupportedLanguage = 'en'; // Default to English
+    
+    if (userError) {
+      // If no user found, try to get target language from store
+      const { targetLanguage: storeTargetLanguage } = useStore.getState();
+      if (storeTargetLanguage) {
+        targetLanguage = storeTargetLanguage;
+        logger.warn('User record not found in database, using target language from store', { 
+          userId,
+          targetLanguage 
+        });
+      }
+    } else {
+      targetLanguage = userData?.target_language as SupportedLanguage || 'en';
+    }
+    
+    // Get current language level with security validation
+    const levelResult = await secureQuery(
+      'get_language_level_for_mission',
+      userId,
+      async () => {
+        const { data, error } = await supabase
+          .from('language_levels')
+          .select('*')
+          .eq('user_id', userId)
+          .eq('target_language', targetLanguage)
+          .single();
+        
+        return { data, error };
+      }
+    );
+    
+    const { data: languageLevel, error: levelError } = levelResult;
+    
+    if (levelError && levelError.code !== 'PGRST116') {
+      throw levelError;
+    }
+    
+    // Calculate global mission ID: (scenarioNumber - 1) * 5 + missionNumber
+    // Example: Scenario 1, Mission 1 = 1
+    //          Scenario 1, Mission 5 = 5
+    //          Scenario 2, Mission 1 = 6
+    const globalMissionId = (scenarioNumber - 1) * 5 + missionNumber;
+    
+    if (languageLevel) {
+      const currentMissionProgress = languageLevel.mission_progress || 0;
+      
+      // Only update if this mission is the next one (sequential unlocking)
+      // Or if it's higher (user somehow completed a future mission)
+      const newMissionProgress = Math.max(globalMissionId, currentMissionProgress);
+      
+      logger.info('Updating mission progress', {
+        oldProgress: currentMissionProgress,
+        newProgress: newMissionProgress,
+        scenarioNumber,
+        missionNumber,
+        globalMissionId
+      });
+      
+      // Update language level with security validation
+      await secureQuery(
+        'update_mission_progress',
+        userId,
+        async () => {
+          const { data, error } = await supabase
+            .from('language_levels')
+            .update({
+              mission_progress: newMissionProgress
+            })
+            .eq('user_id', userId)
+            .eq('target_language', targetLanguage)
+            .select();
+          
+          return { data, error };
+        }
+      );
+      
+      logger.info('Mission completion tracked successfully', { 
+        scenarioNumber, 
+        missionNumber, 
+        globalMissionId,
+        newProgress: newMissionProgress 
+      });
+      
+    } else {
+      // Create new language level if doesn't exist
+      await secureQuery(
+        'create_language_level_for_mission',
+        userId,
+        async () => {
+          const { data, error } = await supabase
+            .from('language_levels')
+            .insert([{
+              user_id: userId,
+              target_language: targetLanguage,
+              mother_language: targetLanguage === 'en' ? 'ru' : 'en',
+              mission_progress: globalMissionId,
+              dialogue_number: 0,
+              word_progress: 0,
+              level: 1
+            }])
+            .select();
+          
+          return { data, error };
+        }
+      );
+      
+      logger.info('Created language level with mission progress', { 
+        scenarioNumber, 
+        missionNumber, 
+        globalMissionId 
+      });
+    }
+    
+    // ALSO SAVE TO mission_completions TABLE FOR DETAILED TRACKING
+    await secureQuery(
+      'insert_mission_completion',
+      userId,
+      async () => {
+        const { data, error } = await supabase
+          .from('mission_completions')
+          .upsert([{
+            user_id: userId,
+            scenario_number: scenarioNumber,
+            mission_number: missionNumber,
+            score: score,
+            used_help: usedHelp,
+            completed_at: new Date().toISOString()
+          }], {
+            onConflict: 'user_id,scenario_number,mission_number'
+          })
+          .select();
+        
+        return { data, error };
+      }
+    );
+    
+    logger.info('Mission completion record saved', { scenarioNumber, missionNumber });
+    
+    return true;
+    
+  } catch (error) {
+    if (error instanceof SecurityError) {
+      logger.error('Security error in trackCompletedMission', { error: error.message });
+    } else {
+      logger.error('Failed to track mission completion', { error });
+    }
+    throw error;
+  }
 }; 

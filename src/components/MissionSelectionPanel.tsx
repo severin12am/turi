@@ -13,6 +13,7 @@ import { getMissionsForScenario, Mission } from '../constants/missions';
 import { getScenarioName } from '../constants/scenarios';
 import { getTranslation } from '../constants/translations';
 import { logger } from '../services/logger';
+import { supabase } from '../services/supabase';
 
 interface MissionSelectionPanelProps {
   scenarioNumber: number;
@@ -46,9 +47,28 @@ const MissionSelectionPanel: React.FC<MissionSelectionPanelProps> = ({
           missionCount: scenarioMissions.length 
         });
 
-        // TODO: Load completed missions from database when we implement progress tracking
-        // For now, start with empty set
-        setCompletedMissions(new Set());
+        // Load completed missions from database
+        if (user?.id) {
+          const { data: completedData, error } = await supabase
+            .from('mission_completions')
+            .select('mission_number')
+            .eq('user_id', user.id)
+            .eq('scenario_number', scenarioNumber);
+          
+          if (!error && completedData) {
+            const completed = new Set(completedData.map(m => m.mission_number));
+            setCompletedMissions(completed);
+            logger.info('[MissionSelection] Loaded completed missions', { 
+              scenarioNumber,
+              completed: Array.from(completed) 
+            });
+          } else if (error) {
+            logger.error('[MissionSelection] Error loading completed missions', { error });
+            setCompletedMissions(new Set());
+          }
+        } else {
+          setCompletedMissions(new Set());
+        }
 
       } catch (error) {
         logger.error('[MissionSelection] Error loading missions', { error });
@@ -77,9 +97,21 @@ const MissionSelectionPanel: React.FC<MissionSelectionPanelProps> = ({
     return completedMissions.has(missionId);
   };
 
-  // For now, all missions are unlocked. Later we can add unlock logic
+  // Sequential mission unlocking: Mission N requires Mission N-1 to be completed
   const isMissionUnlocked = (missionNumber: number): boolean => {
-    return true;
+    // Mission 1 is always unlocked
+    if (missionNumber === 1) return true;
+    
+    // Other missions require previous mission to be completed
+    const previousMissionCompleted = completedMissions.has(missionNumber - 1);
+    
+    logger.info('[MissionSelection] Checking unlock status', {
+      missionNumber,
+      previousMissionCompleted,
+      completedMissions: Array.from(completedMissions)
+    });
+    
+    return previousMissionCompleted;
   };
 
   return (

@@ -54,6 +54,9 @@ interface VocalQuizProps {
   scenarioNumber?: number;
   isMission?: boolean;
   missionConversation?: string; // Full conversation text from mission for AI extraction
+  missionScenarioNumber?: number; // Scenario number for mission tracking
+  missionNumber?: number; // Mission number (1-5) for tracking
+  usedHelpInMission?: boolean; // Whether user used help during mission
 }
 
 import type { SupportedLanguage } from '../constants/translations';
@@ -165,7 +168,10 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
   isScenario = false,
   scenarioNumber = 1,
   isMission = false,
-  missionConversation
+  missionConversation,
+  missionScenarioNumber,
+  missionNumber,
+  usedHelpInMission = false
 }) => {
   // Get languages from store
   const { motherLanguage, targetLanguage, user, setIsQuizActive, setIsMovementDisabled } = useStore();
@@ -1974,6 +1980,36 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
           } else {
             await trackCompletedDialogue(user.id, characterId, dialogueId, passPercentage);
             console.log("VocalQuizComponent - Dialogue completion tracked for dialogue:", dialogueId, "with word count:", wordCount);
+          }
+          
+          // NEW: Track mission completion if this is a mission quiz
+          if (isMission && missionScenarioNumber !== undefined && missionNumber !== undefined) {
+            console.log("VocalQuizComponent - This is a mission quiz, tracking mission completion");
+            
+            // Import the function
+            const { trackCompletedMission } = await import('../services/progress');
+            
+            const missionTracked = await trackCompletedMission(
+              user.id,
+              missionScenarioNumber,
+              missionNumber,
+              usedHelpInMission,
+              passed, // Quiz passed
+              passPercentage
+            );
+            
+            console.log("VocalQuizComponent - Mission completion tracked:", {
+              scenario: missionScenarioNumber,
+              mission: missionNumber,
+              usedHelp: usedHelpInMission,
+              passed,
+              actuallyCompleted: missionTracked
+            });
+            
+            if (!missionTracked) {
+              console.log("VocalQuizComponent - Mission NOT counted as completed due to:", 
+                usedHelpInMission ? "Used help" : "Quiz not passed");
+            }
           }
           
           // Track which words/expressions the user has learned

@@ -342,6 +342,7 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
   const [missionCompleted, setMissionCompleted] = useState(false);
   const [currentUserInput, setCurrentUserInput] = useState<string>(''); // Current unapproved user input
   const [showHelpMe, setShowHelpMe] = useState(true); // Show "Help Me" button
+  const [usedHelpInMission, setUsedHelpInMission] = useState(false); // Track if user used help
   
   // Cleanup cached audio URLs on unmount to prevent memory leaks
   useEffect(() => {
@@ -378,6 +379,14 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
       setIsMovementDisabled(false);
     };
   }, [showSignupPrompt, setIsMovementDisabled]);
+  
+  // Reset help tracking when starting a new mission
+  useEffect(() => {
+    if (isMissionMode && mission) {
+      setUsedHelpInMission(false); // Reset for each new mission
+      console.log('[Missions] Reset help tracking for mission:', mission.id);
+    }
+  }, [isMissionMode, mission?.id]);
   
   // Debug hook to track showQuiz more intensively
   useEffect(() => {
@@ -1851,17 +1860,26 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
     
     try {
       console.log('[Missions] Help Me clicked');
+      setUsedHelpInMission(true); // Track that help was used - mission won't count as completed
       setMissionHelperMessage('Generating suggestion...');
 
       const suggestion = await generateHelpSuggestion({
         targetLanguage,
         motherLanguage,
         missionGoal: mission.goal,
-        npcRole: mission.npcRole
+        npcRole: mission.npcRole,
+        conversationHistory: conversationHistory.map(e => ({
+          speaker: e.speaker.toLowerCase() as 'user' | 'npc',
+          text: e.phrase
+        }))
       });
 
-      console.log('[Missions] Suggestion generated');
+      console.log('[Missions] Suggestion generated - mission will not count as completed');
       setMissionHelperMessage(suggestion);
+      logger.info('[Missions] Help suggestion provided - mission will not count as completed', { 
+        missionId: mission.id,
+        usedHelp: true 
+      });
       // Keep help button visible for subsequent exchanges
     } catch (error) {
       console.error('[Missions] Error generating help:', error);
@@ -4484,6 +4502,9 @@ Keep it simple, practical, and focused only on structure. No extra examples need
         scenarioNumber={scenarioNumber}
         isMission={isMissionMode}
         missionConversation={isMissionMode ? conversationHistory.map(e => e.phrase).join(' ') : undefined}
+        missionScenarioNumber={isMissionMode ? scenarioNumber : undefined}
+        missionNumber={isMissionMode ? mission?.missionNumber : undefined}
+        usedHelpInMission={usedHelpInMission}
       />
     );
   }
