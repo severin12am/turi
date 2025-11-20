@@ -2380,6 +2380,25 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
                 : 'Turi believes in you! A little more practice and you\'ll master these words.', motherLanguage)}
             </p>
             
+            {/* Warning message if mission wasn't counted due to help usage */}
+            {isMission && usedHelpInMission && passed && (
+              <div className="w-full bg-yellow-900/30 border border-yellow-600/50 p-4 rounded-lg">
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0 text-2xl">
+                    ⚠️
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm text-yellow-200 font-medium mb-1">
+                      Mission not counted
+                    </p>
+                    <p className="text-xs text-yellow-300/80">
+                      You used Turi's help during this mission, so it wasn't counted as completed. Try again without help to unlock the next mission!
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+            
             <button
               onClick={() => onComplete(passed)}
               className="w-full py-3.5 mt-2 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white rounded-lg transition-colors font-medium shadow-md cursor-pointer pointer-events-auto"

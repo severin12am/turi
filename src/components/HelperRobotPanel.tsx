@@ -10,6 +10,7 @@ import AppPanel from './AppPanel';
 import { PanelBackdrop } from './AppPanel';
 import { PanelTitle, PanelButton, PanelInput } from './PanelElements';
 import { SCENARIO_NAMES, DIALOGUES_PER_SCENARIO, TOTAL_SCENARIOS, getScenarioName, getScenarioProgress } from '../constants/scenarios';
+import { getMissionsForScenario, MISSIONS_PER_SCENARIO, getTotalMissions } from '../constants/missions';
 
 interface HelperRobotPanelProps {
   onClose: () => void;
@@ -45,6 +46,7 @@ interface LanguagePair {
   dialogue_number?: number;
   scenario_progress?: number;
   scenario_dialogue_progress?: number;
+  mission_progress?: number;
   user_id?: string;
 }
 
@@ -54,10 +56,12 @@ const HelperRobotPanel: React.FC<HelperRobotPanelProps> = ({ onClose }) => {
   const [showVocabulary, setShowVocabulary] = useState<boolean>(false);
   const [showCurrentVocabulary, setShowCurrentVocabulary] = useState<boolean>(false);
   const [showScenarios, setShowScenarios] = useState<boolean>(false);
+  const [showMissions, setShowMissions] = useState<boolean>(false);
   const [allWords, setAllWords] = useState<Word[]>([]);
   const [learnedWords, setLearnedWords] = useState<Word[]>([]);
   const [dictionaryEntries, setDictionaryEntries] = useState<DictionaryEntry[]>([]);
   const [languagePairs, setLanguagePairs] = useState<LanguagePair[]>([]);
+  const [missionCompletions, setMissionCompletions] = useState<Array<{scenario_number: number, mission_number: number}>>([]);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [dictionarySearchTerm, setDictionarySearchTerm] = useState<string>('');
   const [showHelpTooltip, setShowHelpTooltip] = useState<boolean>(false);
@@ -91,6 +95,9 @@ const HelperRobotPanel: React.FC<HelperRobotPanelProps> = ({ onClose }) => {
       
       // Load language pairs data
       await loadLanguagePairs();
+      
+      // Load mission completions
+      await loadMissionCompletions();
     } catch (error) {
       console.error('Error loading data:', error);
       logger.error('Error loading data in HelperRobotPanel', { error });
@@ -223,6 +230,29 @@ const HelperRobotPanel: React.FC<HelperRobotPanelProps> = ({ onClose }) => {
     }
   };
   
+  const loadMissionCompletions = async () => {
+    if (!user?.id) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('mission_completions')
+        .select('scenario_number, mission_number')
+        .eq('user_id', user.id);
+        
+      if (error) {
+        logger.error('Error fetching mission completions', { error });
+        return;
+      }
+      
+      if (data) {
+        console.log("Mission completions:", data);
+        setMissionCompletions(data);
+      }
+    } catch (error) {
+      logger.error('Error in loadMissionCompletions', { error });
+    }
+  };
+  
   const switchLanguagePair = async (motherLang: 'en' | 'ru', targetLang: 'en' | 'ru') => {
     setLanguages(motherLang, targetLang);
     // After switching, reload data
@@ -262,6 +292,10 @@ const HelperRobotPanel: React.FC<HelperRobotPanelProps> = ({ onClose }) => {
   
   const toggleScenarios = () => {
     setShowScenarios(!showScenarios);
+  };
+  
+  const toggleMissions = () => {
+    setShowMissions(!showMissions);
   };
   
   // Filter words based on search term
@@ -721,6 +755,109 @@ const HelperRobotPanel: React.FC<HelperRobotPanelProps> = ({ onClose }) => {
                                 </p>
                               )}
                             </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* 5. Missions Progress */}
+            <div className="bg-white/5 rounded-2xl p-5 mb-6 cursor-pointer hover:bg-white/10 transition-colors" onClick={toggleMissions}>
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="text-xl font-medium text-white/90">Missions Progress</h3>
+                <span className="text-blue-400 text-sm">{showMissions ? 'Hide Details' : 'Show Details'}</span>
+              </div>
+              <div className="mt-4">
+                {languagePairs.map(pair => {
+                  if (pair.mother_language === motherLanguage && pair.target_language === targetLanguage) {
+                    const totalMissions = getTotalMissions(); // 150 missions total
+                    const completedMissionsCount = missionCompletions.length;
+                    
+                    return (
+                      <div key={pair.id}>
+                        <div className="flex justify-between text-sm text-white/60 mb-1">
+                          <span>Missions completed</span>
+                          <span>{completedMissionsCount} / {totalMissions}</span>
+                        </div>
+                        <div className="w-full bg-white/10 rounded-full h-2">
+                          <div 
+                            className="bg-gradient-to-r from-orange-500 to-yellow-500 h-2 rounded-full" 
+                            style={{ width: `${(completedMissionsCount / totalMissions) * 100}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    );
+                  }
+                  return null;
+                })}
+              </div>
+            </div>
+            
+            {/* Missions list (shown when toggled) */}
+            {showMissions && (
+              <div className="mb-6">
+                <div className="max-h-[60vh] overflow-y-auto bg-white/5 rounded-2xl p-4">
+                  <div className="space-y-4">
+                    {Array.from({ length: 30 }, (_, i) => i + 1).map(scenarioNum => {
+                      const scenarioMissions = getMissionsForScenario(scenarioNum);
+                      
+                      return (
+                        <div key={scenarioNum} className="bg-white/5 rounded-xl p-4">
+                          <h4 className="text-lg font-semibold text-white mb-3">
+                            Scenario {scenarioNum}: {getScenarioName(scenarioNum)}
+                          </h4>
+                          
+                          <div className="space-y-2">
+                            {scenarioMissions.map((mission) => {
+                              const isCompleted = missionCompletions.some(
+                                mc => mc.scenario_number === scenarioNum && mc.mission_number === mission.missionNumber
+                              );
+                              
+                              // Check if previous mission is completed (for lock state)
+                              const isPreviousCompleted = mission.missionNumber === 1 || missionCompletions.some(
+                                mc => mc.scenario_number === scenarioNum && mc.mission_number === mission.missionNumber - 1
+                              );
+                              
+                              const isUnlocked = mission.missionNumber === 1 || isPreviousCompleted;
+                              
+                              return (
+                                <div
+                                  key={mission.id}
+                                  className={`p-3 rounded-lg transition-all ${
+                                    isCompleted
+                                      ? 'bg-green-900/20 border border-green-500/30'
+                                      : isUnlocked
+                                      ? 'bg-orange-900/20 border border-orange-500/30'
+                                      : 'bg-white/5 border border-white/10 opacity-50'
+                                  }`}
+                                >
+                                  <div className="flex items-start justify-between">
+                                    <div className="flex-1">
+                                      <div className="flex items-center gap-2 mb-1">
+                                        <span className="text-sm font-bold text-white">
+                                          Mission {mission.missionNumber}
+                                        </span>
+                                        {!isUnlocked && (
+                                          <span className="text-yellow-400 text-xs">🔒</span>
+                                        )}
+                                        {isCompleted && (
+                                          <span className="text-green-400 text-xs">✓</span>
+                                        )}
+                                      </div>
+                                      <p className={`text-xs ${isUnlocked ? 'text-white/80' : 'text-white/40'}`}>
+                                        {mission.goal}
+                                      </p>
+                                      <p className={`text-xs italic mt-1 ${isUnlocked ? 'text-white/60' : 'text-white/30'}`}>
+                                        NPC: {mission.npcRole}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
                           </div>
                         </div>
                       );
