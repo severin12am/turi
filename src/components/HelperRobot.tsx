@@ -424,6 +424,9 @@ const HelperRobot: React.FC<HelperRobotProps> = ({
   // State for rotating language placeholder
   const [placeholderLang, setPlaceholderLang] = useState<string>('en');
   
+  // Ref to track animation interval for cleanup
+  const animationIntervalRef = React.useRef<NodeJS.Timeout | null>(null);
+  
   // Use the helper function to get translations from cache
   const currentLang = selectedMotherLang || 'en';
   const t = {
@@ -456,6 +459,12 @@ const HelperRobot: React.FC<HelperRobotProps> = ({
   }, [step]);
 
   const animateAllTexts = (questionText: string, accountText: string) => {
+    // Clear any existing animation first to prevent orphaned intervals
+    if (animationIntervalRef.current) {
+      clearInterval(animationIntervalRef.current);
+      animationIntervalRef.current = null;
+    }
+    
     setIsAnimating(true);
     setHasAnimationStarted(true);
     let iteration = 0;
@@ -484,9 +493,13 @@ const HelperRobot: React.FC<HelperRobotProps> = ({
       
       if (iteration > maxLength) {
         clearInterval(interval);
+        animationIntervalRef.current = null;
         setIsAnimating(false);
       }
     }, ANIMATION_SPEED);
+    
+    // Store interval ref for cleanup
+    animationIntervalRef.current = interval;
   };
 
   useEffect(() => {
@@ -498,6 +511,11 @@ const HelperRobot: React.FC<HelperRobotProps> = ({
     // Debug mount/unmount
     console.log("🤖 HelperRobot component MOUNTED");
     return () => {
+      // Clean up animation interval on unmount to prevent orphaned intervals
+      if (animationIntervalRef.current) {
+        clearInterval(animationIntervalRef.current);
+        animationIntervalRef.current = null;
+      }
       console.log("🤖 HelperRobot component UNMOUNTED");
     };
   }, []);
