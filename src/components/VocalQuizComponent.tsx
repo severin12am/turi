@@ -1151,7 +1151,12 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
         setIsCorrect(null);
         setShowHint(false);
       } else {
+        // Last word - finish quiz and show results
         finishQuiz();
+        // Increment index to trigger results screen render
+        setCurrentWordIndex(prev => prev + 1);
+        setTranscript('');
+        setIsCorrect(null);
       }
     }, 1500);
   };
@@ -1864,7 +1869,12 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
         setIsCorrect(null);
         setShowHint(false);
       } else {
+        // Last word - finish quiz and show results
         finishQuiz();
+        // Increment index to trigger results screen render
+        setCurrentWordIndex(prev => prev + 1);
+        setTranscript('');
+        setIsCorrect(null);
       }
     }, 1000);
   };
