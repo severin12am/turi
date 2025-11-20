@@ -17,6 +17,14 @@ export interface TranslationStrings {
   goBack?: string;
   startJourney?: string;
   
+  // Helper Robot specific
+  whatLanguage?: string;
+  whatToLearn?: string;
+  ready?: string;
+  selectDifferent?: string;
+  chooseLanguage?: string;
+  chooseLanguageYouSpeak?: string;
+  
   // Helper robot instructions
   goToCharacter?: string;
   findNextCharacter?: string;
@@ -146,6 +154,14 @@ export const translations: Record<'en', TranslationStrings> = {
     languageToLearn: "Language to learn",
     goBack: "Go Back",
     startJourney: "Start my journey",
+    
+    // Helper Robot specific
+    whatLanguage: "Hi! I'm Turi, I will guide you on your language learning journey! Firstly, what language do you already speak?",
+    whatToLearn: "Good, now choose language you want to learn",
+    ready: "Ready to begin your journey!",
+    selectDifferent: "Please select a different language",
+    chooseLanguage: "Choose language...",
+    chooseLanguageYouSpeak: "Choose your native language",
     
     // Helper robot instructions
     goToCharacter: 'Go towards next character. You can review previous levels by approaching their characters but you can`t skip levels',

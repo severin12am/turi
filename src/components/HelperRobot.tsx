@@ -9,7 +9,9 @@ import AppPanel from './AppPanel';
 import { PanelBackdrop } from './AppPanel';
 import { PanelTitle, PanelButton, PanelSelect } from './PanelElements';
 import { POPULAR_LANGUAGES } from '../constants/languages';
-import { translations as allTranslations, getTranslation, SupportedLanguage } from '../constants/translations';
+import { translations as allTranslations, getTranslation, SupportedLanguage, type TranslationStrings } from '../constants/translations';
+import { translationCache } from '../services/translationCache';
+import { loadTranslations } from '../services/translationLoader';
 
 interface HelperRobotProps {
   instructions: Record<string, string>;
@@ -32,7 +34,32 @@ const languages = POPULAR_LANGUAGES.map(lang => ({
   nameRu: `${lang.nativeName} (${lang.name})`  // We'll use native name for all
 }));
 
-const translations = {
+// Helper function to get translations from cache or fallback to English
+const getHelperTranslation = (language: string, key: string): string => {
+  const lang = language as SupportedLanguage;
+  
+  // For English, return directly from bundled translations
+  if (lang === 'en') {
+    const translation = allTranslations.en[key as keyof TranslationStrings];
+    return (translation as string) || key;
+  }
+  
+  // Try to get from cache (translations loaded from Supabase)
+  const cachedTranslations = translationCache.get(lang);
+  if (cachedTranslations) {
+    const translation = cachedTranslations[key as keyof TranslationStrings];
+    if (translation) {
+      return translation as string;
+    }
+  }
+  
+  // Fallback to English
+  const englishTranslation = allTranslations.en[key as keyof TranslationStrings];
+  return (englishTranslation as string) || key;
+};
+
+// Deprecated - keeping for reference but will be replaced with cached translations
+const _localTranslations = {
   en: {
     whatLanguage: "Hi! I'm Turi, I will guide you on your language learning journey! Firstly, what language do you already speak?",
     whatToLearn: 'Good, now choose language you want to learn',
@@ -397,16 +424,43 @@ const HelperRobot: React.FC<HelperRobotProps> = ({
   // State for rotating language placeholder
   const [placeholderLang, setPlaceholderLang] = useState<string>('en');
   
-  const t = translations[selectedMotherLang as keyof typeof translations] || translations.en;
-  const placeholderText = translations[placeholderLang as keyof typeof translations]?.chooseLanguageYouSpeak || translations.en.chooseLanguageYouSpeak;
+  // Use the helper function to get translations from cache
+  const t = {
+    whatLanguage: getHelperTranslation(selectedMotherLang || 'en', 'whatLanguage'),
+    whatToLearn: getHelperTranslation(selectedMotherLang || 'en', 'whatToLearn'),
+    ready: getHelperTranslation(selectedMotherLang || 'en', 'ready'),
+    selectDifferent: getHelperTranslation(selectedMotherLang || 'en', 'selectDifferent'),
+    chooseLanguage: getHelperTranslation(selectedMotherLang || 'en', 'chooseLanguage'),
+    chooseLanguageYouSpeak: getHelperTranslation(selectedMotherLang || 'en', 'chooseLanguageYouSpeak'),
+    startJourney: getHelperTranslation(selectedMotherLang || 'en', 'startJourney'),
+    haveAccount: getHelperTranslation(selectedMotherLang || 'en', 'haveAccount'),
+    back: getHelperTranslation(selectedMotherLang || 'en', 'back')
+  };
+  const placeholderText = getHelperTranslation(placeholderLang, 'chooseLanguageYouSpeak');
 
+  // Preload translations when mother language is selected
+  useEffect(() => {
+    if (selectedMotherLang && selectedMotherLang !== 'en') {
+      loadTranslations(selectedMotherLang as SupportedLanguage).catch(error => {
+        console.error(`Failed to preload translations for ${selectedMotherLang}:`, error);
+      });
+    }
+  }, [selectedMotherLang]);
+  
   // Setup rotation of placeholder languages
   useEffect(() => {
     // Only rotate when on the mother language selection step
     if (step !== 'mother') return;
     
-    const languageCodes = Object.keys(translations);
+    const languageCodes = ['en', 'ru', 'es', 'fr', 'de', 'it', 'pt', 'ar', 'CH', 'ja'];
     let currentIndex = 0;
+    
+    // Preload a few common languages for the placeholder rotation
+    languageCodes.forEach(lang => {
+      if (lang !== 'en') {
+        loadTranslations(lang as SupportedLanguage).catch(() => {});
+      }
+    });
     
     const interval = setInterval(() => {
       currentIndex = (currentIndex + 1) % languageCodes.length;
