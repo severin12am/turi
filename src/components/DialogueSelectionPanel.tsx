@@ -516,7 +516,7 @@ const DialogueSelectionPanel: React.FC<DialogueSelectionPanelProps> = ({
               </PanelTitle>
               <button
                 onClick={fetchDialogues}
-                className="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                className="px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
                 disabled={isLoading}
               >
                 <svg className={`w-4 h-4 ${isLoading ? 'animate-spin' : 'animate-none'}`} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">

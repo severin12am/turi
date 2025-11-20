@@ -435,28 +435,29 @@ const HelperRobotPanel: React.FC<HelperRobotPanelProps> = ({ onClose }) => {
               </div>
             </div>
             
-            {/* Progress Metrics - Three panels */}
-            {/* 1. Dialogues Progress */}
-            <div className="bg-white/5 rounded-2xl p-5 mb-6">
-              <h3 className="text-xl font-medium text-white/90 mb-3">Dialogues Progress</h3>
+            {/* Progress Metrics - Reordered */}
+            {/* 1. Missions Progress */}
+            <div className="bg-white/5 rounded-2xl p-5 mb-6 cursor-pointer hover:bg-white/10 transition-colors" onClick={toggleMissions}>
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="text-xl font-medium text-white/90">Missions Progress</h3>
+                <span className="text-blue-400 text-sm">{showMissions ? 'Hide Details' : 'Show Details'}</span>
+              </div>
               <div className="mt-4">
-                {/* Estimate dialogue progress based on language level */}
                 {languagePairs.map(pair => {
                   if (pair.mother_language === motherLanguage && pair.target_language === targetLanguage) {
-                    // Calculate dialogue completion based on dialogue_number
-                    const totalDialogues = 150; // Total of 150 dialogues
-                    const completedDialogues = pair.dialogue_number || 0;
+                    const totalMissions = getTotalMissions(); // 150 missions total
+                    const completedMissionsCount = missionCompletions.length;
                     
                     return (
                       <div key={pair.id}>
                         <div className="flex justify-between text-sm text-white/60 mb-1">
-                          <span>Dialogues completed</span>
-                          <span>{completedDialogues} / {totalDialogues}</span>
+                          <span>Missions completed</span>
+                          <span>{completedMissionsCount} / {totalMissions}</span>
                         </div>
                         <div className="w-full bg-white/10 rounded-full h-2">
                           <div 
-                            className="bg-gradient-to-r from-green-500 to-teal-500 h-2 rounded-full" 
-                            style={{ width: `${(completedDialogues / totalDialogues) * 100}%` }}
+                            className="bg-gradient-to-r from-orange-500 to-yellow-500 h-2 rounded-full" 
+                            style={{ width: `${(completedMissionsCount / totalMissions) * 100}%` }}
                           ></div>
                         </div>
                       </div>
@@ -467,7 +468,252 @@ const HelperRobotPanel: React.FC<HelperRobotPanelProps> = ({ onClose }) => {
               </div>
             </div>
             
-            {/* 2. Level Progress */}
+            {/* Missions list (shown when toggled) */}
+            {showMissions && (
+              <div className="mb-6">
+                <div className="max-h-[60vh] overflow-y-auto bg-white/5 rounded-2xl p-4">
+                  <div className="space-y-4">
+                    {Array.from({ length: 30 }, (_, i) => i + 1).map(scenarioNum => {
+                      const scenarioMissions = getMissionsForScenario(scenarioNum);
+                      
+                      return (
+                        <div key={scenarioNum} className="bg-white/5 rounded-xl p-4">
+                          <h4 className="text-lg font-semibold text-white mb-3">
+                            Scenario {scenarioNum}: {getScenarioName(scenarioNum)}
+                          </h4>
+                          
+                          <div className="space-y-2">
+                            {scenarioMissions.map((mission) => {
+                              const isCompleted = missionCompletions.some(
+                                mc => mc.scenario_number === scenarioNum && mc.mission_number === mission.missionNumber
+                              );
+                              
+                              const isPreviousCompleted = mission.missionNumber === 1 || missionCompletions.some(
+                                mc => mc.scenario_number === scenarioNum && mc.mission_number === mission.missionNumber - 1
+                              );
+                              
+                              const isUnlocked = mission.missionNumber === 1 || isPreviousCompleted;
+                              
+                              return (
+                                <div
+                                  key={mission.id}
+                                  className={`p-3 rounded-lg transition-all ${
+                                    isCompleted
+                                      ? 'bg-green-900/20 border border-green-500/30'
+                                      : isUnlocked
+                                      ? 'bg-orange-900/20 border border-orange-500/30'
+                                      : 'bg-white/5 border border-white/10 opacity-50'
+                                  }`}
+                                >
+                                  <div className="flex items-start justify-between">
+                                    <div className="flex-1">
+                                      <div className="flex items-center gap-2 mb-1">
+                                        <span className="text-sm font-bold text-white">
+                                          Mission {mission.missionNumber}
+                                        </span>
+                                        {!isUnlocked && (
+                                          <span className="text-yellow-400 text-xs">🔒</span>
+                                        )}
+                                        {isCompleted && (
+                                          <span className="text-green-400 text-xs">✓</span>
+                                        )}
+                                      </div>
+                                      <p className={`text-xs ${isUnlocked ? 'text-white/80' : 'text-white/40'}`}>
+                                        {mission.goal}
+                                      </p>
+                                      <p className={`text-xs italic mt-1 ${isUnlocked ? 'text-white/60' : 'text-white/30'}`}>
+                                        NPC: {mission.npcRole}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* 2. Scenarios Progress */}
+            <div className="bg-white/5 rounded-2xl p-5 mb-6 cursor-pointer hover:bg-white/10 transition-colors" onClick={toggleScenarios}>
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="text-xl font-medium text-white/90">Scenarios Progress</h3>
+                <span className="text-blue-400 text-sm">{showScenarios ? 'Hide Details' : 'Show Details'}</span>
+              </div>
+              <div className="mt-4">
+                {languagePairs.map(pair => {
+                  if (pair.mother_language === motherLanguage && pair.target_language === targetLanguage) {
+                    let currentScenario = pair.scenario_progress || 0;
+                    let currentDialogueProgress = pair.scenario_dialogue_progress || 0;
+                    
+                    if (currentDialogueProgress >= DIALOGUES_PER_SCENARIO && currentScenario > 0) {
+                      currentScenario = currentScenario + 1;
+                      currentDialogueProgress = 0;
+                    }
+                    
+                    const scenariosCompleted = currentScenario > 0 ? currentScenario - 1 : 0;
+                    
+                    return (
+                      <div key={pair.id}>
+                        <div className="flex justify-between text-sm text-white/60 mb-1">
+                          <span>Scenarios completed</span>
+                          <span>{scenariosCompleted} / {TOTAL_SCENARIOS}</span>
+                        </div>
+                        <div className="w-full bg-white/10 rounded-full h-2">
+                          <div 
+                            className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full" 
+                            style={{ width: `${(scenariosCompleted / TOTAL_SCENARIOS) * 100}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    );
+                  }
+                  return null;
+                })}
+              </div>
+            </div>
+            
+            {/* Scenarios list (shown when toggled) */}
+            {showScenarios && (
+              <div className="mb-6">
+                <div className="max-h-[60vh] overflow-y-auto bg-white/5 rounded-2xl p-4">
+                  <div className="space-y-3">
+                    {Array.from({ length: TOTAL_SCENARIOS }, (_, i) => i + 1).map(scenarioNum => {
+                      const currentPair = languagePairs.find(
+                        pair => pair.mother_language === motherLanguage && pair.target_language === targetLanguage
+                      );
+                      
+                      let userScenarioProgress = currentPair?.scenario_progress || 0;
+                      let rawDialogueProgress = currentPair?.scenario_dialogue_progress || 0;
+                      
+                      if (rawDialogueProgress >= DIALOGUES_PER_SCENARIO && userScenarioProgress > 0) {
+                        userScenarioProgress = userScenarioProgress + 1;
+                        rawDialogueProgress = 0;
+                      }
+                      
+                      const currentScenarioDialogues = scenarioNum === userScenarioProgress
+                        ? rawDialogueProgress
+                        : 0;
+                      
+                      const isUnlocked = scenarioNum <= userScenarioProgress;
+                      const isCompleted = scenarioNum < userScenarioProgress;
+                      const isCurrent = scenarioNum === userScenarioProgress;
+                      
+                      return (
+                        <div
+                          key={scenarioNum}
+                          className={`p-4 rounded-xl transition-all ${
+                            isCompleted
+                              ? 'bg-green-900/20 border border-green-500/30'
+                              : isCurrent
+                              ? 'bg-purple-900/20 border border-purple-500/30'
+                              : 'bg-white/5 border border-white/10 opacity-50'
+                          }`}
+                        >
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-2">
+                                <span className="text-lg font-bold text-white">
+                                  Scenario {scenarioNum}
+                                </span>
+                                {!isUnlocked && (
+                                  <span className="text-yellow-400 text-sm">🔒</span>
+                                )}
+                                {isCompleted && (
+                                  <span className="text-green-400 text-sm">✓</span>
+                                )}
+                              </div>
+                              <p className={`text-sm ${isUnlocked ? 'text-white/80' : 'text-white/40'}`}>
+                                {getScenarioName(scenarioNum)}
+                              </p>
+                              {isCurrent && (
+                                <p className="text-xs text-purple-400 mt-2">
+                                  {currentScenarioDialogues} / {DIALOGUES_PER_SCENARIO} dialogues finished
+                                </p>
+                              )}
+                              {isCompleted && (
+                                <p className="text-xs text-green-400 mt-2">
+                                  {DIALOGUES_PER_SCENARIO} / {DIALOGUES_PER_SCENARIO} dialogues finished
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* 3. Current Vocabulary Section */}
+            <div className="bg-white/5 rounded-2xl p-5 mb-6 cursor-pointer hover:bg-white/10 transition-colors" onClick={toggleCurrentVocabulary}>
+              <div className="flex justify-between items-center">
+                <div>
+                  <h3 className="text-xl font-medium text-white/90">Current Vocabulary</h3>
+                  <p className="text-sm text-white/60 mt-1">{dictionaryEntries.length} saved words</p>
+                </div>
+                <span className="text-blue-400 text-sm">{showCurrentVocabulary ? 'Hide Details' : 'Show Details'}</span>
+              </div>
+            </div>
+            
+            {/* Current Vocabulary list (shown when toggled) */}
+            {showCurrentVocabulary && (
+              <div className="mb-6">
+                <PanelInput
+                  type="text"
+                  placeholder="Search saved words..."
+                  value={dictionarySearchTerm}
+                  onChange={(e) => setDictionarySearchTerm(e.target.value)}
+                  className="mb-4"
+                />
+                
+                <div className="max-h-[60vh] overflow-y-auto bg-white/5 rounded-2xl p-4">
+                  {filteredDictionaryEntries.length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {filteredDictionaryEntries.map(entry => (
+                        <div 
+                          key={entry.id}
+                          className="relative p-3 rounded-xl transition-all bg-white/5 border border-white/10 hover:bg-white/10"
+                        >
+                          <div className="space-y-1">
+                            <div 
+                              className="text-lg font-medium text-white break-words cursor-help" 
+                              title={entry.word}
+                            >
+                              {entry.word}
+                            </div>
+                            {entry.translation && (
+                              <div 
+                                className="text-sm text-slate-300 break-words cursor-help" 
+                                title={entry.translation}
+                              >
+                                {entry.translation}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-4 text-center text-white/60">
+                      {dictionarySearchTerm.trim() ? 'No words found' : 'No saved words yet. Hover over words in dialogues and click "Save to vocabulary" to add them here.'}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+            
+            {/* 4. 500 most common words separator */}
+            <div className="my-6 border-t border-white/20 pt-2">
+              <h3 className="text-lg font-medium text-white/70 text-center">500 most common words</h3>
+            </div>
+            
+            {/* 5. Level Progress */}
             <div className="bg-white/5 rounded-2xl p-5 mb-6">
               <h3 className="text-xl font-medium text-white/90 mb-3">Level Progress</h3>
               <div className="mt-4">
@@ -500,7 +746,36 @@ const HelperRobotPanel: React.FC<HelperRobotPanelProps> = ({ onClose }) => {
               </div>
             </div>
             
-            {/* 3. Vocabulary Progress */}
+            {/* 6. Dialogues Progress */}
+            <div className="bg-white/5 rounded-2xl p-5 mb-6">
+              <h3 className="text-xl font-medium text-white/90 mb-3">Dialogues Progress</h3>
+              <div className="mt-4">
+                {languagePairs.map(pair => {
+                  if (pair.mother_language === motherLanguage && pair.target_language === targetLanguage) {
+                    const totalDialogues = 150;
+                    const completedDialogues = pair.dialogue_number || 0;
+                    
+                    return (
+                      <div key={pair.id}>
+                        <div className="flex justify-between text-sm text-white/60 mb-1">
+                          <span>Dialogues completed</span>
+                          <span>{completedDialogues} / {totalDialogues}</span>
+                        </div>
+                        <div className="w-full bg-white/10 rounded-full h-2">
+                          <div 
+                            className="bg-gradient-to-r from-green-500 to-teal-500 h-2 rounded-full" 
+                            style={{ width: `${(completedDialogues / totalDialogues) * 100}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    );
+                  }
+                  return null;
+                })}
+              </div>
+            </div>
+            
+            {/* 7. Vocabulary Progress */}
             <div className="bg-white/5 rounded-2xl p-5 mb-6 cursor-pointer hover:bg-white/10 transition-colors" onClick={toggleVocabulary}>
               <div className="flex justify-between items-center mb-3">
                 <h3 className="text-xl font-medium text-white/90">Vocabulary Progress</h3>
@@ -585,284 +860,6 @@ const HelperRobotPanel: React.FC<HelperRobotPanelProps> = ({ onClose }) => {
                       No words found
                     </div>
                   )}
-                </div>
-              </div>
-            )}
-            
-            {/* Current Vocabulary Section */}
-            <div className="bg-white/5 rounded-2xl p-5 mb-6 cursor-pointer hover:bg-white/10 transition-colors" onClick={toggleCurrentVocabulary}>
-              <div className="flex justify-between items-center">
-                <div>
-                  <h3 className="text-xl font-medium text-white/90">Current Vocabulary</h3>
-                  <p className="text-sm text-white/60 mt-1">{dictionaryEntries.length} saved words</p>
-                </div>
-                <span className="text-blue-400 text-sm">{showCurrentVocabulary ? 'Hide Details' : 'Show Details'}</span>
-              </div>
-            </div>
-            
-            {/* Current Vocabulary list (shown when toggled) */}
-            {showCurrentVocabulary && (
-              <div className="mb-6">
-                <PanelInput
-                  type="text"
-                  placeholder="Search saved words..."
-                  value={dictionarySearchTerm}
-                  onChange={(e) => setDictionarySearchTerm(e.target.value)}
-                  className="mb-4"
-                />
-                
-                <div className="max-h-[60vh] overflow-y-auto bg-white/5 rounded-2xl p-4">
-                  {filteredDictionaryEntries.length > 0 ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {filteredDictionaryEntries.map(entry => (
-                        <div 
-                          key={entry.id}
-                          className="relative p-3 rounded-xl transition-all bg-white/5 border border-white/10 hover:bg-white/10"
-                        >
-                          {/* Word/Phrase and Translation */}
-                          <div className="space-y-1">
-                            <div 
-                              className="text-lg font-medium text-white break-words cursor-help" 
-                              title={entry.word}
-                            >
-                              {entry.word}
-                            </div>
-                            {entry.translation && (
-                              <div 
-                                className="text-sm text-slate-300 break-words cursor-help" 
-                                title={entry.translation}
-                              >
-                                {entry.translation}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="p-4 text-center text-white/60">
-                      {dictionarySearchTerm.trim() ? 'No words found' : 'No saved words yet. Hover over words in dialogues and click "Save to vocabulary" to add them here.'}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-            
-            {/* 4. Scenarios Progress */}
-            <div className="bg-white/5 rounded-2xl p-5 mb-6 cursor-pointer hover:bg-white/10 transition-colors" onClick={toggleScenarios}>
-              <div className="flex justify-between items-center mb-3">
-                <h3 className="text-xl font-medium text-white/90">Scenarios Progress</h3>
-                <span className="text-blue-400 text-sm">{showScenarios ? 'Hide Details' : 'Show Details'}</span>
-              </div>
-              <div className="mt-4">
-                {languagePairs.map(pair => {
-                  if (pair.mother_language === motherLanguage && pair.target_language === targetLanguage) {
-                    let currentScenario = pair.scenario_progress || 0;
-                    let currentDialogueProgress = pair.scenario_dialogue_progress || 0;
-                    
-                    // Handle edge case: if dialogue progress is >= 10 but scenario hasn't incremented yet
-                    if (currentDialogueProgress >= DIALOGUES_PER_SCENARIO && currentScenario > 0) {
-                      currentScenario = currentScenario + 1;
-                      currentDialogueProgress = 0;
-                    }
-                    
-                    // Number of completed scenarios is current - 1 (if current > 0)
-                    const scenariosCompleted = currentScenario > 0 ? currentScenario - 1 : 0;
-                    
-                    return (
-                      <div key={pair.id}>
-                        <div className="flex justify-between text-sm text-white/60 mb-1">
-                          <span>Scenarios completed</span>
-                          <span>{scenariosCompleted} / {TOTAL_SCENARIOS}</span>
-                        </div>
-                        <div className="w-full bg-white/10 rounded-full h-2">
-                          <div 
-                            className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full" 
-                            style={{ width: `${(scenariosCompleted / TOTAL_SCENARIOS) * 100}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                    );
-                  }
-                  return null;
-                })}
-              </div>
-            </div>
-            
-            {/* Scenarios list (shown when toggled) */}
-            {showScenarios && (
-              <div className="mb-6">
-                <div className="max-h-[60vh] overflow-y-auto bg-white/5 rounded-2xl p-4">
-                  <div className="space-y-3">
-                    {Array.from({ length: TOTAL_SCENARIOS }, (_, i) => i + 1).map(scenarioNum => {
-                      const currentPair = languagePairs.find(
-                        pair => pair.mother_language === motherLanguage && pair.target_language === targetLanguage
-                      );
-                      
-                      // scenario_progress represents the CURRENT scenario being worked on
-                      let userScenarioProgress = currentPair?.scenario_progress || 0;
-                      let rawDialogueProgress = currentPair?.scenario_dialogue_progress || 0;
-                      
-                      // Handle edge case: if dialogue progress is >= 10 but scenario hasn't incremented yet
-                      if (rawDialogueProgress >= DIALOGUES_PER_SCENARIO && userScenarioProgress > 0) {
-                        userScenarioProgress = userScenarioProgress + 1;
-                        rawDialogueProgress = 0;
-                      }
-                      
-                      const currentScenarioDialogues = scenarioNum === userScenarioProgress
-                        ? rawDialogueProgress
-                        : 0;
-                      
-                      const isUnlocked = scenarioNum <= userScenarioProgress;
-                      const isCompleted = scenarioNum < userScenarioProgress; // Strictly less than
-                      const isCurrent = scenarioNum === userScenarioProgress;
-                      
-                      return (
-                        <div
-                          key={scenarioNum}
-                          className={`p-4 rounded-xl transition-all ${
-                            isCompleted
-                              ? 'bg-green-900/20 border border-green-500/30'
-                              : isCurrent
-                              ? 'bg-purple-900/20 border border-purple-500/30'
-                              : 'bg-white/5 border border-white/10 opacity-50'
-                          }`}
-                        >
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-2">
-                                <span className="text-lg font-bold text-white">
-                                  Scenario {scenarioNum}
-                                </span>
-                                {!isUnlocked && (
-                                  <span className="text-yellow-400 text-sm">🔒</span>
-                                )}
-                                {isCompleted && (
-                                  <span className="text-green-400 text-sm">✓</span>
-                                )}
-                              </div>
-                              <p className={`text-sm ${isUnlocked ? 'text-white/80' : 'text-white/40'}`}>
-                                {getScenarioName(scenarioNum)}
-                              </p>
-                              {isCurrent && (
-                                <p className="text-xs text-purple-400 mt-2">
-                                  {currentScenarioDialogues} / {DIALOGUES_PER_SCENARIO} dialogues finished
-                                </p>
-                              )}
-                              {isCompleted && (
-                                <p className="text-xs text-green-400 mt-2">
-                                  {DIALOGUES_PER_SCENARIO} / {DIALOGUES_PER_SCENARIO} dialogues finished
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-            )}
-            
-            {/* 5. Missions Progress */}
-            <div className="bg-white/5 rounded-2xl p-5 mb-6 cursor-pointer hover:bg-white/10 transition-colors" onClick={toggleMissions}>
-              <div className="flex justify-between items-center mb-3">
-                <h3 className="text-xl font-medium text-white/90">Missions Progress</h3>
-                <span className="text-blue-400 text-sm">{showMissions ? 'Hide Details' : 'Show Details'}</span>
-              </div>
-              <div className="mt-4">
-                {languagePairs.map(pair => {
-                  if (pair.mother_language === motherLanguage && pair.target_language === targetLanguage) {
-                    const totalMissions = getTotalMissions(); // 150 missions total
-                    const completedMissionsCount = missionCompletions.length;
-                    
-                    return (
-                      <div key={pair.id}>
-                        <div className="flex justify-between text-sm text-white/60 mb-1">
-                          <span>Missions completed</span>
-                          <span>{completedMissionsCount} / {totalMissions}</span>
-                        </div>
-                        <div className="w-full bg-white/10 rounded-full h-2">
-                          <div 
-                            className="bg-gradient-to-r from-orange-500 to-yellow-500 h-2 rounded-full" 
-                            style={{ width: `${(completedMissionsCount / totalMissions) * 100}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                    );
-                  }
-                  return null;
-                })}
-              </div>
-            </div>
-            
-            {/* Missions list (shown when toggled) */}
-            {showMissions && (
-              <div className="mb-6">
-                <div className="max-h-[60vh] overflow-y-auto bg-white/5 rounded-2xl p-4">
-                  <div className="space-y-4">
-                    {Array.from({ length: 30 }, (_, i) => i + 1).map(scenarioNum => {
-                      const scenarioMissions = getMissionsForScenario(scenarioNum);
-                      
-                      return (
-                        <div key={scenarioNum} className="bg-white/5 rounded-xl p-4">
-                          <h4 className="text-lg font-semibold text-white mb-3">
-                            Scenario {scenarioNum}: {getScenarioName(scenarioNum)}
-                          </h4>
-                          
-                          <div className="space-y-2">
-                            {scenarioMissions.map((mission) => {
-                              const isCompleted = missionCompletions.some(
-                                mc => mc.scenario_number === scenarioNum && mc.mission_number === mission.missionNumber
-                              );
-                              
-                              // Check if previous mission is completed (for lock state)
-                              const isPreviousCompleted = mission.missionNumber === 1 || missionCompletions.some(
-                                mc => mc.scenario_number === scenarioNum && mc.mission_number === mission.missionNumber - 1
-                              );
-                              
-                              const isUnlocked = mission.missionNumber === 1 || isPreviousCompleted;
-                              
-                              return (
-                                <div
-                                  key={mission.id}
-                                  className={`p-3 rounded-lg transition-all ${
-                                    isCompleted
-                                      ? 'bg-green-900/20 border border-green-500/30'
-                                      : isUnlocked
-                                      ? 'bg-orange-900/20 border border-orange-500/30'
-                                      : 'bg-white/5 border border-white/10 opacity-50'
-                                  }`}
-                                >
-                                  <div className="flex items-start justify-between">
-                                    <div className="flex-1">
-                                      <div className="flex items-center gap-2 mb-1">
-                                        <span className="text-sm font-bold text-white">
-                                          Mission {mission.missionNumber}
-                                        </span>
-                                        {!isUnlocked && (
-                                          <span className="text-yellow-400 text-xs">🔒</span>
-                                        )}
-                                        {isCompleted && (
-                                          <span className="text-green-400 text-xs">✓</span>
-                                        )}
-                                      </div>
-                                      <p className={`text-xs ${isUnlocked ? 'text-white/80' : 'text-white/40'}`}>
-                                        {mission.goal}
-                                      </p>
-                                      <p className={`text-xs italic mt-1 ${isUnlocked ? 'text-white/60' : 'text-white/30'}`}>
-                                        NPC: {mission.npcRole}
-                                      </p>
-                                    </div>
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
                 </div>
               </div>
             )}
