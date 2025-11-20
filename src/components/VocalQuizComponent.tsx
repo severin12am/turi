@@ -2073,9 +2073,9 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
         }
       }
       
-      // Call completion callback
-      console.log("VocalQuizComponent - Calling onComplete with passed:", passed);
-      onComplete(passed);
+      // Don't call onComplete here - let the results screen handle it
+      // when user clicks "Continue my journey" button
+      console.log("VocalQuizComponent - Progress updated, showing results screen");
       logger.info('Vocal quiz completed', { 
         correctCount, 
         totalQuestions: quizWords.length,
@@ -2088,9 +2088,8 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
       console.error('VocalQuizComponent - Failed to update progress', error);
       logger.error('Failed to update quiz progress', { error, characterId, dialogueId });
       
-      // Even if we have an error, still call the completion callback
-      // This ensures the user can continue and get prompted for signup
-      onComplete(true);
+      // Even on error, we still want to show results screen
+      // Don't call onComplete here
     }
   };
   
