@@ -11,6 +11,7 @@ import HelperRobotInstructions from './components/HelperRobotInstructions';
 import type { SupportedLanguage } from './constants/translations';
 import type { AuthChangeEvent, Session } from '@supabase/supabase-js';
 import { useMobile, isMobileApp } from './hooks/useMobile';
+import { preloadTranslations } from './services/translationLoader';
 
 function App() {
   useMobile();
@@ -66,6 +67,16 @@ function App() {
   useEffect(() => {
     initializeModels();
   }, []);
+
+  // Preload translations when languages are selected
+  useEffect(() => {
+    if (motherLanguage && motherLanguage !== 'en') {
+      preloadTranslations(motherLanguage);
+    }
+    if (targetLanguage && targetLanguage !== 'en') {
+      preloadTranslations(targetLanguage);
+    }
+  }, [motherLanguage, targetLanguage]);
 
   // Proper Supabase session management
   useEffect(() => {
