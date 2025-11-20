@@ -8,6 +8,7 @@ import { logger } from './services/logger';
 import { login, signUp, debugSessionState, refreshSession } from './services/auth';
 import HelperRobotPanel from './components/HelperRobotPanel';
 import HelperRobotInstructions from './components/HelperRobotInstructions';
+import TuriLoadingScreen from './components/TuriLoadingScreen';
 import type { SupportedLanguage } from './constants/translations';
 import type { AuthChangeEvent, Session } from '@supabase/supabase-js';
 import { useMobile, isMobileApp } from './hooks/useMobile';
@@ -20,6 +21,7 @@ function App() {
   const [panelInstructions, setPanelInstructions] = useState<Record<string, string>>({ mode: "language_selection" });
   const [robotInstructions, setRobotInstructions] = useState<Record<string, string>>({ mode: "language_selection" });
   const [showHelperRobotPanel, setShowHelperRobotPanel] = useState(false);
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   const { 
     isLanguageSelected,
     setUser,
@@ -605,6 +607,16 @@ function App() {
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [user, isLoggedIn]);
+
+  // Show loading screen on initial mount
+  if (!initialLoadComplete) {
+    return (
+      <TuriLoadingScreen 
+        onLoadingComplete={() => setInitialLoadComplete(true)}
+        minimumLoadTime={2000}
+      />
+    );
+  }
 
   // Check if we should show language selection immediately
   const needsLanguageSelection = !isLanguageSelected && !isLoading;
