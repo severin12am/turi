@@ -552,7 +552,11 @@ const DialogueSelectionPanel: React.FC<DialogueSelectionPanelProps> = ({
                 <div className="mb-6">
                   <button
                     onClick={handleScenarioToggle}
-                    className="w-full flex items-center justify-between p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-colors mb-3"
+                    className={`w-full flex items-center justify-between p-4 rounded-xl transition-all duration-300 mb-3 ${
+                      scenarioProgress > characterId 
+                        ? 'bg-gradient-to-r from-green-600/20 to-emerald-600/20 hover:from-green-600/30 hover:to-emerald-600/30 border border-green-500/30 hover:border-green-500/50'
+                        : 'bg-gradient-to-r from-purple-600/20 to-pink-600/20 hover:from-purple-600/30 hover:to-pink-600/30 border border-purple-500/30 hover:border-purple-500/50'
+                    }`}
                   >
                     <div className="flex items-center gap-3">
                       <h3 className="text-white text-lg font-semibold">
