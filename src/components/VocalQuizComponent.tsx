@@ -173,6 +173,15 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
   missionNumber,
   usedHelpInMission = false
 }) => {
+  // Log props received
+  console.log('🎮 [VocalQuizComponent] Props received:', {
+    isMission,
+    usedHelpInMission,
+    missionScenarioNumber,
+    missionNumber,
+    dialogueId
+  });
+  
   // Get languages from store
   const { motherLanguage, targetLanguage, user, setIsQuizActive, setIsMovementDisabled } = useStore();
   
@@ -2319,6 +2328,15 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
     const passPercentage = (correctCount / quizWords.length) * 100;
     const passed = passPercentage >= 60; // 60% to pass
     
+    console.log('🎯 [QUIZ RESULTS SCREEN] Rendering results:', {
+      isMission,
+      usedHelpInMission,
+      passed,
+      missionScenarioNumber,
+      missionNumber,
+      shouldShowWarning: isMission && usedHelpInMission && passed
+    });
+    
     return (
       <div className="fixed inset-0 flex items-center justify-center z-50">
         <div className="w-full max-w-md p-8 mx-4 shadow-2xl rounded-xl bg-slate-900/80 backdrop-blur-md border border-slate-700 text-white pointer-events-auto">
@@ -2382,12 +2400,28 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
             
             {/* Warning message if mission wasn't counted due to help usage */}
             {(() => {
-              console.log('[Quiz Results] Warning check:', {
+              const shouldShow = isMission && usedHelpInMission && passed;
+              console.log('⚠️ [MISSION WARNING CHECK]:', {
                 isMission,
                 usedHelpInMission,
                 passed,
-                shouldShow: isMission && usedHelpInMission && passed
+                shouldShow,
+                allPropsReceived: {
+                  isMission,
+                  missionScenarioNumber,
+                  missionNumber,
+                  usedHelpInMission
+                }
               });
+              if (shouldShow) {
+                console.log('✅ WARNING SHOULD BE VISIBLE NOW!');
+              } else {
+                console.log('❌ Warning NOT showing because:', {
+                  missingMission: !isMission,
+                  missingHelp: !usedHelpInMission,
+                  missingPassed: !passed
+                });
+              }
               return null;
             })()}
             {isMission && usedHelpInMission && passed && (
