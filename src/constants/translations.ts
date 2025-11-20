@@ -265,8 +265,8 @@ export const translations: Record<'en', TranslationStrings> = {
   }
 };
 
-// Deprecated: Use the async functions from translationLoader.ts instead
-// These are kept for backwards compatibility during migration
+// Synchronous translation access with cache fallback
+// This checks if translations are already loaded in the cache
 export const getTranslation = (language: SupportedLanguage, key: keyof TranslationStrings): string => {
   // For English, return directly
   if (language === 'en') {
@@ -276,9 +276,14 @@ export const getTranslation = (language: SupportedLanguage, key: keyof Translati
     }
   }
   
-  // For other languages, return the key as fallback
-  // Components should use the async loader instead
-  console.warn(`Synchronous translation access for non-English language: ${language}. Use translationLoader instead.`);
+  // Try to get from cache (if already loaded)
+  // Import dynamically to avoid circular dependency
+  const { translationCache } = require('./translationLoader');
+  const cachedTranslations = translationCache.get(language);
+  
+  if (cachedTranslations && cachedTranslations[key]) {
+    return cachedTranslations[key] as string;
+  }
   
   // Fallback to English
   const englishTranslations = translations.en;
@@ -290,8 +295,7 @@ export const getTranslation = (language: SupportedLanguage, key: keyof Translati
   return key;
 };
 
-// Deprecated: Use the async functions from translationLoader.ts instead
-// These are kept for backwards compatibility during migration
+// Synchronous character name access with cache fallback
 export const getCharacterName = (language: SupportedLanguage, characterId: number): string => {
   // For English, return directly
   if (language === 'en') {
@@ -301,9 +305,13 @@ export const getCharacterName = (language: SupportedLanguage, characterId: numbe
     }
   }
   
-  // For other languages, return fallback
-  // Components should use the async loader instead
-  console.warn(`Synchronous character name access for non-English language: ${language}. Use translationLoader instead.`);
+  // Try to get from cache (if already loaded)
+  const { translationCache } = require('./translationLoader');
+  const cachedTranslations = translationCache.get(language);
+  
+  if (cachedTranslations?.characterNames?.[characterId]) {
+    return cachedTranslations.characterNames[characterId];
+  }
   
   // Fallback to English
   const englishTranslations = translations.en;

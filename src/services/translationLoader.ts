@@ -1,8 +1,8 @@
 import { supabase } from './supabase';
 import type { SupportedLanguage, TranslationStrings } from '../constants/translations';
 
-// Cache for loaded translations
-const translationCache = new Map<SupportedLanguage, TranslationStrings>();
+// Cache for loaded translations (exported for synchronous access)
+export const translationCache = new Map<SupportedLanguage, TranslationStrings>();
 const loadingPromises = new Map<SupportedLanguage, Promise<TranslationStrings>>();
 
 /**

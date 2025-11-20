@@ -1,13 +1,14 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import LanguageSelector from './LanguageSelector';
 import { LanguageOption } from '../types';
 import { SelectionState } from '../types';
 import { POPULAR_LANGUAGES } from '../constants/languages';
-import { translations, SupportedLanguage } from '../constants/translations';
+import { translations, SupportedLanguage, type TranslationStrings } from '../constants/translations';
 import { ArrowLeft } from 'lucide-react';
 import AppPanel from './AppPanel';
 import { PanelBackdrop } from './AppPanel';
 import { PanelTitle, PanelButton } from './PanelElements';
+import { loadTranslations } from '../services/translationLoader';
 
 interface LanguagePanelProps {
   onLanguagesSelected: (known: LanguageOption, learn: LanguageOption) => void;
@@ -17,12 +18,38 @@ const LanguagePanel: React.FC<LanguagePanelProps> = ({ onLanguagesSelected }) =>
   const [knownLanguage, setKnownLanguage] = useState<LanguageOption | null>(null);
   const [learnLanguage, setLearnLanguage] = useState<LanguageOption | null>(null);
   const [selectionState, setSelectionState] = useState<SelectionState>(SelectionState.SELECT_KNOWN);
+  const [currentTranslations, setCurrentTranslations] = useState<TranslationStrings>(translations.en);
   
   const buttonRef = useRef<HTMLButtonElement>(null);
   
-  const getTranslation = (language: LanguageOption | null) => {
-    if (!language) return null;
-    return translations[language.code as SupportedLanguage] || null;
+  // Load translations when known language changes
+  useEffect(() => {
+    if (!knownLanguage) {
+      setCurrentTranslations(translations.en);
+      return;
+    }
+
+    const languageCode = knownLanguage.code as SupportedLanguage;
+    
+    // English is always available immediately
+    if (languageCode === 'en') {
+      setCurrentTranslations(translations.en);
+      return;
+    }
+
+    // Load other languages asynchronously
+    loadTranslations(languageCode)
+      .then(data => {
+        setCurrentTranslations(data);
+      })
+      .catch(error => {
+        console.error(`Failed to load translations for ${languageCode}:`, error);
+        setCurrentTranslations(translations.en);
+      });
+  }, [knownLanguage]);
+  
+  const getTranslation = () => {
+    return currentTranslations;
   };
   
   const handleKnownLanguageChange = (language: LanguageOption) => {
@@ -56,7 +83,7 @@ const LanguagePanel: React.FC<LanguagePanelProps> = ({ onLanguagesSelected }) =>
   
   // Simplify title text logic even further
   const getTitleText = () => {
-    const translation = getTranslation(knownLanguage);
+    const translation = getTranslation();
     
     // If we have both languages selected, show the final text
     if (knownLanguage && learnLanguage) {
@@ -77,7 +104,7 @@ const LanguagePanel: React.FC<LanguagePanelProps> = ({ onLanguagesSelected }) =>
     return POPULAR_LANGUAGES.filter((lang: LanguageOption) => lang.code !== knownLanguage.code);
   };
   
-  const translation = getTranslation(knownLanguage);
+  const translation = getTranslation();
   
   return (
     <PanelBackdrop>
