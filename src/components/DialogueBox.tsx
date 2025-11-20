@@ -3869,6 +3869,8 @@ Keep it simple, practical, and focused only on structure. No extra examples need
           }, 800);
         } else {
           // Rejected - show correction
+          // Mark that help was used (correction counts as help)
+          setUsedHelpInMission(true);
           setAwaitingMissionApproval(false);
           const correctionMsg = `${decision.explanation}\n\n${decision.correctedSentence}`;
           setMissionHelperMessage(correctionMsg);
@@ -3876,6 +3878,12 @@ Keep it simple, practical, and focused only on structure. No extra examples need
           
           // Clear temp recording since it was rejected
           tempRecordingBlobRef.current = null;
+          
+          logger.info('[Missions] Correction provided - mission will not count as completed', { 
+            missionId: mission.id,
+            userText: transcript,
+            usedHelp: true 
+          });
         }
       } catch (error) {
         console.error('[Missions] Error checking sentence:', error);
