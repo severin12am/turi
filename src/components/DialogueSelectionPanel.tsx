@@ -595,11 +595,13 @@ const DialogueSelectionPanel: React.FC<DialogueSelectionPanelProps> = ({
                           <button
                             key={dialogueId}
                             onClick={() => handleScenarioDialogueClick(dialogueId)}
-                            className={`w-full text-left relative rounded-xl p-4 transition-all duration-300 ${
-                              isUnlocked 
-                                ? 'bg-white/10 hover:bg-white/20 cursor-pointer' 
-                                : 'bg-white/5 opacity-70 cursor-not-allowed'
-                            } border border-white/10`}
+                            className={`w-full text-left relative rounded-xl p-4 transition-all duration-300 border ${
+                              isCompleted
+                                ? 'bg-gradient-to-r from-green-600/20 to-emerald-600/20 hover:from-green-600/30 hover:to-emerald-600/30 border-green-500/30 hover:border-green-500/50 cursor-pointer'
+                                : isUnlocked 
+                                  ? 'bg-gradient-to-r from-purple-600/20 to-pink-600/20 hover:from-purple-600/30 hover:to-pink-600/30 border-purple-500/30 hover:border-purple-500/50 cursor-pointer' 
+                                  : 'bg-white/5 opacity-70 cursor-not-allowed border-white/10'
+                            }`}
                             disabled={!isUnlocked}
                           >
                             <div className="flex items-center justify-between mb-2">
@@ -651,11 +653,13 @@ const DialogueSelectionPanel: React.FC<DialogueSelectionPanelProps> = ({
                             key={mission.id}
                             onClick={() => isUnlocked && onMissionClick(mission)}
                             disabled={!isUnlocked}
-                            className={`w-full text-left relative rounded-xl p-4 transition-all duration-300 ${
-                              isUnlocked 
-                                ? 'bg-white/10 hover:bg-white/20 cursor-pointer' 
-                                : 'bg-white/5 opacity-70 cursor-not-allowed'
-                            } border border-white/10`}
+                            className={`w-full text-left relative rounded-xl p-4 transition-all duration-300 border ${
+                              isCompleted
+                                ? 'bg-gradient-to-r from-green-600/20 to-emerald-600/20 hover:from-green-600/30 hover:to-emerald-600/30 border-green-500/30 hover:border-green-500/50 cursor-pointer'
+                                : isUnlocked 
+                                  ? 'bg-gradient-to-r from-purple-600/20 to-pink-600/20 hover:from-purple-600/30 hover:to-pink-600/30 border-purple-500/30 hover:border-purple-500/50 cursor-pointer' 
+                                  : 'bg-white/5 opacity-70 cursor-not-allowed border-white/10'
+                            }`}
                           >
                             <div className="flex items-center justify-between mb-2">
                               <div className="flex items-center gap-2">
@@ -693,9 +697,21 @@ const DialogueSelectionPanel: React.FC<DialogueSelectionPanelProps> = ({
                 <div className="mb-6">
                   <button
                     onClick={() => setShowCommonWords(!showCommonWords)}
-                    className="w-full flex items-center justify-between p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-colors mb-3"
+                    className={`w-full flex items-center justify-between p-4 rounded-xl transition-all duration-300 mb-3 ${
+                      availableDialogues.length > 0 && availableDialogues.every(id => isDialogueCompleted(id))
+                        ? 'bg-gradient-to-r from-green-600/20 to-emerald-600/20 hover:from-green-600/30 hover:to-emerald-600/30 border border-green-500/30 hover:border-green-500/50'
+                        : 'bg-gradient-to-r from-purple-600/20 to-pink-600/20 hover:from-purple-600/30 hover:to-pink-600/30 border border-purple-500/30 hover:border-purple-500/50'
+                    }`}
                   >
-                    <h3 className="text-white text-lg font-semibold">{getTranslation(motherLanguage, 'commonWordsInContext')}</h3>
+                    <div className="flex items-center gap-3">
+                      <h3 className="text-white text-lg font-semibold">{getTranslation(motherLanguage, 'commonWordsInContext')}</h3>
+                      {availableDialogues.length > 0 && availableDialogues.every(id => isDialogueCompleted(id)) && (
+                        <div className="flex items-center px-3 py-1 rounded-lg text-xs text-green-300 bg-green-900/30">
+                          <Check size={14} className="mr-1" />
+                          <span>Completed</span>
+                        </div>
+                      )}
+                    </div>
                     {showCommonWords ? <ChevronUp size={20} className="text-white" /> : <ChevronDown size={20} className="text-white" />}
                   </button>
                   
@@ -710,11 +726,13 @@ const DialogueSelectionPanel: React.FC<DialogueSelectionPanelProps> = ({
                     <div key={dialogueId} className="space-y-2">
                       <button
                         onClick={() => handleDialogueClick(dialogueId)}
-                        className={`w-full text-left relative rounded-xl p-4 transition-all duration-300 ${
-                          isUnlocked 
-                            ? 'bg-white/10 hover:bg-white/20 cursor-pointer' 
-                            : 'bg-white/5 opacity-70 cursor-not-allowed'
-                        } border border-white/10`}
+                        className={`w-full text-left relative rounded-xl p-4 transition-all duration-300 border ${
+                          isCompleted
+                            ? 'bg-gradient-to-r from-green-600/20 to-emerald-600/20 hover:from-green-600/30 hover:to-emerald-600/30 border-green-500/30 hover:border-green-500/50 cursor-pointer'
+                            : isUnlocked 
+                              ? 'bg-gradient-to-r from-purple-600/20 to-pink-600/20 hover:from-purple-600/30 hover:to-pink-600/30 border-purple-500/30 hover:border-purple-500/50 cursor-pointer' 
+                              : 'bg-white/5 opacity-70 cursor-not-allowed border-white/10'
+                        }`}
                         disabled={!isUnlocked}
                       >
                         <div className="flex items-center justify-between mb-2">
