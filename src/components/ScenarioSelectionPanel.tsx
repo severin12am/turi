@@ -245,32 +245,6 @@ const ScenarioSelectionPanel: React.FC<ScenarioSelectionPanelProps> = ({
               </div>
             ) : (
               <>
-                {/* Missions Section */}
-                {onMissionsClick && (
-                  <div className="mb-6">
-                    <button
-                      onClick={onMissionsClick}
-                      className="w-full text-left relative rounded-xl p-6 transition-all duration-300 bg-gradient-to-r from-purple-600/30 to-pink-600/30 hover:from-purple-600/40 hover:to-pink-600/40 border border-purple-500/50 hover:border-purple-500/70"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="flex items-center gap-2 mb-2">
-                            <h3 className="text-white font-bold text-xl">
-                              {getTranslation(motherLanguage, 'missions')}
-                            </h3>
-                          </div>
-                          <p className="text-white/80 text-sm">
-                            {getTranslation(motherLanguage, 'missionDescription')}
-                          </p>
-                        </div>
-                        <div className="flex items-center text-purple-300 bg-purple-900/30 px-4 py-2 rounded-lg">
-                          <span className="font-medium">5 {getTranslation(motherLanguage, 'missions')}</span>
-                        </div>
-                      </div>
-                    </button>
-                  </div>
-                )}
-                
                 {/* Regular Dialogues Section */}
                 <h3 className="text-white text-lg font-semibold mb-3">
                   {getTranslation(motherLanguage, 'regularDialogues')}

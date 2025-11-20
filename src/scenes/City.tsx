@@ -2150,6 +2150,7 @@ const CityScene: React.FC = () => {
           onDialogueSelect={handleDialogueSelect}
           onAIDialogueSelect={handleAIDialogueSelect}
           onScenarioClick={handleScenarioClick}
+          onScenarioDialogueSelect={handleScenarioDialogueSelect}
           onMissionClick={handleMissionClickFromPanel}
           onClose={handleDialogueSelectionClose}
         />

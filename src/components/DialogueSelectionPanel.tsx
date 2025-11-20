@@ -22,6 +22,7 @@ interface DialogueSelectionPanelProps {
   onDialogueSelect: (dialogueId: number) => void;
   onAIDialogueSelect: (dialogueId: number, aiDialogue: AIDialogueStep[]) => void;
   onScenarioClick?: (scenarioNumber: number) => void;
+  onScenarioDialogueSelect?: (dialogueId: number, scenarioNumber: number) => void;
   onMissionClick?: (mission: Mission) => void;
   onClose: () => void;
 }
@@ -37,6 +38,7 @@ const DialogueSelectionPanel: React.FC<DialogueSelectionPanelProps> = ({
   onDialogueSelect,
   onAIDialogueSelect,
   onScenarioClick,
+  onScenarioDialogueSelect,
   onMissionClick,
   onClose
 }) => {
@@ -52,6 +54,9 @@ const DialogueSelectionPanel: React.FC<DialogueSelectionPanelProps> = ({
   const [missions, setMissions] = useState<Mission[]>([]);
   const [completedMissions, setCompletedMissions] = useState<Set<number>>(new Set());
   const [showCommonWords, setShowCommonWords] = useState(false);
+  const [showScenarioDialogues, setShowScenarioDialogues] = useState(false);
+  const [scenarioDialogues, setScenarioDialogues] = useState<number[]>([]);
+  const [scenarioCompletedDialogues, setScenarioCompletedDialogues] = useState<DialogueProgress[]>([]);
   
   const { user, motherLanguage, targetLanguage } = useStore();
   
@@ -308,6 +313,91 @@ const DialogueSelectionPanel: React.FC<DialogueSelectionPanelProps> = ({
     setShowAIModal(false);
     setSelectedDialogueForAI(null);
   };
+
+  // Handle scenario expand/collapse
+  const handleScenarioToggle = async () => {
+    const newShowState = !showScenarioDialogues;
+    setShowScenarioDialogues(newShowState);
+    
+    if (newShowState && scenarioDialogues.length === 0) {
+      // Fetch scenario dialogues
+      try {
+        const scenarioNumber = characterId;
+        const sourceTable = `scenario_${characterId}`;
+        
+        const { data: dialogueData, error } = await supabase
+          .from(sourceTable)
+          .select('dialogue_id');
+          
+        if (!error && dialogueData) {
+          const uniqueDialogueIds = [...new Set(dialogueData.map(item => item.dialogue_id) || [])]
+            .sort((a, b) => a - b);
+          setScenarioDialogues(uniqueDialogueIds);
+          
+          // Get completed dialogues for this scenario
+          if (user?.id) {
+            const { data: languageLevel } = await supabase
+              .from('language_levels')
+              .select('*')
+              .eq('user_id', user.id)
+              .eq('target_language', targetLanguage)
+              .single();
+            
+            if (languageLevel) {
+              let globalScenarioProgress = languageLevel.scenario_progress || 0;
+              let globalDialogueProgress = languageLevel.scenario_dialogue_progress || 0;
+              
+              if (globalDialogueProgress >= DIALOGUES_PER_SCENARIO && globalScenarioProgress > 0) {
+                globalScenarioProgress = globalScenarioProgress + 1;
+                globalDialogueProgress = 0;
+              }
+              
+              let highestCompletedDialogue = 0;
+              if (scenarioNumber < globalScenarioProgress) {
+                highestCompletedDialogue = DIALOGUES_PER_SCENARIO;
+              } else if (scenarioNumber === globalScenarioProgress) {
+                highestCompletedDialogue = globalDialogueProgress;
+              }
+              
+              if (highestCompletedDialogue > 0) {
+                const progressData: DialogueProgress[] = [];
+                for (let i = 1; i <= highestCompletedDialogue; i++) {
+                  progressData.push({
+                    dialogue_id: i,
+                    completed: true,
+                    score: 100
+                  });
+                }
+                setScenarioCompletedDialogues(progressData);
+              }
+            }
+          }
+        }
+      } catch (error) {
+        logger.error('Error fetching scenario dialogues', { error });
+      }
+    }
+  };
+
+  const isScenarioDialogueUnlocked = (dialogueId: number): boolean => {
+    if (dialogueId === 1) return true;
+    return scenarioCompletedDialogues.some(dialogue => 
+      dialogue.dialogue_id === dialogueId - 1 && dialogue.completed
+    );
+  };
+  
+  const isScenarioDialogueCompleted = (dialogueId: number): boolean => {
+    return scenarioCompletedDialogues.some(dialogue => 
+      dialogue.dialogue_id === dialogueId && dialogue.completed
+    );
+  };
+
+  const handleScenarioDialogueClick = (dialogueId: number) => {
+    if (isScenarioDialogueUnlocked(dialogueId) && onScenarioDialogueSelect) {
+      const scenarioNumber = characterId;
+      onScenarioDialogueSelect(dialogueId, scenarioNumber);
+    }
+  };
   
   // DEBUG: Function to manually mark dialogue 1 as completed
   const manuallyMarkDialogueComplete = async (dialogueId: number) => {
@@ -458,67 +548,90 @@ const DialogueSelectionPanel: React.FC<DialogueSelectionPanelProps> = ({
               </div>
             ) : (
               <>
-                {/* Scenarios Section */}
-                {onScenarioClick && (
-                  <div className="mb-6">
-                    <h3 className="text-white text-lg font-semibold mb-3">Scenarios</h3>
-                    <div className="space-y-3">
-                      {/* Show the scenario corresponding to this character */}
-                      {(() => {
-                        // Character ID = Scenario Number (character 1 = scenario 1, character 2 = scenario 2, etc.)
-                        const scenarioNum = characterId;
-                        
-                        // Check if this scenario is completed (scenarioProgress > scenarioNum means we've moved past it)
-                        const isCompleted = scenarioProgress > scenarioNum;
-                        // Check if this is the current scenario
-                        const isCurrent = scenarioProgress === scenarioNum;
+                {/* Scenarios Section - Collapsible */}
+                <div className="mb-6">
+                  <button
+                    onClick={handleScenarioToggle}
+                    className="w-full flex items-center justify-between p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-colors mb-3"
+                  >
+                    <div className="flex items-center gap-3">
+                      <h3 className="text-white text-lg font-semibold">
+                        Scenario {characterId}: {getScenarioName(characterId)}
+                      </h3>
+                      <div className={`flex items-center px-3 py-1 rounded-lg text-xs ${
+                        scenarioProgress > characterId 
+                          ? 'text-green-300 bg-green-900/30'
+                          : 'text-purple-300 bg-purple-900/30'
+                      }`}>
+                        {scenarioProgress > characterId ? (
+                          <>
+                            <Check size={14} className="mr-1" />
+                            <span>Completed</span>
+                          </>
+                        ) : scenarioProgress === characterId && scenarioDialogueProgress > 0 ? (
+                          <span>{scenarioDialogueProgress} / {DIALOGUES_PER_SCENARIO} {getTranslation(motherLanguage, 'dialoguesCompleted')}</span>
+                        ) : (
+                          <>
+                            <PlayCircle size={14} className="mr-1" />
+                            <span>Available</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    {showScenarioDialogues ? <ChevronUp size={20} className="text-white" /> : <ChevronDown size={20} className="text-white" />}
+                  </button>
+                  
+                  {showScenarioDialogues && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mt-3">
+                      {scenarioDialogues.map((dialogueId) => {
+                        const isCompleted = isScenarioDialogueCompleted(dialogueId);
+                        const isUnlocked = isScenarioDialogueUnlocked(dialogueId);
                         
                         return (
                           <button
-                            key={scenarioNum}
-                            onClick={() => onScenarioClick(scenarioNum)}
+                            key={dialogueId}
+                            onClick={() => handleScenarioDialogueClick(dialogueId)}
                             className={`w-full text-left relative rounded-xl p-4 transition-all duration-300 ${
-                              isCompleted 
-                                ? 'bg-gradient-to-r from-green-600/20 to-emerald-600/20 hover:from-green-600/30 hover:to-emerald-600/30 border border-green-500/30 hover:border-green-500/50'
-                                : 'bg-gradient-to-r from-purple-600/20 to-pink-600/20 hover:from-purple-600/30 hover:to-pink-600/30 border border-purple-500/30 hover:border-purple-500/50'
-                            }`}
+                              isUnlocked 
+                                ? 'bg-white/10 hover:bg-white/20 cursor-pointer' 
+                                : 'bg-white/5 opacity-70 cursor-not-allowed'
+                            } border border-white/10`}
+                            disabled={!isUnlocked}
                           >
                             <div className="flex items-center justify-between mb-2">
-                              <span className="text-white font-medium text-lg">
-                                Scenario {scenarioNum}: {getScenarioName(scenarioNum)}
+                              <span className="text-white font-medium">
+                                {getTranslation(motherLanguage, 'dialogue')} {dialogueId}
                               </span>
-                              <div className={`flex items-center px-3 py-1 rounded-lg text-xs ${
-                                isCompleted 
-                                  ? 'text-green-300 bg-green-900/30'
-                                  : 'text-purple-300 bg-purple-900/30'
-                              }`}>
-                                {isCompleted ? (
-                                  <>
-                                    <Check size={14} className="mr-1" />
-                                    <span>Completed</span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <PlayCircle size={14} className="mr-1" />
-                                    <span>{isCurrent ? 'Current' : 'Available'}</span>
-                                  </>
-                                )}
-                              </div>
+                              {isCompleted ? (
+                                <div className="flex items-center text-emerald-400 bg-emerald-900/30 px-2 py-1 rounded-lg text-xs">
+                                  <Check size={12} className="mr-1" />
+                                  <span>{getTranslation(motherLanguage, 'completed')}</span>
+                                </div>
+                              ) : isUnlocked ? (
+                                <div className="flex items-center text-blue-400 bg-blue-900/30 px-2 py-1 rounded-lg text-xs">
+                                  <PlayCircle size={12} className="mr-1" />
+                                  <span>{getTranslation(motherLanguage, 'available')}</span>
+                                </div>
+                              ) : (
+                                <div className="flex items-center text-gray-400 bg-gray-900/30 px-2 py-1 rounded-lg text-xs">
+                                  <Lock size={12} className="mr-1" />
+                                  <span>{getTranslation(motherLanguage, 'locked')}</span>
+                                </div>
+                              )}
                             </div>
-                            <p className="text-white/70 text-sm">
+                            <p className="text-white/60 text-sm">
                               {isCompleted 
-                                ? `${DIALOGUES_PER_SCENARIO} / ${DIALOGUES_PER_SCENARIO} ${getTranslation(motherLanguage, 'dialoguesCompleted')}`
-                                : isCurrent && scenarioDialogueProgress > 0
-                                  ? `${scenarioDialogueProgress} / ${DIALOGUES_PER_SCENARIO} ${getTranslation(motherLanguage, 'dialoguesCompleted')}`
-                                  : getTranslation(motherLanguage, 'scenarioDescription')
-                              }
+                                ? getTranslation(motherLanguage, 'completedText')
+                                : isUnlocked 
+                                  ? getTranslation(motherLanguage, 'clickToStartText')
+                                  : getTranslation(motherLanguage, 'completePreviousText')}
                             </p>
                           </button>
                         );
-                      })()}
+                      })}
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
                 
                 {/* Missions Section */}
                 {onMissionClick && missions.length > 0 && (
