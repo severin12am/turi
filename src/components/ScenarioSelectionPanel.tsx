@@ -255,7 +255,6 @@ const ScenarioSelectionPanel: React.FC<ScenarioSelectionPanelProps> = ({
                       <div className="flex items-center justify-between">
                         <div>
                           <div className="flex items-center gap-2 mb-2">
-                            <span className="text-2xl">🎯</span>
                             <h3 className="text-white font-bold text-xl">
                               {getTranslation(motherLanguage, 'missions')}
                             </h3>

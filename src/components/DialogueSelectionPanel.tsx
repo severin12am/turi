@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../services/supabase';
 import { logger } from '../services/logger';
-import { Lock, Check, PlayCircle, X, Sparkles } from 'lucide-react';
+import { Lock, Check, PlayCircle, X, Sparkles, ChevronDown, ChevronUp, Target } from 'lucide-react';
 import { useStore } from '../store';
 import { getCompletedDialogues } from '../services/auth';
 import AppPanel from './AppPanel';
@@ -10,6 +10,7 @@ import { PanelTitle, PanelButton } from './PanelElements';
 import AIDialogueModal from './AIDialogueModal';
 import { AIDialogueStep } from '../services/gemini';
 import { getScenarioName, DIALOGUES_PER_SCENARIO } from '../constants/scenarios';
+import { getMissionsForScenario, Mission } from '../constants/missions';
 
 
 
@@ -21,6 +22,7 @@ interface DialogueSelectionPanelProps {
   onDialogueSelect: (dialogueId: number) => void;
   onAIDialogueSelect: (dialogueId: number, aiDialogue: AIDialogueStep[]) => void;
   onScenarioClick?: (scenarioNumber: number) => void;
+  onMissionClick?: (mission: Mission) => void;
   onClose: () => void;
 }
 
@@ -35,6 +37,7 @@ const DialogueSelectionPanel: React.FC<DialogueSelectionPanelProps> = ({
   onDialogueSelect,
   onAIDialogueSelect,
   onScenarioClick,
+  onMissionClick,
   onClose
 }) => {
   const [availableDialogues, setAvailableDialogues] = useState<number[]>([]);
@@ -46,6 +49,9 @@ const DialogueSelectionPanel: React.FC<DialogueSelectionPanelProps> = ({
   const [dialogueWords, setDialogueWords] = useState<Record<number, string[]>>({});
   const [scenarioProgress, setScenarioProgress] = useState<number>(0);
   const [scenarioDialogueProgress, setScenarioDialogueProgress] = useState<number>(0);
+  const [missions, setMissions] = useState<Mission[]>([]);
+  const [completedMissions, setCompletedMissions] = useState<Set<number>>(new Set());
+  const [showCommonWords, setShowCommonWords] = useState(false);
   
   const { user, motherLanguage, targetLanguage } = useStore();
   
@@ -124,6 +130,11 @@ const DialogueSelectionPanel: React.FC<DialogueSelectionPanelProps> = ({
       // Fetch words for each dialogue for AI generation
       await fetchDialogueWords(uniqueDialogueIds);
       
+      // Fetch missions for this character's scenario
+      const scenarioNumber = characterId; // Character ID = Scenario Number
+      const scenarioMissions = getMissionsForScenario(scenarioNumber);
+      setMissions(scenarioMissions);
+      
       // Fetch user progress if logged in
       if (user?.id) {
         try {
@@ -157,6 +168,20 @@ const DialogueSelectionPanel: React.FC<DialogueSelectionPanelProps> = ({
             
             setScenarioProgress(currentScenarioProgress);
             setScenarioDialogueProgress(currentDialogueProgress);
+          }
+          
+          // Load completed missions from database
+          const { data: completedData, error: missionsError } = await supabase
+            .from('mission_completions')
+            .select('mission_number')
+            .eq('user_id', user.id)
+            .eq('scenario_number', scenarioNumber);
+          
+          if (!missionsError && completedData) {
+            const completed = new Set(completedData.map(m => m.mission_number));
+            setCompletedMissions(completed);
+          } else {
+            setCompletedMissions(new Set());
           }
           
           // Use dialogue_number if available, otherwise fall back to word_progress
@@ -495,9 +520,70 @@ const DialogueSelectionPanel: React.FC<DialogueSelectionPanelProps> = ({
                   </div>
                 )}
                 
-                {/* Regular Dialogues Section */}
-                <h3 className="text-white text-lg font-semibold mb-3">{getTranslation(motherLanguage, 'regularDialogues')}</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                {/* Missions Section */}
+                {onMissionClick && missions.length > 0 && (
+                  <div className="mb-6">
+                    <h3 className="text-white text-lg font-semibold mb-3">{getTranslation(motherLanguage, 'missions')}</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {missions.map((mission) => {
+                        const isCompleted = completedMissions.has(mission.missionNumber);
+                        const isUnlocked = mission.missionNumber === 1 || completedMissions.has(mission.missionNumber - 1);
+                        
+                        return (
+                          <button
+                            key={mission.id}
+                            onClick={() => isUnlocked && onMissionClick(mission)}
+                            disabled={!isUnlocked}
+                            className={`w-full text-left relative rounded-xl p-4 transition-all duration-300 ${
+                              isUnlocked 
+                                ? 'bg-white/10 hover:bg-white/20 cursor-pointer' 
+                                : 'bg-white/5 opacity-70 cursor-not-allowed'
+                            } border border-white/10`}
+                          >
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center gap-2">
+                                <Target size={16} className="text-purple-400" />
+                                <span className="text-white font-medium">
+                                  {getTranslation(motherLanguage, 'mission')} {mission.missionNumber}
+                                </span>
+                              </div>
+                              {isCompleted ? (
+                                <div className="flex items-center text-emerald-400 bg-emerald-900/30 px-2 py-1 rounded-lg text-xs">
+                                  <Check size={12} className="mr-1" />
+                                  <span>{getTranslation(motherLanguage, 'completed')}</span>
+                                </div>
+                              ) : isUnlocked ? (
+                                <div className="flex items-center text-blue-400 bg-blue-900/30 px-2 py-1 rounded-lg text-xs">
+                                  <PlayCircle size={12} className="mr-1" />
+                                  <span>{getTranslation(motherLanguage, 'available')}</span>
+                                </div>
+                              ) : (
+                                <div className="flex items-center text-gray-400 bg-gray-900/30 px-2 py-1 rounded-lg text-xs">
+                                  <Lock size={12} className="mr-1" />
+                                  <span>{getTranslation(motherLanguage, 'locked')}</span>
+                                </div>
+                              )}
+                            </div>
+                            <p className="text-white/70 text-sm">{mission.goal}</p>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+                
+                {/* 500 Most Common Words in Context Section - Collapsible */}
+                <div className="mb-6">
+                  <button
+                    onClick={() => setShowCommonWords(!showCommonWords)}
+                    className="w-full flex items-center justify-between p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-colors mb-3"
+                  >
+                    <h3 className="text-white text-lg font-semibold">{getTranslation(motherLanguage, 'commonWordsInContext')}</h3>
+                    {showCommonWords ? <ChevronUp size={20} className="text-white" /> : <ChevronDown size={20} className="text-white" />}
+                  </button>
+                  
+                  {showCommonWords && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                 {availableDialogues.map((dialogueId) => {
                   const isCompleted = isDialogueCompleted(dialogueId);
                   const isUnlocked = isDialogueUnlocked(dialogueId);
@@ -556,6 +642,8 @@ const DialogueSelectionPanel: React.FC<DialogueSelectionPanelProps> = ({
                     </div>
                   );
                 })}
+                    </div>
+                  )}
                 </div>
               </>
             )}

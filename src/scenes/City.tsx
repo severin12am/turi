@@ -1712,6 +1712,13 @@ const CityScene: React.FC = () => {
     logger.info('[Missions] Mission selection opened', { scenarioNumber: selectedScenarioNumber });
   };
   
+  // Handle mission click from dialogue selection panel
+  const handleMissionClickFromPanel = (mission: Mission) => {
+    console.log('Mission clicked from panel:', mission);
+    handleMissionSelect(mission);
+    setShowDialogueSelection(false);
+  };
+  
   // Handle mission selection
   const handleMissionSelect = (mission: Mission) => {
     console.log('Mission selected:', mission);
@@ -2133,7 +2140,7 @@ const CityScene: React.FC = () => {
           aiDialogue={aiDialogue}
           isScenario={isScenarioDialogue}
           scenarioNumber={selectedScenarioNumber}
-          mission={isMissionMode ? selectedMission : undefined}
+          mission={isMissionMode && selectedMission ? selectedMission : undefined}
         />
       )}
       
@@ -2143,6 +2150,7 @@ const CityScene: React.FC = () => {
           onDialogueSelect={handleDialogueSelect}
           onAIDialogueSelect={handleAIDialogueSelect}
           onScenarioClick={handleScenarioClick}
+          onMissionClick={handleMissionClickFromPanel}
           onClose={handleDialogueSelectionClose}
         />
       )}

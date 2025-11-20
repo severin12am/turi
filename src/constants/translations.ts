@@ -120,6 +120,7 @@ export interface TranslationStrings {
   scenarioDescription?: string;
   dialoguesCompleted?: string;
   regularDialogues?: string;
+  commonWordsInContext?: string;
   
   // Dialogue completion
   completeInHideOrTranslationMode?: string;
@@ -264,6 +265,7 @@ export const translations: Record<'en', TranslationStrings> = {
     scenarioDescription: 'Practice real-world conversation scenarios',
     dialoguesCompleted: 'dialogues completed',
     regularDialogues: 'Regular Dialogues',
+    commonWordsInContext: '500 most common words in context',
     completeInHideOrTranslationMode: 'To prove you\'ve mastered this dialogue, complete in Hide or Translation mode to proceed (click visibility button)',
     pleaseSignIn: 'Please sign in to save words to your dictionary',
     
