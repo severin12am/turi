@@ -20,6 +20,7 @@ interface HelperRobotProps {
   position?: { x: number; y: number };
   scale?: number;
   onClick?: () => void;
+  onReady?: () => void; // Callback when component is ready to show
 }
 
 const ANIMATION_SPEED = 30;
@@ -398,7 +399,8 @@ const HelperRobot: React.FC<HelperRobotProps> = ({
   onLogin,
   position = { x: 0, y: 0 },
   scale = 1,
-  onClick
+  onClick,
+  onReady
 }) => {
   const { 
     isHelperRobotOpen, 
@@ -503,25 +505,46 @@ const HelperRobot: React.FC<HelperRobotProps> = ({
   };
 
   useEffect(() => {
-    // Small delay to ensure React has finished painting before starting animation
-    const startDelay = setTimeout(() => {
+    // Signal to parent that component is mounted and ready
+    // Parent will hide loading screen, then we'll start animation
+    if (onReady) {
+      // Small delay to ensure React has finished painting
+      const readyTimer = setTimeout(() => {
+        onReady();
+        
+        // Start animation after signaling ready
+        setTimeout(() => {
+          const whatLanguage = allTranslations.en.whatLanguage || "Hi! I'm Turi, I will guide you on your language learning journey! Firstly, what language do you already speak?";
+          const haveAccount = allTranslations.en.alreadyHaveAccount || "Already have an account?";
+          animateAllTexts(whatLanguage, haveAccount);
+        }, 100);
+      }, 100);
+      
+      console.log("🤖 HelperRobot component MOUNTED");
+      return () => {
+        clearTimeout(readyTimer);
+        if (animationIntervalRef.current) {
+          clearInterval(animationIntervalRef.current);
+          animationIntervalRef.current = null;
+        }
+        console.log("🤖 HelperRobot component UNMOUNTED");
+      };
+    } else {
+      // If no onReady callback, start animation immediately (backward compatibility)
       const whatLanguage = allTranslations.en.whatLanguage || "Hi! I'm Turi, I will guide you on your language learning journey! Firstly, what language do you already speak?";
       const haveAccount = allTranslations.en.alreadyHaveAccount || "Already have an account?";
       animateAllTexts(whatLanguage, haveAccount);
-    }, 100);
-    
-    // Debug mount/unmount
-    console.log("🤖 HelperRobot component MOUNTED");
-    return () => {
-      // Clean up timers and animation interval on unmount
-      clearTimeout(startDelay);
-      if (animationIntervalRef.current) {
-        clearInterval(animationIntervalRef.current);
-        animationIntervalRef.current = null;
-      }
-      console.log("🤖 HelperRobot component UNMOUNTED");
-    };
-  }, []);
+      
+      console.log("🤖 HelperRobot component MOUNTED");
+      return () => {
+        if (animationIntervalRef.current) {
+          clearInterval(animationIntervalRef.current);
+          animationIntervalRef.current = null;
+        }
+        console.log("🤖 HelperRobot component UNMOUNTED");
+      };
+    }
+  }, [onReady]);
 
   // This effect is intentionally empty/removed to prevent re-animation issues
   // The initial animation is handled by the mount effect above
