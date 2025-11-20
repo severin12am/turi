@@ -521,19 +521,15 @@ const HelperRobot: React.FC<HelperRobotProps> = ({
     };
   }, []);
 
-  useEffect(() => {
-    // Only animate when returning to 'mother' step, not on initial mount
-    if (step === 'mother' && selectedMotherLang !== '') {
-      animateAllTexts(t.whatLanguage, t.haveAccount);
-    }
-  }, [step === 'mother', t.whatLanguage, t.haveAccount, selectedMotherLang]);
+  // This effect is intentionally empty/removed to prevent re-animation issues
+  // The initial animation is handled by the mount effect above
+  // The second animation is handled by handleMotherLanguageSelect
 
   const handleMotherLanguageSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const lang = e.target.value;
     if (!lang) return;
     
-    // IMPORTANT: Change step to 'target' FIRST to prevent useEffect from interfering
-    setStep('target');
+    // Update selected language
     setSelectedMotherLang(lang);
     
     // Load translations first if not English
@@ -546,8 +542,11 @@ const HelperRobot: React.FC<HelperRobotProps> = ({
       }
     }
     
-    // Small delay to ensure state is updated
-    await new Promise(resolve => setTimeout(resolve, 100));
+    // Small delay to ensure translations are cached
+    await new Promise(resolve => setTimeout(resolve, 50));
+    
+    // Now move to target selection
+    setStep('target');
     
     // Get translated text from cache
     const whatToLearn = getHelperTranslation(lang, 'whatToLearn');
@@ -555,6 +554,7 @@ const HelperRobot: React.FC<HelperRobotProps> = ({
     
     console.log(`Using translations: whatToLearn="${whatToLearn.substring(0, 50)}..."`);
     
+    // Animate the second question
     animateAllTexts(whatToLearn, haveAccount);
   };
 
