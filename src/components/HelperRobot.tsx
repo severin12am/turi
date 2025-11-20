@@ -439,15 +439,6 @@ const HelperRobot: React.FC<HelperRobotProps> = ({
   };
   const placeholderText = getHelperTranslation(placeholderLang, 'chooseLanguageYouSpeak');
 
-  // Preload translations when mother language is selected
-  useEffect(() => {
-    if (selectedMotherLang && selectedMotherLang !== 'en') {
-      loadTranslations(selectedMotherLang as SupportedLanguage).catch(error => {
-        console.error(`Failed to preload translations for ${selectedMotherLang}:`, error);
-      });
-    }
-  }, [selectedMotherLang]);
-  
   // Setup rotation of placeholder languages
   useEffect(() => {
     // Only rotate when on the mother language selection step
@@ -455,13 +446,6 @@ const HelperRobot: React.FC<HelperRobotProps> = ({
     
     const languageCodes = ['en', 'ru', 'es', 'fr', 'de', 'it', 'pt', 'ar', 'CH', 'ja'];
     let currentIndex = 0;
-    
-    // Preload a few common languages for the placeholder rotation
-    languageCodes.forEach(lang => {
-      if (lang !== 'en') {
-        loadTranslations(lang as SupportedLanguage).catch(() => {});
-      }
-    });
     
     const interval = setInterval(() => {
       currentIndex = (currentIndex + 1) % languageCodes.length;
@@ -525,36 +509,28 @@ const HelperRobot: React.FC<HelperRobotProps> = ({
   // The initial animation is handled by the mount effect above
   // The second animation is handled by handleMotherLanguageSelect
 
-  const handleMotherLanguageSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleMotherLanguageSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const lang = e.target.value;
     if (!lang) return;
     
     // Update selected language
     setSelectedMotherLang(lang);
     
-    // Load translations first if not English
+    // Start loading translations in the background (non-blocking)
     if (lang !== 'en') {
-      try {
-        await loadTranslations(lang as SupportedLanguage);
-        console.log(`✅ Translations loaded for ${lang}`);
-      } catch (error) {
+      loadTranslations(lang as SupportedLanguage).catch(error => {
         console.error(`Failed to load translations for ${lang}:`, error);
-      }
+      });
     }
     
-    // Small delay to ensure translations are cached
-    await new Promise(resolve => setTimeout(resolve, 50));
-    
-    // Now move to target selection
+    // Move to target selection immediately
     setStep('target');
     
-    // Get translated text from cache
+    // Get text (will use cached if available, or fallback to English)
     const whatToLearn = getHelperTranslation(lang, 'whatToLearn');
     const haveAccount = getHelperTranslation(lang, 'alreadyHaveAccount');
     
-    console.log(`Using translations: whatToLearn="${whatToLearn.substring(0, 50)}..."`);
-    
-    // Animate the second question
+    // Animate the second question immediately
     animateAllTexts(whatToLearn, haveAccount);
   };
 
