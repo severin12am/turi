@@ -1,3 +1,6 @@
+// Import the shared cache at the top to avoid issues
+import { translationCache } from '../services/translationCache';
+
 // Support for 30 most popular world languages
 export type SupportedLanguage = 
   | 'en' | 'CH' | 'hi' | 'es' | 'fr' | 'ar' | 'bn' | 'pt' | 'ru' | 'id'
@@ -277,8 +280,6 @@ export const getTranslation = (language: SupportedLanguage, key: keyof Translati
   }
   
   // Try to get from cache (if already loaded)
-  // Import dynamically to avoid circular dependency
-  const { translationCache } = require('./translationLoader');
   const cachedTranslations = translationCache.get(language);
   
   if (cachedTranslations && cachedTranslations[key]) {
@@ -306,7 +307,6 @@ export const getCharacterName = (language: SupportedLanguage, characterId: numbe
   }
   
   // Try to get from cache (if already loaded)
-  const { translationCache } = require('./translationLoader');
   const cachedTranslations = translationCache.get(language);
   
   if (cachedTranslations?.characterNames?.[characterId]) {

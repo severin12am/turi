@@ -1,8 +1,8 @@
 import { supabase } from './supabase';
 import type { SupportedLanguage, TranslationStrings } from '../constants/translations';
+import { translationCache } from './translationCache';
 
-// Cache for loaded translations (exported for synchronous access)
-export const translationCache = new Map<SupportedLanguage, TranslationStrings>();
+// Loading promises tracker
 const loadingPromises = new Map<SupportedLanguage, Promise<TranslationStrings>>();
 
 /**
@@ -105,6 +105,9 @@ export function clearTranslationCache(): void {
   translationCache.clear();
   loadingPromises.clear();
 }
+
+// Re-export the cache for external access
+export { translationCache };
 
 /**
  * Gets a specific translation key with fallback to English
