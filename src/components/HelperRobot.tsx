@@ -503,15 +503,18 @@ const HelperRobot: React.FC<HelperRobotProps> = ({
   };
 
   useEffect(() => {
-    // Show first text immediately on mount (no delay)
-    const whatLanguage = allTranslations.en.whatLanguage || "Hi! I'm Turi, I will guide you on your language learning journey! Firstly, what language do you already speak?";
-    const haveAccount = allTranslations.en.alreadyHaveAccount || "Already have an account?";
-    animateAllTexts(whatLanguage, haveAccount);
+    // Small delay to ensure React has finished painting before starting animation
+    const startDelay = setTimeout(() => {
+      const whatLanguage = allTranslations.en.whatLanguage || "Hi! I'm Turi, I will guide you on your language learning journey! Firstly, what language do you already speak?";
+      const haveAccount = allTranslations.en.alreadyHaveAccount || "Already have an account?";
+      animateAllTexts(whatLanguage, haveAccount);
+    }, 100);
     
     // Debug mount/unmount
     console.log("🤖 HelperRobot component MOUNTED");
     return () => {
-      // Clean up animation interval on unmount to prevent orphaned intervals
+      // Clean up timers and animation interval on unmount
+      clearTimeout(startDelay);
       if (animationIntervalRef.current) {
         clearInterval(animationIntervalRef.current);
         animationIntervalRef.current = null;

@@ -619,7 +619,7 @@ function App() {
         {!initialLoadComplete && (
           <TuriLoadingScreen 
             onLoadingComplete={() => setInitialLoadComplete(true)}
-            minimumLoadTime={1500}
+            minimumLoadTime={3000}
           />
         )}
         
