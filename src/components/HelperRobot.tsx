@@ -425,16 +425,17 @@ const HelperRobot: React.FC<HelperRobotProps> = ({
   const [placeholderLang, setPlaceholderLang] = useState<string>('en');
   
   // Use the helper function to get translations from cache
+  const currentLang = selectedMotherLang || 'en';
   const t = {
-    whatLanguage: getHelperTranslation(selectedMotherLang || 'en', 'whatLanguage'),
-    whatToLearn: getHelperTranslation(selectedMotherLang || 'en', 'whatToLearn'),
-    ready: getHelperTranslation(selectedMotherLang || 'en', 'ready'),
-    selectDifferent: getHelperTranslation(selectedMotherLang || 'en', 'selectDifferent'),
-    chooseLanguage: getHelperTranslation(selectedMotherLang || 'en', 'chooseLanguage'),
-    chooseLanguageYouSpeak: getHelperTranslation(selectedMotherLang || 'en', 'chooseLanguageYouSpeak'),
-    startJourney: getHelperTranslation(selectedMotherLang || 'en', 'startJourney'),
-    haveAccount: getHelperTranslation(selectedMotherLang || 'en', 'haveAccount'),
-    back: getHelperTranslation(selectedMotherLang || 'en', 'back')
+    whatLanguage: getHelperTranslation(currentLang, 'whatLanguage'),
+    whatToLearn: getHelperTranslation(currentLang, 'whatToLearn'),
+    ready: getHelperTranslation(currentLang, 'ready'),
+    selectDifferent: getHelperTranslation(currentLang, 'selectDifferent'),
+    chooseLanguage: getHelperTranslation(currentLang, 'chooseLanguage'),
+    chooseLanguageYouSpeak: getHelperTranslation(currentLang, 'chooseLanguageYouSpeak'),
+    startJourney: getHelperTranslation(currentLang, 'startJourney'),
+    haveAccount: getHelperTranslation(currentLang, 'alreadyHaveAccount'), // Use correct key
+    back: getHelperTranslation(currentLang, 'goBack') // Use correct key
   };
   const placeholderText = getHelperTranslation(placeholderLang, 'chooseLanguageYouSpeak');
 
@@ -525,14 +526,26 @@ const HelperRobot: React.FC<HelperRobotProps> = ({
     }
   }, [step === 'mother', t.whatLanguage, t.haveAccount, selectedMotherLang]);
 
-  const handleMotherLanguageSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleMotherLanguageSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const lang = e.target.value;
     if (!lang) return;
     
     setSelectedMotherLang(lang);
+    
+    // Load translations first if not English
+    if (lang !== 'en') {
+      try {
+        await loadTranslations(lang as SupportedLanguage);
+      } catch (error) {
+        console.error(`Failed to load translations for ${lang}:`, error);
+      }
+    }
+    
+    // Now move to next step and get translations (which are now cached)
     setStep('target');
-    const newT = translations[lang as keyof typeof translations] || translations.en;
-    animateAllTexts(newT.whatToLearn, newT.haveAccount);
+    const whatToLearn = getHelperTranslation(lang, 'whatToLearn');
+    const haveAccount = getHelperTranslation(lang, 'alreadyHaveAccount');
+    animateAllTexts(whatToLearn, haveAccount);
   };
 
   const handleTargetLanguageSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
