@@ -532,7 +532,8 @@ const HelperRobot: React.FC<HelperRobotProps> = ({
     const lang = e.target.value;
     if (!lang) return;
     
-    // Update selected language first
+    // IMPORTANT: Change step to 'target' FIRST to prevent useEffect from interfering
+    setStep('target');
     setSelectedMotherLang(lang);
     
     // Load translations first if not English
@@ -547,9 +548,6 @@ const HelperRobot: React.FC<HelperRobotProps> = ({
     
     // Small delay to ensure state is updated
     await new Promise(resolve => setTimeout(resolve, 100));
-    
-    // Now move to next step and get translations (which are now cached)
-    setStep('target');
     
     // Get translated text from cache
     const whatToLearn = getHelperTranslation(lang, 'whatToLearn');
