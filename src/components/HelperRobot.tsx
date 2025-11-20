@@ -503,10 +503,17 @@ const HelperRobot: React.FC<HelperRobotProps> = ({
   };
 
   useEffect(() => {
-    // Show first text immediately on mount (no delay)
+    // Show first text IMMEDIATELY without animation to prevent loading delays
     const whatLanguage = allTranslations.en.whatLanguage || "Hi! I'm Turi, I will guide you on your language learning journey! Firstly, what language do you already speak?";
     const haveAccount = allTranslations.en.alreadyHaveAccount || "Already have an account?";
-    animateAllTexts(whatLanguage, haveAccount);
+    
+    // Set text directly without animation on first mount
+    setTexts({
+      question: whatLanguage,
+      account: haveAccount
+    });
+    setHasAnimationStarted(true);
+    setIsAnimating(false);
     
     // Debug mount/unmount
     console.log("🤖 HelperRobot component MOUNTED");
