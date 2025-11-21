@@ -50,36 +50,18 @@ export const generateNPCResponse = async (params: MissionNPCParams): Promise<Mis
     .map(entry => `${entry.speaker === 'user' ? 'Learner' : 'You'}: ${entry.text}`)
     .join('\n');
 
-  // Construct the NPC prompt
-  const prompt = `You are a friendly native speaker having a real voice conversation with a language learner who is standing next to you.
+  // Construct the NPC prompt - ULTRA BRIEF to avoid MAX_TOKENS
+  const prompt = `You are ${npcName} (${npcRole}, ${npcGender}). Reply in ${targetLanguage} ONLY.
 
-  The learner has a secret goal: "${missionGoal}"
-  ++
-  IMPORTANT RULES:
-  1. Speak ONLY in ${targetLanguage}
-  2. Stay 100% in character as ${npcRole}
-  3. Your name is ${npcName} and you are ${npcGender}
-  4. NEVER mention the learner's goal
-  5. Make conversation last at least 2-4 natural exchanges
-  6. Be natural, conversational, but keep responses short, and use simpler words and more common sentence structures. 
-  7. After 2-4 exchanges, gently help the language learner complete their mission.
-  
-  Your character:
-  - Name: ${npcName}
-  - Role: ${npcRole}
-  - Gender: ${npcGender}
-  - Language: ${targetLanguage}
-  
-  Previous conversation:
-  ${historyText}
-  
-  Learner's latest message: "${userLatestMessage}"
-  
- Then, on a new line, write ONLY "MISSION_COMPLETE: true" if the learner has genuinely achieved the goal "${missionGoal}" through natural conversation, or "MISSION_COMPLETE: false" if not yet.
-  
-  Format:
-  [Your SHORT response in ${targetLanguage}]
-  MISSION_COMPLETE: [true or false]`;
+Learner's goal (secret): "${missionGoal}"
+${historyText ? `\nConversation:\n${historyText}` : ''}
+
+Learner: "${userLatestMessage}"
+
+Reply with 1-2 SHORT sentences in ${targetLanguage}. Be natural and conversational.
+Then on new line: MISSION_COMPLETE: true (if learner achieved goal) or false (if not yet).
+
+NO THINKING. NO EXPLANATIONS. JUST YOUR REPLY + MISSION_COMPLETE LINE.`;
 
   let lastError: Error | null = null;
 
@@ -104,7 +86,7 @@ export const generateNPCResponse = async (params: MissionNPCParams): Promise<Mis
               temperature: 0.8, // Higher temperature for more natural, varied responses
               topK: 40,
               topP: 0.95,
-              maxOutputTokens: 512,
+              maxOutputTokens: 150, // Short conversational response only
             },
             safetySettings: [
               {
@@ -143,6 +125,13 @@ export const generateNPCResponse = async (params: MissionNPCParams): Promise<Mis
       const data = await response.json();
       logger.info('[MissionNPC] Received response', { modelName });
 
+      // Check for MAX_TOKENS error
+      const finishReason = data.candidates?.[0]?.finishReason;
+      if (finishReason === 'MAX_TOKENS') {
+        logger.warn('[MissionNPC] MAX_TOKENS hit, retrying with next model', { modelName });
+        throw new Error('MAX_TOKENS - retrying');
+      }
+      
       // Validate response structure
       if (!data.candidates || !data.candidates[0] || !data.candidates[0].content || !data.candidates[0].content.parts) {
         logger.error('[MissionNPC] Invalid response structure', { data });

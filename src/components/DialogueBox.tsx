@@ -12,13 +12,14 @@ import { AIDialogueStep } from '../services/gemini';
 import { fetchDialoguesWithFallback, translateWithAI } from '../services/translationFallback';
 // New imports for enhanced word interaction
 import WordExplanationModal from './WordExplanationModal';
-import { generateWordExplanation, WordExplanationData, speakWithAI, generateSpeechWithGemini, translateWord } from '../services/gemini';
+import { generateWordExplanation, WordExplanationData, translateWord } from '../services/gemini';
 import { addWordToDictionary } from '../services/dictionary';
 // Mission imports
 import { Mission } from '../constants/missions';
 import { checkUserSentence, generateHelpSuggestion } from '../services/missionHelperRobot';
 import { generateNPCResponse } from '../services/missionNPC';
 import { getCharacterByScenario } from '../constants/characters';
+import { generateSpeech } from '../services/aiService';
 
 // Map supported languages to their speech recognition codes
 const getRecognitionLanguage = (lang: SupportedLanguage): string => {
@@ -2262,7 +2263,7 @@ Return ONLY the transliteration, nothing else.`;
       if (typeof onNpcSpeakStart === 'function') onNpcSpeakStart();
       
       try {
-        const audio = await generateSpeechWithGemini(text, targetLanguage, characterGender, characterTTSId);
+        const audio = await generateSpeech(text, targetLanguage, characterGender, characterTTSId);
         
         // Cache the audio URL if we have a step number
         if (stepNumber && audio.src) {
@@ -2773,10 +2774,10 @@ Return ONLY the transliteration, nothing else.`;
       }
     }
     
-    // Try Gemini TTS first
+    // Try TTS via router (ElevenLabs or Google based on config)
     try {
-      console.log('🔊 FULL DIALOGUE: Generating new audio with Gemini TTS, gender:', characterGender, 'characterId:', characterTTSId);
-      const audio = await generateSpeechWithGemini(text, targetLanguage, characterGender, characterTTSId);
+      console.log('🔊 FULL DIALOGUE: Generating audio via router, gender:', characterGender, 'characterId:', characterTTSId);
+      const audio = await generateSpeech(text, targetLanguage, characterGender, characterTTSId);
       
       // Check if playback was stopped while generating
       if (!isPlayingFullDialogueRef.current) {

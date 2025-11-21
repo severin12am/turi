@@ -8,7 +8,8 @@ import { useStore } from '../store';
 import { logger } from '../services/logger';
 import { trackCompletedDialogue, saveAnonymousProgress } from '../services/auth';
 import { trackCompletedScenarioDialogue } from '../services/progress';
-import { speakWithAI, generateSpeechWithGemini, translateWord } from '../services/gemini';
+import { translateWord } from '../services/gemini';
+import { generateSpeech } from '../services/aiService';
 import { fetchScenarioQuizWords } from '../services/scenarioQuiz';
 import { fetchScenarioExpressions } from '../services/scenarioExpressions';
 import { extractExpressionsFromDialogue } from '../services/expressionExtraction';
@@ -1656,10 +1657,10 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
         console.warn('⚠️ QUIZ Text is pinyin, not Chinese characters. Using browser TTS.');
         // Fall through to browser TTS
       } else {
-        // Try Gemini TTS first for Chinese
+        // Try TTS via router (ElevenLabs or Google based on config)
         try {
-          console.log('🔊 QUIZ Attempting Gemini TTS');
-          const audio = await generateSpeechWithGemini(wordToPlay, targetLanguage);
+          console.log('🔊 QUIZ Attempting TTS via router');
+          const audio = await generateSpeech(wordToPlay, targetLanguage, 'female', null);
           
           // Cache the audio URL for future replays
           if (audio.src && currentWord) {
@@ -1687,15 +1688,15 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
           await audio.play();
           return;
         } catch (error) {
-          console.error('❌ QUIZ Gemini TTS failed, falling back:', error);
+          console.error('❌ QUIZ TTS router failed, falling back to browser TTS:', error);
           // Fall through to browser TTS
         }
       }
     } else {
-      // Try Gemini TTS first for all other languages
+      // Try TTS via router for all other languages
       try {
-        console.log('🔊 QUIZ Attempting Gemini TTS');
-        const audio = await generateSpeechWithGemini(wordToPlay, targetLanguage);
+        console.log('🔊 QUIZ Attempting TTS via router');
+        const audio = await generateSpeech(wordToPlay, targetLanguage, 'female', null);
         
         // Cache the audio URL for future replays
         if (audio.src && currentWord) {
