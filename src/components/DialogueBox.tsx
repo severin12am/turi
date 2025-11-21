@@ -1946,17 +1946,17 @@ Return ONLY the transliteration, nothing else.`;
       const userStepNumber = currentHistory.length + 1;
       console.log('[Missions] 🎙️ User entry will be step:', userStepNumber);
       
-      // Generate translation and transliteration for user's text
-      const userTranslation = await translateWithAI({
-        sourceText: userText,
-        sourceLanguage: targetLanguage,
-        targetLanguage: motherLanguage,
-        motherLanguage: motherLanguage,
-        includeTransliteration: false // Don't use the buggy transliteration
-      });
-      
-      // Generate proper phonetic transliteration
-      const userTransliteration = await generateTransliteration(userText, targetLanguage, motherLanguage);
+      // MISSION MODE OPTIMIZATION: Run translation and transliteration in parallel
+      const [userTranslation, userTransliteration] = await Promise.all([
+        translateWithAI({
+          sourceText: userText,
+          sourceLanguage: targetLanguage,
+          targetLanguage: motherLanguage,
+          motherLanguage: motherLanguage,
+          includeTransliteration: false // Don't use the buggy transliteration
+        }),
+        generateTransliteration(userText, targetLanguage, motherLanguage)
+      ]);
       
       console.log('[Missions] User text translation:', userTranslation);
       console.log('[Missions] User text transliteration:', userTransliteration);
@@ -2007,17 +2007,17 @@ Return ONLY the transliteration, nothing else.`;
       
       console.log('[Missions] NPC responded:', npcResponse.response);
       
-      // Generate translation and transliteration for NPC's response
-      const npcTranslation = await translateWithAI({
-        sourceText: npcResponse.response,
-        sourceLanguage: targetLanguage,
-        targetLanguage: motherLanguage,
-        motherLanguage: motherLanguage,
-        includeTransliteration: false // Don't use the buggy transliteration
-      });
-      
-      // Generate proper phonetic transliteration for NPC
-      const npcTransliteration = await generateTransliteration(npcResponse.response, targetLanguage, motherLanguage);
+      // MISSION MODE OPTIMIZATION: Run translation and transliteration in parallel
+      const [npcTranslation, npcTransliteration] = await Promise.all([
+        translateWithAI({
+          sourceText: npcResponse.response,
+          sourceLanguage: targetLanguage,
+          targetLanguage: motherLanguage,
+          motherLanguage: motherLanguage,
+          includeTransliteration: false // Don't use the buggy transliteration
+        }),
+        generateTransliteration(npcResponse.response, targetLanguage, motherLanguage)
+      ]);
       
       console.log('[Missions] NPC response translation:', npcTranslation);
       console.log('[Missions] NPC response transliteration:', npcTransliteration);
@@ -3864,9 +3864,8 @@ Keep it simple, practical, and focused only on structure. No extra examples need
           const recordingBlob = tempRecordingBlobRef.current;
           tempRecordingBlobRef.current = null;
           
-          setTimeout(() => {
-            handleMissionNPCResponse(transcript, recordingBlob || undefined);
-          }, 800);
+          // MISSION MODE: No delay - immediately get NPC response
+          handleMissionNPCResponse(transcript, recordingBlob || undefined);
         } else {
           // Rejected - show correction
           // Mark that help was used (correction counts as help)
