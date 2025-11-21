@@ -60,7 +60,7 @@ export const AI_CONFIG: Record<AITask, ProviderConfig[] | TTSConfig[]> = {
     {
       provider: 'gemini',
       percentage: 50,  // 50% Gemini (free tier)
-      model: 'gemini-1.5-flash'
+      model: 'gemini-1.5-flash-latest'
     },
     {
       provider: 'groq',
@@ -87,7 +87,7 @@ export const AI_CONFIG: Record<AITask, ProviderConfig[] | TTSConfig[]> = {
     {
       provider: 'gemini',
       percentage: 30,
-      model: 'gemini-1.5-flash'
+      model: 'gemini-1.5-flash-latest'
     },
     {
       provider: 'deepseek',
@@ -114,7 +114,7 @@ export const AI_CONFIG: Record<AITask, ProviderConfig[] | TTSConfig[]> = {
     {
       provider: 'gemini',
       percentage: 10,
-      model: 'gemini-1.5-flash-8b'  // Smaller model is enough
+      model: 'gemini-1.5-flash-latest'  // Fast model for quick checks
     }
   ],
 
@@ -126,7 +126,7 @@ export const AI_CONFIG: Record<AITask, ProviderConfig[] | TTSConfig[]> = {
     {
       provider: 'gemini',
       percentage: 40,  // Gemini good for structured output
-      model: 'gemini-1.5-flash'
+      model: 'gemini-1.5-flash-latest'
     },
     {
       provider: 'deepseek',
@@ -148,7 +148,7 @@ export const AI_CONFIG: Record<AITask, ProviderConfig[] | TTSConfig[]> = {
     {
       provider: 'gemini',
       percentage: 40,
-      model: 'gemini-1.5-flash'
+      model: 'gemini-1.5-flash-latest'
     },
     {
       provider: 'deepseek',
@@ -170,7 +170,7 @@ export const AI_CONFIG: Record<AITask, ProviderConfig[] | TTSConfig[]> = {
     {
       provider: 'gemini',
       percentage: 50,
-      model: 'gemini-1.5-flash'
+      model: 'gemini-1.5-flash-latest'
     },
     {
       provider: 'deepseek',
@@ -192,7 +192,7 @@ export const AI_CONFIG: Record<AITask, ProviderConfig[] | TTSConfig[]> = {
     {
       provider: 'gemini',
       percentage: 50,
-      model: 'gemini-1.5-flash'
+      model: 'gemini-1.5-flash-latest'
     },
     {
       provider: 'deepseek',
@@ -253,11 +253,10 @@ export const AI_CONFIG: Record<AITask, ProviderConfig[] | TTSConfig[]> = {
  */
 export const MODEL_FALLBACKS: Record<AIProvider, string[]> = {
   gemini: [
-    'gemini-1.5-flash',
-    'gemini-1.5-pro',
-    'gemini-flash-latest',
-    'gemini-flash-lite-latest',
-    'gemini-1.5-flash-8b'
+    'gemini-1.5-flash-latest',
+    'gemini-1.5-pro-latest',
+    'gemini-1.5-flash-002',
+    'gemini-1.5-pro-002'
   ],
   
   groq: [

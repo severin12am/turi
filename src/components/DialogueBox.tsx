@@ -1905,7 +1905,7 @@ Return ONLY the transliteration, nothing else.`;
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          modelName: 'gemini-2.0-flash-exp',
+          modelName: 'gemini-1.5-flash-latest',
           requestBody: {
             contents: [{ parts: [{ text: prompt }] }],
             generationConfig: {
@@ -3378,7 +3378,7 @@ Keep it simple, practical, and focused only on structure. No extra examples need
       console.log('📡 Sending request to Netlify function...');
       
       // Try multiple model names in order of preference
-      const modelNames = ['gemini-flash-latest', 'gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-flash-lite-latest'];
+      const modelNames = ['gemini-1.5-flash-latest', 'gemini-1.5-pro-latest', 'gemini-1.5-flash-002', 'gemini-1.5-pro-002'];
       let response;
       let lastError;
       

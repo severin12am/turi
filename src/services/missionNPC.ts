@@ -7,9 +7,9 @@ import { logger } from './logger';
 import { SupportedLanguage } from '../constants/languages';
 
 const GEMINI_MODELS = [
-  'gemini-2.0-flash-exp',
-  'gemini-1.5-flash',
-  'gemini-1.5-flash-8b'
+  'gemini-1.5-flash-latest',
+  'gemini-1.5-pro-latest',
+  'gemini-1.5-flash-002'
 ];
 
 export interface MissionNPCParams {
@@ -51,7 +51,7 @@ export const generateNPCResponse = async (params: MissionNPCParams): Promise<Mis
     .join('\n');
 
   // Construct the NPC prompt
-  const prompt = `You are a friendly native speaker having a real voice conversation with a language learner.
+  const prompt = `You are a friendly native speaker having a real voice conversation with a language learner who is standing next to you.
 
   The learner has a secret goal: "${missionGoal}"
   ++

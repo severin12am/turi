@@ -8,11 +8,10 @@ const getGeminiExpressionExtractionUrl = () => '/.netlify/functions/gemini-extra
 // Use the EXACT same models as gemini.ts for consistency
 // These models are proven to work with word explanations
 const GEMINI_MODELS = [
-  'gemini-1.5-flash',              // Try legacy model first (most compatible)
-  'gemini-1.5-pro',                // Legacy pro model
-  'gemini-flash-latest',           // Alias for latest Gemini 2.5 Flash (may have quota limits)
-  'gemini-flash-lite-latest',      // Alias for latest Gemini 2.5 Flash Lite
-  'gemini-1.5-flash-8b'            // Smaller, faster model
+  'gemini-1.5-flash-latest',       // Latest stable flash model (v1 API compatible)
+  'gemini-1.5-pro-latest',         // Latest stable pro model
+  'gemini-1.5-flash-002',          // Stable flash version
+  'gemini-1.5-pro-002'             // Stable pro version
 ];
 
 // Rate limiting (shared concept with other AI features)
