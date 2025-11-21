@@ -3371,17 +3371,13 @@ Return ONLY the transliteration, nothing else.`;
       
       console.log('🔍 Requesting structure explanation:', { phrase, targetLangName, motherLangName });
       
-      const prompt = `You are a language teacher explaining sentence structure to a student.
+      const prompt = `Explain this sentence structure in ${motherLangName} (2-3 sentences MAX):
 
-Phrase in ${targetLangName}: "${phrase}"
-Translation in ${motherLangName}: "${translation}"
+${targetLangName}: "${phrase}"
+${motherLangName}: "${translation}"
 
-Provide a concise explanation (2-3 sentences maximum) in ${motherLangName} that:
-1. Breaks down the sentence structure (subject, verb, object, etc.)
-2. Explains word order or grammatical patterns specific to ${targetLangName}
-3. Highlights key grammar points that differ from ${motherLangName}
-
-Keep it simple, practical, and focused only on structure. No extra examples needed.`;
+Cover: 1) sentence structure, 2) word order, 3) key grammar point.
+BE BRIEF.`;
 
       console.log('📡 Sending request to Netlify function...');
       
@@ -3404,7 +3400,7 @@ Keep it simple, practical, and focused only on structure. No extra examples need
                   temperature: 0.3,
                   topK: 20,
                   topP: 0.8,
-                  maxOutputTokens: 1000,
+                  maxOutputTokens: 300,
                 }
               }
             })
@@ -3450,8 +3446,17 @@ Keep it simple, practical, and focused only on structure. No extra examples need
         throw new Error('Invalid response from AI service');
       }
       
+      // Check finish reason
+      const finishReason = data.candidates[0].finishReason;
+      console.log('🔍 Finish reason:', finishReason);
+      
       // Check if parts exists
       if (!data.candidates[0].content.parts || !data.candidates[0].content.parts[0]) {
+        // If MAX_TOKENS, the model ran out of space - retry is needed
+        if (finishReason === 'MAX_TOKENS') {
+          console.log('⚠️ MAX_TOKENS reached - retrying with simpler prompt');
+          throw new Error('MAX_TOKENS - retrying');
+        }
         console.error('❌ Parts array is missing or empty:', data.candidates[0].content);
         throw new Error('Invalid content structure - parts missing');
       }

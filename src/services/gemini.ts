@@ -472,6 +472,7 @@ export const generateSpeechWithGemini = async (
   gender: 'male' | 'female' = 'male',
   characterId: number | null = null
 ): Promise<HTMLAudioElement> => {
+  console.warn('⚠️ DIRECT CALL: generateSpeechWithGemini bypassing router - always uses Google TTS');
   console.log('🔊 GEMINI TTS: Attempting to generate speech with Google Cloud TTS API');
   logger.info('Generating speech with Gemini TTS', { text, languageCode, gender, characterId });
 

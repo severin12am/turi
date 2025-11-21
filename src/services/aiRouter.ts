@@ -47,6 +47,9 @@ export async function routeAIRequest(request: AIRequest): Promise<any> {
   // Select provider based on percentage distribution
   const selectedConfig = selectProvider(task) as ProviderConfig;
   
+  // ENHANCED LOGGING - Always visible
+  console.log(`🤖 [AI Router] Task: ${task} | Provider: ${selectedConfig.provider.toUpperCase()} | Model: ${selectedConfig.model}`);
+  
   logger.info('[AIRouter] Selected provider', {
     task,
     provider: selectedConfig.provider,
@@ -62,8 +65,10 @@ export async function routeAIRequest(request: AIRequest): Promise<any> {
       generationConfig,
       safetySettings
     );
+    console.log(`✅ [AI Router] Success with ${selectedConfig.provider.toUpperCase()}`);
     return result;
   } catch (error) {
+    console.error(`❌ [AI Router] ${selectedConfig.provider.toUpperCase()} failed, trying fallbacks...`);
     logger.error('[AIRouter] Primary provider failed', { 
       provider: selectedConfig.provider, 
       error 
@@ -252,6 +257,9 @@ export async function routeTTSRequest(request: TTSRequest): Promise<string> {
   // Select TTS provider based on percentage distribution
   const selectedConfig = selectProvider(task) as TTSConfig;
   
+  // ENHANCED LOGGING - Always visible
+  console.log(`🔊 [TTS Router] Task: ${task} | Provider: ${selectedConfig.provider.toUpperCase()} | Gender: ${gender} | CharID: ${characterId || 'Turi'}`);
+  
   logger.info('[AIRouter] Selected TTS provider', {
     task,
     provider: selectedConfig.provider,
@@ -260,15 +268,21 @@ export async function routeTTSRequest(request: TTSRequest): Promise<string> {
   
   try {
     if (selectedConfig.provider === 'elevenlabs') {
-      return await callElevenLabsTTS(text, gender, selectedConfig, languageCode);
+      const result = await callElevenLabsTTS(text, gender, selectedConfig, languageCode);
+      console.log(`✅ [TTS Router] Success with ELEVENLABS`);
+      return result;
     } else {
-      return await callGoogleTTS(text, languageCode, gender, voiceName, characterId);
+      const result = await callGoogleTTS(text, languageCode, gender, voiceName, characterId);
+      console.log(`✅ [TTS Router] Success with GOOGLE TTS`);
+      return result;
     }
   } catch (error) {
+    console.error(`❌ [TTS Router] ${selectedConfig.provider.toUpperCase()} failed, trying fallback...`);
     logger.error('[AIRouter] TTS provider failed, trying fallback', { error });
     
     // Fallback to Google TTS if ElevenLabs fails
     if (selectedConfig.provider === 'elevenlabs') {
+      console.log(`🔄 [TTS Router] Falling back to GOOGLE TTS`);
       logger.info('[AIRouter] Falling back to Google TTS');
       return await callGoogleTTS(text, languageCode, gender, voiceName, characterId);
     }
