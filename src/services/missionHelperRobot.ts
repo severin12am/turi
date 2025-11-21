@@ -7,9 +7,9 @@ import { logger } from './logger';
 import type { SupportedLanguage } from '../constants/translations';
 
 const GEMINI_MODELS = [
-  'gemini-1.5-flash-latest',
-  'gemini-1.5-pro-latest',
-  'gemini-1.5-flash-002'
+  'gemini-2.5-flash',
+  'gemini-2.0-flash',
+  'gemini-2.5-flash-lite'
 ];
 
 export interface HelperRobotDecision {

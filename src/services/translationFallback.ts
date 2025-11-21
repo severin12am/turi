@@ -12,10 +12,10 @@ import { supabase } from './supabase';
 
 // Try different Gemini models in order of preference (same as dialogue generation)
 const GEMINI_MODELS = [
-  'gemini-1.5-flash-latest',       // Latest stable flash model (v1 API compatible)
-  'gemini-1.5-pro-latest',         // Latest stable pro model
-  'gemini-1.5-flash-002',          // Stable flash version
-  'gemini-1.5-pro-002'             // Stable pro version
+  'gemini-2.5-flash',              // Fast multimodal model
+  'gemini-2.0-flash',              // Older but supported
+  'gemini-2.5-flash-lite',         // Lightweight version
+  'gemini-2.5-pro'                 // Advanced reasoning
 ];
 
 export interface DialoguePhrase {
