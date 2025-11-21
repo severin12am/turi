@@ -333,7 +333,7 @@ Return a JSON object with:
 
     if (includeTransliteration) {
       prompt += `
-- "transliteration": the translation written using ${motherLangName} alphabet/script (lowercase, no punctuation)`;
+- "transliteration": the ORIGINAL ${sourceLangName} text written phonetically using ${motherLangName} alphabet/script (lowercase, no punctuation)`;
     }
 
     prompt += `
@@ -341,10 +341,10 @@ Return a JSON object with:
 Example format:
 {
   "translation": "translated text here",
-  "transliteration": "transliterated text here"
+  "transliteration": "phonetic transliteration of the original ${sourceLangName} text"
 }
 
-Be accurate and natural. For transliteration, approximate the ${targetLangName} sounds using the ${motherLangName} writing system.`;
+Be accurate and natural. For transliteration, approximate the ORIGINAL ${sourceLangName} sounds (NOT the translation) using the ${motherLangName} writing system.`;
   }
 
   return prompt;
