@@ -186,23 +186,23 @@ export const AI_CONFIG: Record<AITask, ProviderConfig[] | TTSConfig[]> = {
 
   /**
    * TRANSLATION (AI fallback when database translation missing)
-   * Accuracy is critical
+   * Accuracy is critical - primarily using Gemini for reliable JSON output
    */
   'translation': [
     {
       provider: 'gemini',
-      percentage: 50,
+      percentage: 70,  // Increased - most reliable for JSON
       model: 'gemini-2.5-flash'
     },
     {
-      provider: 'deepseek',
-      percentage: 30,
-      model: 'deepseek-chat'
+      provider: 'groq',
+      percentage: 25,  // Increased as fallback
+      model: 'llama-3.3-70b-versatile'
     },
     {
-      provider: 'groq',
-      percentage: 20,
-      model: 'llama-3.3-70b-versatile'
+      provider: 'deepseek',
+      percentage: 5,   // Reduced - currently out of balance
+      model: 'deepseek-chat'
     }
   ],
 

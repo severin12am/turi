@@ -932,7 +932,7 @@ Be accurate and natural. For transliteration, approximate the ORIGINAL ${sourceL
       temperature: 0.3,
       topK: 20,
       topP: 0.8,
-      maxOutputTokens: 512,
+      maxOutputTokens: 200,  // Increased to account for Gemini 2.5's thinking tokens
     }
   };
 
@@ -943,6 +943,13 @@ Be accurate and natural. For transliteration, approximate the ORIGINAL ${sourceL
 
   if (!data.candidates || !data.candidates[0]) {
     throw new Error('No response generated from AI');
+  }
+
+  // Check if response hit MAX_TOKENS before generating content
+  const finishReason = data.candidates[0].finishReason;
+  if (finishReason === 'MAX_TOKENS') {
+    console.error('⚠️ Translation hit MAX_TOKENS - model thinking used too many tokens');
+    throw new Error('MAX_TOKENS - translation incomplete, will retry with different provider');
   }
 
   // Validate response structure before accessing
