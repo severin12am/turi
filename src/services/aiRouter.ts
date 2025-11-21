@@ -12,6 +12,7 @@ import {
   TTSConfig,
   selectProvider, 
   getFallbackModels,
+  getTaskConfig,
   PROVIDER_ENDPOINTS,
   AIProvider
 } from '../config/aiConfig';
@@ -102,7 +103,41 @@ export async function routeAIRequest(request: AIRequest): Promise<any> {
       }
     }
     
-    // If all fallbacks failed, throw the original error
+    // All models for primary provider failed - try OTHER providers for this task
+    console.log(`🔄 [AI Router] All ${selectedConfig.provider.toUpperCase()} models failed, trying other providers...`);
+    const allTaskProviders = getTaskConfig(task) as ProviderConfig[];
+    
+    for (const alternativeConfig of allTaskProviders) {
+      // Skip the provider we already tried
+      if (alternativeConfig.provider === selectedConfig.provider) continue;
+      
+      try {
+        console.log(`🔄 [AI Router] Trying alternative: ${alternativeConfig.provider.toUpperCase()} | Model: ${alternativeConfig.model}`);
+        logger.info('[AIRouter] Trying alternative provider', { 
+          provider: alternativeConfig.provider, 
+          model: alternativeConfig.model 
+        });
+        
+        const result = await callAIProvider(
+          alternativeConfig.provider,
+          alternativeConfig.model,
+          prompt,
+          generationConfig,
+          safetySettings
+        );
+        console.log(`✅ [AI Router] Success with alternative ${alternativeConfig.provider.toUpperCase()}`);
+        return result;
+      } catch (alternativeError) {
+        console.error(`❌ [AI Router] Alternative ${alternativeConfig.provider.toUpperCase()} also failed`);
+        logger.error('[AIRouter] Alternative provider failed', { 
+          provider: alternativeConfig.provider, 
+          error: alternativeError 
+        });
+        continue;
+      }
+    }
+    
+    // If all providers failed, throw error
     throw new Error(`All providers failed for task: ${task}`);
   }
 }
