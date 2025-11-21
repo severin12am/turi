@@ -1,6 +1,8 @@
 import { supabase } from './supabase';
 import type { SupportedLanguage, TranslationStrings } from '../constants/translations';
 import { translationCache } from './translationCache';
+import { translateWithAI } from './aiService';
+import { logger } from './logger';
 
 // Loading promises tracker
 const loadingPromises = new Map<SupportedLanguage, Promise<TranslationStrings>>();
@@ -41,6 +43,7 @@ export async function loadTranslations(language: SupportedLanguage): Promise<Tra
 
 /**
  * Fetches translations from Supabase for a specific language
+ * Falls back to AI translation if keys are missing
  */
 async function fetchTranslationsFromSupabase(language: SupportedLanguage): Promise<TranslationStrings> {
   try {
@@ -54,27 +57,115 @@ async function fetchTranslationsFromSupabase(language: SupportedLanguage): Promi
       throw error;
     }
 
-    if (!data || data.length === 0) {
-      console.warn(`No translations found for ${language}, will use fallback`);
-      return {};
-    }
-
     // Convert array of key-value pairs to TranslationStrings object
     const translationObj: any = {};
     
-    for (const row of data) {
-      const key = row.translation_key;
-      const value = row.translation_value;
-      
-      // Handle nested characterNames object
-      if (key.startsWith('characterNames.')) {
-        const characterId = key.split('.')[1];
-        if (!translationObj.characterNames) {
-          translationObj.characterNames = {};
+    if (data && data.length > 0) {
+      for (const row of data) {
+        const key = row.translation_key;
+        const value = row.translation_value;
+        
+        // Handle nested characterNames object
+        if (key.startsWith('characterNames.')) {
+          const characterId = key.split('.')[1];
+          if (!translationObj.characterNames) {
+            translationObj.characterNames = {};
+          }
+          translationObj.characterNames[parseInt(characterId)] = value;
+        } else {
+          translationObj[key] = value;
         }
-        translationObj.characterNames[parseInt(characterId)] = value;
-      } else {
-        translationObj[key] = value;
+      }
+    }
+
+    // Check for missing keys and use AI fallback
+    const { translations } = await import('../constants/translations');
+    const englishTranslations = translations.en;
+    const missingKeys: string[] = [];
+    
+    // Find missing top-level keys
+    for (const key in englishTranslations) {
+      if (key === 'characterNames') {
+        // Handle character names separately
+        const englishCharNames = englishTranslations.characterNames;
+        if (englishCharNames) {
+          if (!translationObj.characterNames) {
+            translationObj.characterNames = {};
+          }
+          for (const charId in englishCharNames) {
+            if (!translationObj.characterNames[charId]) {
+              missingKeys.push(`characterNames.${charId}`);
+            }
+          }
+        }
+      } else if (!translationObj[key] && englishTranslations[key as keyof TranslationStrings]) {
+        missingKeys.push(key);
+      }
+    }
+    
+    // If there are missing translations, use AI
+    if (missingKeys.length > 0) {
+      console.log(`🤖 Using AI to translate ${missingKeys.length} missing UI strings for ${language}`);
+      logger.info('AI fallback for UI translations', { language, missingCount: missingKeys.length });
+      
+      // Translate missing keys with AI (in batches to avoid rate limits)
+      const batchSize = 5;
+      for (let i = 0; i < missingKeys.length; i += batchSize) {
+        const batch = missingKeys.slice(i, i + batchSize);
+        
+        await Promise.all(batch.map(async (key) => {
+          try {
+            let englishText: string;
+            
+            // Get English text for this key
+            if (key.startsWith('characterNames.')) {
+              const charId = key.split('.')[1];
+              englishText = englishTranslations.characterNames?.[parseInt(charId)] || `Character ${charId}`;
+            } else {
+              englishText = englishTranslations[key as keyof TranslationStrings] as string;
+            }
+            
+            if (!englishText) return;
+            
+            // Translate using AI (Groq/Gemini via router)
+            const result = await translateWithAI({
+              sourceText: englishText,
+              sourceLanguage: 'en',
+              targetLanguage: language,
+              includeTransliteration: false
+            });
+            
+            // Store the translation
+            if (key.startsWith('characterNames.')) {
+              const charId = key.split('.')[1];
+              if (!translationObj.characterNames) {
+                translationObj.characterNames = {};
+              }
+              translationObj.characterNames[parseInt(charId)] = result.translation;
+            } else {
+              translationObj[key] = result.translation;
+            }
+            
+            console.log(`✅ AI translated: ${key} → ${result.translation.substring(0, 50)}...`);
+          } catch (err) {
+            console.error(`Failed to AI-translate ${key}:`, err);
+            // Keep English as fallback for this specific key
+            if (key.startsWith('characterNames.')) {
+              const charId = key.split('.')[1];
+              if (!translationObj.characterNames) {
+                translationObj.characterNames = {};
+              }
+              translationObj.characterNames[parseInt(charId)] = englishTranslations.characterNames?.[parseInt(charId)] || `Character ${charId}`;
+            } else {
+              translationObj[key] = englishTranslations[key as keyof TranslationStrings];
+            }
+          }
+        }));
+        
+        // Small delay between batches to avoid rate limits
+        if (i + batchSize < missingKeys.length) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
       }
     }
 

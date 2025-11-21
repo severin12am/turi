@@ -560,7 +560,7 @@ const DialogueSelectionPanel: React.FC<DialogueSelectionPanelProps> = ({
                   >
                     <div className="flex items-center gap-3">
                       <h3 className="text-white text-lg font-semibold">
-                        Scenario {characterId}: {getScenarioName(characterId)}
+                        {getTranslation(motherLanguage, 'scenario')} {characterId}: {getTranslation(motherLanguage, `scenario${characterId}` as any)}
                       </h3>
                       <div className={`flex items-center px-3 py-1 rounded-lg text-xs ${
                         scenarioProgress > characterId 
@@ -577,7 +577,7 @@ const DialogueSelectionPanel: React.FC<DialogueSelectionPanelProps> = ({
                         ) : (
                           <>
                             <PlayCircle size={14} className="mr-1" />
-                            <span>Available</span>
+                            <span>{getTranslation(motherLanguage, 'available')}</span>
                           </>
                         )}
                       </div>

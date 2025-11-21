@@ -16,6 +16,7 @@ import { AIDialogueStep } from '../services/gemini';
 import { Mission } from '../constants/missions';
 import MobileControls from '../components/MobileControls';
 import { NPC_CHARACTERS } from '../constants/characters';
+import { getTranslation } from '../constants/translations';
 
 // Preload the character models
 useGLTF.preload('/models/character1.glb');
@@ -2160,7 +2161,7 @@ const CityScene: React.FC = () => {
         <ScenarioSelectionPanel
           characterId={activeCharacterId}
           scenarioNumber={selectedScenarioNumber}
-          scenarioName="Scenario 1: Greetings and Introductions"
+          scenarioName={`${getTranslation(motherLanguage, 'scenario')} ${selectedScenarioNumber}: ${getTranslation(motherLanguage, `scenario${selectedScenarioNumber}` as any)}`}
           onScenarioDialogueSelect={handleScenarioDialogueSelect}
           onMissionsClick={handleMissionsClick}
           onBack={handleScenarioBack}

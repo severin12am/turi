@@ -128,7 +128,7 @@ const MissionSelectionPanel: React.FC<MissionSelectionPanelProps> = ({
                 ← {getTranslation(motherLanguage, 'back')}
               </button>
               <PanelTitle className="m-0">
-                {getTranslation(motherLanguage, 'missions')} - {getScenarioName(scenarioNumber)}
+                {getTranslation(motherLanguage, 'missions')} - {getTranslation(motherLanguage, `scenario${scenarioNumber}` as any)}
               </PanelTitle>
             </div>
             <button
@@ -184,7 +184,7 @@ const MissionSelectionPanel: React.FC<MissionSelectionPanelProps> = ({
                               </span>
                             </div>
                             <p className="text-white/90 text-sm mb-1">
-                              {mission.goal}
+                              {getTranslation(motherLanguage, `mission${mission.scenarioNumber}_${mission.missionNumber}` as any)}
                             </p>
                             <p className="text-white/60 text-xs">
                               {getTranslation(motherLanguage, 'talkingTo')}: {mission.npcRole}

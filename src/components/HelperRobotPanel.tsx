@@ -11,6 +11,7 @@ import { PanelBackdrop } from './AppPanel';
 import { PanelTitle, PanelButton, PanelInput } from './PanelElements';
 import { SCENARIO_NAMES, DIALOGUES_PER_SCENARIO, TOTAL_SCENARIOS, getScenarioName, getScenarioProgress } from '../constants/scenarios';
 import { getMissionsForScenario, MISSIONS_PER_SCENARIO, getTotalMissions } from '../constants/missions';
+import { getTranslation } from '../constants/translations';
 
 interface HelperRobotPanelProps {
   onClose: () => void;
@@ -479,7 +480,7 @@ const HelperRobotPanel: React.FC<HelperRobotPanelProps> = ({ onClose }) => {
                       return (
                         <div key={scenarioNum} className="bg-white/5 rounded-xl p-4">
                           <h4 className="text-lg font-semibold text-white mb-3">
-                            Scenario {scenarioNum}: {getScenarioName(scenarioNum)}
+                            {getTranslation(motherLanguage, 'scenario')} {scenarioNum}: {getTranslation(motherLanguage, `scenario${scenarioNum}` as any)}
                           </h4>
                           
                           <div className="space-y-2">
@@ -628,7 +629,7 @@ const HelperRobotPanel: React.FC<HelperRobotPanelProps> = ({ onClose }) => {
                                 )}
                               </div>
                               <p className={`text-sm ${isUnlocked ? 'text-white/80' : 'text-white/40'}`}>
-                                {getScenarioName(scenarioNum)}
+                                {getTranslation(motherLanguage, `scenario${scenarioNum}` as any)}
                               </p>
                               {isCurrent && (
                                 <p className="text-xs text-purple-400 mt-2">
@@ -710,7 +711,7 @@ const HelperRobotPanel: React.FC<HelperRobotPanelProps> = ({ onClose }) => {
             
             {/* 4. 500 most common words separator */}
             <div className="my-6 border-t border-white/20 pt-2">
-              <h3 className="text-lg font-medium text-white/70 text-center">500 most common words</h3>
+              <h3 className="text-lg font-medium text-white/70 text-center">{getTranslation(motherLanguage, 'commonWordsInContext')}</h3>
             </div>
             
             {/* 5. Level Progress */}
