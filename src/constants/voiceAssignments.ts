@@ -71,17 +71,17 @@ export const VOICE_POOLS: Record<string, VoicePool> = {
   },
   'es': {
     male: [
-      'es-ES-Neural2-B',
       'es-ES-Wavenet-B',
-      'es-ES-Standard-B'
+      'es-ES-Standard-B',
+      'es-ES-Wavenet-D'
     ],
     female: [
-      'es-ES-Neural2-A',
       'es-ES-Neural2-C',
       'es-ES-Wavenet-C',
-      'es-ES-Standard-A'
+      'es-ES-Standard-A',
+      'es-ES-Wavenet-A'
     ],
-    turiVoice: 'es-ES-Neural2-A'
+    turiVoice: 'es-ES-Neural2-C'
   },
   'fr': {
     male: [
