@@ -12,8 +12,7 @@ import { translateWord } from '../services/gemini';
 import { generateSpeech } from '../services/aiService';
 import { fetchScenarioQuizWords } from '../services/scenarioQuiz';
 import { fetchScenarioExpressions } from '../services/scenarioExpressions';
-import { extractExpressionsFromDialogue } from '../services/expressionExtraction';
-import type { ExtractedExpression } from '../services/expressionExtraction';
+import { extractExpressionsFromDialogue, type ExtractedExpression } from '../services/aiService'; // All AI calls go through router
 import { addWordToDictionary } from '../services/dictionary';
 import { getTranslation } from '../constants/translations';
 

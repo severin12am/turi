@@ -8,18 +8,27 @@ import VocalQuizComponent from "./VocalQuizComponent"; // Import the VocalQuizCo
 import SignupPrompt from "./SignupPrompt";
 import type { SupportedLanguage } from '../constants/translations';
 import { getTranslation } from '../constants/translations';
-import { AIDialogueStep } from '../services/gemini';
-import { fetchDialoguesWithFallback, translateWithAI } from '../services/translationFallback';
+import { fetchDialoguesWithFallback } from '../services/translationFallback'; // Only for data fetching, not AI
+import { translateWord } from '../services/gemini'; // Word dictionary translation (non-AI)
 // New imports for enhanced word interaction
 import WordExplanationModal from './WordExplanationModal';
-import { generateWordExplanation, WordExplanationData, translateWord } from '../services/gemini';
 import { addWordToDictionary } from '../services/dictionary';
 // Mission imports
 import { Mission } from '../constants/missions';
-import { checkUserSentence, generateHelpSuggestion } from '../services/missionHelperRobot';
-import { generateNPCResponse } from '../services/missionNPC';
 import { getCharacterByScenario } from '../constants/characters';
-import { generateSpeech } from '../services/aiService';
+// All AI calls now go through the router
+import { 
+  AIDialogueStep,
+  WordExplanationData,
+  generateWordExplanation, 
+  generateSpeech, 
+  generateTextExplanation,
+  translateWithAI,
+  generateTransliteration,
+  checkUserSentence,
+  generateHelpSuggestion,
+  generateNPCResponse
+} from '../services/aiService';
 
 // Map supported languages to their speech recognition codes
 const getRecognitionLanguage = (lang: SupportedLanguage): string => {
@@ -3367,117 +3376,20 @@ Return ONLY the transliteration, nothing else.`;
     setStructureExplanationText('');
     
     try {
-      const targetLangName = getLanguageName(targetLanguage);
-      const motherLangName = getLanguageName(motherLanguage);
+      console.log('🔍 Requesting structure explanation via router:', { phrase, targetLanguage, motherLanguage });
       
-      console.log('🔍 Requesting structure explanation:', { phrase, targetLangName, motherLangName });
+      // Use the router - it will try Deepseek/Groq/Gemini based on aiConfig percentages
+      const explanation = await generateTextExplanation(phrase, translation, targetLanguage, motherLanguage);
       
-      const prompt = `Explain this sentence structure in ${motherLangName} (2-3 sentences MAX):
-
-${targetLangName}: "${phrase}"
-${motherLangName}: "${translation}"
-
-Cover: 1) sentence structure, 2) word order, 3) key grammar point.
-BE BRIEF.`;
-
-      console.log('📡 Sending request to Netlify function...');
-      
-      // Try multiple model names in order of preference
-      const modelNames = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.5-flash-lite', 'gemini-2.5-pro'];
-      let response;
-      let lastError;
-      
-      for (const modelName of modelNames) {
-        try {
-          console.log(`📡 Trying model: ${modelName}`);
-          response = await fetch('/.netlify/functions/gemini-text-explanation', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              modelName,
-              requestBody: {
-                contents: [{ parts: [{ text: prompt }] }],
-                generationConfig: {
-                  temperature: 0.3,
-                  topK: 20,
-                  topP: 0.8,
-                  maxOutputTokens: 300,
-                }
-              }
-            })
-          });
-          
-          if (response.ok) {
-            console.log(`✅ Model ${modelName} worked!`);
-            break;
-          } else {
-            const errorData = await response.json();
-            console.log(`❌ Model ${modelName} failed:`, errorData);
-            lastError = errorData;
-          }
-        } catch (err) {
-          console.log(`❌ Model ${modelName} error:`, err);
-          lastError = err;
-        }
-      }
-      
-      if (!response) {
-        throw new Error('All models failed');
-      }
-
-      console.log('📡 Response status:', response.status, response.statusText);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ API Error:', errorText);
-        throw new Error(`API returned ${response.status}: ${errorText}`);
-      }
-
-      const data = await response.json();
-      console.log('✅ Received data:', data);
-      console.log('🔍 Candidates:', data.candidates);
-      console.log('🔍 First candidate:', data.candidates?.[0]);
-      console.log('🔍 Content:', data.candidates?.[0]?.content);
-      console.log('🔍 Parts:', data.candidates?.[0]?.content?.parts);
-      console.log('🔍 Full content object keys:', data.candidates?.[0]?.content ? Object.keys(data.candidates[0].content) : 'N/A');
-      
-      // Validate response structure (same as other AI functions)
-      if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
-        console.error('❌ Invalid response structure:', data);
-        throw new Error('Invalid response from AI service');
-      }
-      
-      // Check finish reason
-      const finishReason = data.candidates[0].finishReason;
-      console.log('🔍 Finish reason:', finishReason);
-      
-      // Check if parts exists
-      if (!data.candidates[0].content.parts || !data.candidates[0].content.parts[0]) {
-        // If MAX_TOKENS, the model ran out of space - retry is needed
-        if (finishReason === 'MAX_TOKENS') {
-          console.log('⚠️ MAX_TOKENS reached - retrying with simpler prompt');
-          throw new Error('MAX_TOKENS - retrying');
-        }
-        console.error('❌ Parts array is missing or empty:', data.candidates[0].content);
-        throw new Error('Invalid content structure - parts missing');
-      }
-      
-      const generatedText = data.candidates[0].content.parts[0].text;
-      console.log('📝 Generated text:', generatedText);
-      
-      if (!generatedText || generatedText.trim() === '') {
-        throw new Error('AI returned empty response');
-      }
-      
-      setStructureExplanationText(generatedText);
+      setStructureExplanationText(explanation);
       setIsLoadingStructure(false);
       
-      logger.info('Structure explanation generated', { phrase, targetLanguage, motherLanguage });
-      console.log('✅ Structure explanation generated successfully');
+      logger.info('Structure explanation generated via router', { phrase, targetLanguage, motherLanguage });
+      console.log('✅ Structure explanation generated successfully via router');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       console.error('❌ Structure explanation failed:', errorMessage, error);
-      setStructureExplanationText(`Failed to generate explanation: ${errorMessage}\n\nThis feature requires the Netlify function to be deployed. Please check the console for details.`);
+      setStructureExplanationText(`Failed to generate explanation: ${errorMessage}\n\nPlease try again or check your connection.`);
       setIsLoadingStructure(false);
       logger.error('Structure explanation failed', { error: errorMessage });
     }

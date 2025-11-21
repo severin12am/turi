@@ -258,18 +258,16 @@ export const generateTextExplanation = async (
     throw new Error('Rate limit exceeded. Please wait before requesting another explanation.');
   }
 
-  const prompt = `You are a language tutor explaining a phrase to a student learning ${getLanguageName(targetLanguage)}.
+  const targetLangName = getLanguageName(targetLanguage);
+  const motherLangName = getLanguageName(motherLanguage);
 
-Phrase in ${getLanguageName(targetLanguage)}: "${phrase}"
-Translation in ${getLanguageName(motherLanguage)}: "${translation}"
+  const prompt = `Explain this sentence structure in ${motherLangName} (2-3 sentences MAX):
 
-Provide a clear, concise explanation in ${getLanguageName(motherLanguage)} covering:
-1. The literal meaning (if different from the translation)
-2. The grammatical structure (what parts of speech, how they connect)
-3. Any cultural or contextual notes (if relevant)
-4. When and how to use this phrase
+${targetLangName}: "${phrase}"
+${motherLangName}: "${translation}"
 
-Keep your explanation practical and easy to understand. Focus on helping the student USE the phrase correctly.`;
+Cover: 1) sentence structure, 2) word order, 3) key grammar point.
+BE BRIEF.`;
 
   const request: AIRequest = {
     task: 'text-explanation',
@@ -278,10 +276,11 @@ Keep your explanation practical and easy to understand. Focus on helping the stu
       temperature: 0.3,
       topK: 20,
       topP: 0.8,
-      maxOutputTokens: 1000,
+      maxOutputTokens: 300,  // Reduced from 1000 to avoid MAX_TOKENS
     }
   };
 
+  console.log(`📚 [AI Service] Generating structure explanation via router | Task: text-explanation`);
   logger.info('Generating text explanation via router', { phrase, targetLanguage, motherLanguage });
 
   const data = await routeAIRequest(request);
@@ -292,6 +291,7 @@ Keep your explanation practical and easy to understand. Focus on helping the stu
 
   const explanation = data.candidates[0].content.parts[0].text;
   
+  console.log(`✅ [AI Service] Structure explanation generated successfully via router`);
   logger.info('Text explanation generated successfully', { phrase });
   
   return explanation;
@@ -649,12 +649,12 @@ export const generateSpeech = async (
   gender: 'male' | 'female' = 'male',
   characterId: number | null = null
 ): Promise<HTMLAudioElement> => {
-  console.log('🔊 AI Service: Generating speech via router');
+  const task = characterId !== null ? 'tts-npc' : 'tts-turi';
+  
+  console.log(`🔊 [AI Service] Generating speech via router | Task: ${task} | Gender: ${gender} | CharID: ${characterId || 'Turi'}`);
   logger.info('Generating speech via router', { text, languageCode, gender, characterId });
 
   try {
-    const task = characterId !== null ? 'tts-npc' : 'tts-turi';
-    
     const request: TTSRequest = {
       task,
       text,
@@ -670,12 +670,12 @@ export const generateSpeech = async (
     const audioUrl = URL.createObjectURL(audioBlob);
     const audio = new Audio(audioUrl);
     
-    console.log('✅ AI Service: Successfully generated speech');
+    console.log('✅ [AI Service] Successfully generated speech via router');
     logger.info('Speech generated successfully via router', { languageCode, textLength: text.length });
     
     return audio;
   } catch (error) {
-    console.error('❌ AI Service: Failed to generate speech', error);
+    console.error('❌ [AI Service] Failed to generate speech via router', error);
     logger.error('Speech generation failed', { error, text, languageCode });
     throw error;
   }
@@ -737,3 +737,487 @@ function base64ToBlob(base64: string, mimeType: string): Blob {
   return new Blob([byteArray], { type: mimeType });
 }
 
+/**
+ * Generate transliteration only (via router)
+ */
+export const generateTransliteration = async (
+  text: string,
+  sourceLanguage: SupportedLanguage,
+  targetLanguage: SupportedLanguage
+): Promise<string> => {
+  console.log(`🔤 [AI Service] Generating transliteration via router | ${sourceLanguage} → ${targetLanguage}`);
+  
+  const result = await translateWithAI({
+    sourceText: text,
+    sourceLanguage,
+    targetLanguage: sourceLanguage, // Same language for transliteration only
+    motherLanguage: targetLanguage,
+    includeTransliteration: true
+  });
+
+  return result.transliteration || '';
+};
+
+// ============================================================================
+// EXPRESSION EXTRACTION (Router-based)
+// ============================================================================
+
+export interface ExtractedExpression {
+  target: string;
+  mother: string;
+}
+
+export interface ExtractExpressionsParams {
+  dialogueText: string;
+  targetLanguage: SupportedLanguage;
+  motherLanguage: SupportedLanguage;
+}
+
+/**
+ * Extract key expressions from dialogue (via router)
+ */
+export const extractExpressionsFromDialogue = async (
+  params: ExtractExpressionsParams
+): Promise<ExtractedExpression[]> => {
+  if (!rateLimiter.canMakeRequest()) {
+    throw new Error('Rate limit exceeded. Please wait before requesting another extraction.');
+  }
+
+  const { dialogueText, targetLanguage, motherLanguage } = params;
+  
+  const targetLangName = getLanguageName(targetLanguage);
+  const motherLangName = getLanguageName(motherLanguage);
+
+  const prompt = `You are a language learning assistant. Extract 5-8 of the most useful common expressions from this dialogue in ${targetLangName}.
+
+Dialogue:
+${dialogueText}
+
+Rules:
+1. Extract COMPLETE expressions and useful phrases (not just single words)
+2. Focus on phrases that are reusable in other contexts
+3. Include greetings, common questions, polite expressions, and idiomatic phrases
+4. Each expression should be 2-7 words long
+
+Return a JSON object with an array "expressions":
+{
+  "expressions": [
+    { "target": "expression in ${targetLangName}", "mother": "translation in ${motherLangName}" }
+  ]
+}
+
+Extract 5-8 expressions. Return ONLY the JSON object, no other text.`;
+
+  const request: AIRequest = {
+    task: 'expression-extraction',
+    prompt,
+    generationConfig: {
+      temperature: 0.2,
+      topK: 20,
+      topP: 0.8,
+      maxOutputTokens: 400,
+    }
+  };
+
+  console.log(`📚 [AI Service] Extracting expressions via router | Task: expression-extraction`);
+  logger.info('Extracting expressions via router', { targetLanguage, motherLanguage, textLength: dialogueText.length });
+
+  const data = await routeAIRequest(request);
+
+  if (!data.candidates || !data.candidates[0]) {
+    throw new Error('No response generated from AI');
+  }
+
+  const generatedText = data.candidates[0].content.parts[0].text;
+  
+  // Parse JSON response
+  const cleanedText = generatedText.replace(/```json\n?|\n?```/g, '').trim();
+  const result = JSON.parse(cleanedText);
+
+  if (!result.expressions || !Array.isArray(result.expressions)) {
+    throw new Error('Invalid expression extraction response format');
+  }
+
+  const expressions: ExtractedExpression[] = result.expressions.filter(
+    (expr: any) => expr.target && expr.mother
+  );
+
+  console.log(`✅ [AI Service] Extracted ${expressions.length} expressions via router`);
+  logger.info('Expressions extracted successfully', { count: expressions.length });
+
+  return expressions;
+};
+
+export interface HelperRobotDecision {
+  decision: 'No errors' | 'Incorrect';
+  explanation?: string;
+  correctedSentence?: string;
+}
+
+export interface HelperRobotCheckParams {
+  userText: string;
+  targetLanguage: SupportedLanguage;
+  motherLanguage: SupportedLanguage;
+  missionGoal: string;
+  npcRole: string;
+  conversationHistory?: Array<{ speaker: 'user' | 'npc'; text: string }>;
+}
+
+/**
+ * Helper robot checks user sentence (via router)
+ */
+export const checkUserSentence = async (params: HelperRobotCheckParams): Promise<HelperRobotDecision> => {
+  const { userText, targetLanguage, motherLanguage, missionGoal, npcRole, conversationHistory } = params;
+
+  const contextSection = conversationHistory && conversationHistory.length > 0 
+    ? `\n\nCONVERSATION SO FAR:\n${conversationHistory.map(entry => 
+        `${entry.speaker === 'user' ? 'User' : 'NPC'}: ${entry.text}`
+      ).join('\n')}\n`
+    : '';
+
+  const prompt = `You are a person who checks the speech of his friend and corrects him if necessary. You are NOT part of the conversation — the learner (your friend who is trying to learn ${targetLanguage} )  is speaking directly to the NPC named "${npcRole}", never to you.
+
+  Context:
+  - Target language: ${targetLanguage}
+  - Learner's native language: ${motherLanguage}
+  - Current mission/goal: ${missionGoal}${contextSection}
+  
+  Important notes about the user's input:
+  - The text comes from voice recognition of spoken ${targetLanguage} and doesnot have punctuation, capitalization and  ¿ ¡ ? ! . ,; which, therefore, must be ignored. Two correct sentences may be joined without pause. Do not worry about sentence order. Do not worry about politeness.
+  
+  Your only job: decide if the sentence of the learner contains MAJOR errors that make it incomprehensible or seriously wrong in the context of talking to "${npcRole}". Be lenient, your friend is learning a new language.
+  
+  Definitions:
+  - MAJOR error = completely wrong grammar/structure, wrong vocabulary, completely irrelevant to the current mission of the learner.
+  - Minor imperfections (slightly unnatural word order, non-native phrasing, small mistakes) are OK — approve them if the meaning is clear.
+  
+  Learner's utterance to the NPC: "${userText}"
+  
+  Task:
+  Answer with ONLY valid JSON in exactly one of the two formats below. No extra text, no markdown, no explanations outside the JSON.
+  
+  If no major errors:
+  {"decision": "No errors"}
+  
+  If there are major errors:
+  {
+    "decision": "Incorrect",
+    "explanation": "Short, friendly explanation in ${motherLanguage} (1–2 sentences max)",
+    "correctedSentence": "Say: Corrected ${targetLanguage} sentence here [phonetic transliteration in parentheses] — Translation to ${motherLanguage}: translation here"
+  }
+  
+  Return only the JSON object.`;
+
+  const request: AIRequest = {
+    task: 'helper-robot',
+    prompt,
+    generationConfig: {
+      temperature: 0.3,
+      topK: 20,
+      topP: 0.8,
+      maxOutputTokens: 512,
+    }
+  };
+
+  console.log(`🤖 [AI Service] Checking user sentence via router | Task: helper-robot`);
+  logger.info('Checking user sentence via router', { userText, targetLanguage });
+
+  const data = await routeAIRequest(request);
+
+  if (!data.candidates || !data.candidates[0]) {
+    throw new Error('No response generated from AI');
+  }
+
+  const textResponse = data.candidates[0].content.parts[0].text;
+
+  // Parse JSON response
+  const jsonMatch = textResponse.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) {
+    throw new Error('No JSON found in response');
+  }
+
+  const decision: HelperRobotDecision = JSON.parse(jsonMatch[0]);
+
+  if (decision.decision !== 'No errors' && decision.decision !== 'Incorrect') {
+    throw new Error('Invalid decision format');
+  }
+
+  if (decision.decision === 'Incorrect' && (!decision.explanation || !decision.correctedSentence)) {
+    throw new Error('Missing explanation or corrected sentence');
+  }
+
+  console.log(`✅ [AI Service] Sentence check completed via router | Decision: ${decision.decision}`);
+  logger.info('Sentence check completed', { decision: decision.decision });
+
+  return decision;
+};
+
+/**
+ * Helper robot generates a suggestion (via router)
+ */
+export const generateHelpSuggestion = async (params: Omit<HelperRobotCheckParams, 'userText'>): Promise<string> => {
+  const { targetLanguage, motherLanguage, missionGoal, npcRole } = params;
+
+  const prompt = `You are Turi, a neutral, friendly helper robot in a language learning app.
+
+The user is practising ${targetLanguage}.
+Their native language is ${motherLanguage}.
+
+Current mission: ${missionGoal}
+The user is talking to: ${npcRole}
+
+The user clicked "help me" because they don't know what to say.
+
+Generate ONE natural, appropriate sentence in ${targetLanguage} that would help achieve the mission goal.
+
+Format EXACTLY like this (no brackets around translation):
+Sentence in ${targetLanguage} [Transliteration in ${motherLanguage} script] — Translation in ${motherLanguage}
+
+Example: ¿Cómo te llamas? [KOH-moh teh YAH-mahs] — What's your name?
+
+Be concise and natural. Return only the formatted suggestion, nothing else.`;
+
+  const request: AIRequest = {
+    task: 'helper-robot',
+    prompt,
+    generationConfig: {
+      temperature: 0.7,
+      topK: 40,
+      topP: 0.95,
+      maxOutputTokens: 256,
+    }
+  };
+
+  console.log(`💡 [AI Service] Generating help suggestion via router | Task: helper-robot`);
+  logger.info('Generating help suggestion via router', { missionGoal, targetLanguage });
+
+  const data = await routeAIRequest(request);
+
+  if (!data.candidates || !data.candidates[0]) {
+    throw new Error('No response generated from AI');
+  }
+
+  const suggestion = data.candidates[0].content.parts[0].text.trim();
+
+  console.log(`✅ [AI Service] Help suggestion generated via router`);
+  logger.info('Help suggestion generated', { suggestion });
+
+  return suggestion;
+};
+
+// ============================================================================
+// TRANSLATION & TRANSLITERATION (Router-based)
+// ============================================================================
+
+export interface TranslationRequest {
+  sourceText: string;
+  sourceLanguage: SupportedLanguage;
+  targetLanguage: SupportedLanguage;
+  motherLanguage?: SupportedLanguage;
+  includeTransliteration?: boolean;
+}
+
+export interface TranslationResult {
+  translation: string;
+  transliteration?: string;
+}
+
+/**
+ * Translate text using AI router
+ */
+export const translateWithAI = async (request: TranslationRequest): Promise<TranslationResult> => {
+  const { sourceText, sourceLanguage, targetLanguage, motherLanguage, includeTransliteration = true } = request;
+
+  const sourceLangName = getLanguageName(sourceLanguage);
+  const targetLangName = getLanguageName(targetLanguage);
+  const motherLangName = motherLanguage ? getLanguageName(motherLanguage) : sourceLangName;
+
+  const isTransliterationOnly = sourceLanguage === targetLanguage;
+
+  let prompt;
+  
+  if (isTransliterationOnly && includeTransliteration) {
+    prompt = `Transliterate the following ${sourceLangName} text into ${motherLangName} script.
+
+Text: "${sourceText}"
+
+Return a JSON object with:
+- "translation": keep the same text in ${sourceLangName} (no translation needed)
+- "transliteration": the text written using ${motherLangName} alphabet/script (lowercase, no punctuation)
+
+Example format:
+{
+  "translation": "original text here",
+  "transliteration": "transliterated text here in ${motherLangName} script"
+}
+
+Be accurate and natural. Approximate the ${sourceLangName} sounds using the ${motherLangName} writing system (not English romanization).`;
+  } else {
+    prompt = `Translate the following text from ${sourceLangName} to ${targetLangName}.
+
+Text: "${sourceText}"
+
+Return a JSON object with:
+- "translation": the translated text in ${targetLangName}`;
+
+    if (includeTransliteration) {
+      prompt += `
+- "transliteration": the ORIGINAL ${sourceLangName} text written phonetically using ${motherLangName} alphabet/script (lowercase, no punctuation)`;
+    }
+
+    prompt += `
+
+Example format:
+{
+  "translation": "translated text here",
+  "transliteration": "phonetic transliteration of the original ${sourceLangName} text"
+}
+
+Be accurate and natural. For transliteration, approximate the ORIGINAL ${sourceLangName} sounds (NOT the translation) using the ${motherLangName} writing system.`;
+  }
+
+  const aiRequest: AIRequest = {
+    task: 'translation',
+    prompt,
+    generationConfig: {
+      temperature: 0.3,
+      topK: 20,
+      topP: 0.8,
+      maxOutputTokens: 512,
+    }
+  };
+
+  console.log(`🌐 [AI Service] Translating via router | Task: translation | ${sourceLangName} → ${targetLangName}`);
+  logger.info('Translating via router', { sourceLanguage, targetLanguage, textLength: sourceText.length });
+
+  const data = await routeAIRequest(aiRequest);
+
+  if (!data.candidates || !data.candidates[0]) {
+    throw new Error('No response generated from AI');
+  }
+
+  const generatedText = data.candidates[0].content.parts[0].text;
+  
+  // Parse JSON response
+  const cleanedText = generatedText.replace(/```json\n?|\n?```/g, '').trim();
+  const result = JSON.parse(cleanedText);
+
+  console.log(`✅ [AI Service] Translation completed via router`);
+  logger.info('Translation successful', { hasTransliteration: !!result.transliteration });
+
+  return {
+    translation: result.translation,
+    transliteration: result.transliteration
+  };
+};
+
+/**
+ * Generate transliteration only (via router)
+ */
+export const generateTransliteration = async (
+  text: string,
+  sourceLanguage: SupportedLanguage,
+  targetLanguage: SupportedLanguage
+): Promise<string> => {
+  console.log(`🔤 [AI Service] Generating transliteration via router | ${sourceLanguage} → ${targetLanguage}`);
+  
+  const result = await translateWithAI({
+    sourceText: text,
+    sourceLanguage,
+    targetLanguage: sourceLanguage, // Same language for transliteration only
+    motherLanguage: targetLanguage,
+    includeTransliteration: true
+  });
+
+  return result.transliteration || '';
+};
+
+// ============================================================================
+// EXPRESSION EXTRACTION (Router-based)
+// ============================================================================
+
+export interface ExtractedExpression {
+  target: string;
+  mother: string;
+}
+
+export interface ExtractExpressionsParams {
+  dialogueText: string;
+  targetLanguage: SupportedLanguage;
+  motherLanguage: SupportedLanguage;
+}
+
+/**
+ * Extract key expressions from dialogue (via router)
+ */
+export const extractExpressionsFromDialogue = async (
+  params: ExtractExpressionsParams
+): Promise<ExtractedExpression[]> => {
+  if (!rateLimiter.canMakeRequest()) {
+    throw new Error('Rate limit exceeded. Please wait before requesting another extraction.');
+  }
+
+  const { dialogueText, targetLanguage, motherLanguage } = params;
+  
+  const targetLangName = getLanguageName(targetLanguage);
+  const motherLangName = getLanguageName(motherLanguage);
+
+  const prompt = `You are a language learning assistant. Extract 5-8 of the most useful common expressions from this dialogue in ${targetLangName}.
+
+Dialogue:
+${dialogueText}
+
+Rules:
+1. Extract COMPLETE expressions and useful phrases (not just single words)
+2. Focus on phrases that are reusable in other contexts
+3. Include greetings, common questions, polite expressions, and idiomatic phrases
+4. Each expression should be 2-7 words long
+
+Return a JSON object with an array "expressions":
+{
+  "expressions": [
+    { "target": "expression in ${targetLangName}", "mother": "translation in ${motherLangName}" }
+  ]
+}
+
+Extract 5-8 expressions. Return ONLY the JSON object, no other text.`;
+
+  const request: AIRequest = {
+    task: 'expression-extraction',
+    prompt,
+    generationConfig: {
+      temperature: 0.2,
+      topK: 20,
+      topP: 0.8,
+      maxOutputTokens: 400,
+    }
+  };
+
+  console.log(`📚 [AI Service] Extracting expressions via router | Task: expression-extraction`);
+  logger.info('Extracting expressions via router', { targetLanguage, motherLanguage, textLength: dialogueText.length });
+
+  const data = await routeAIRequest(request);
+
+  if (!data.candidates || !data.candidates[0]) {
+    throw new Error('No response generated from AI');
+  }
+
+  const generatedText = data.candidates[0].content.parts[0].text;
+  
+  // Parse JSON response
+  const cleanedText = generatedText.replace(/```json\n?|\n?```/g, '').trim();
+  const result = JSON.parse(cleanedText);
+
+  if (!result.expressions || !Array.isArray(result.expressions)) {
+    throw new Error('Invalid expression extraction response format');
+  }
+
+  const expressions: ExtractedExpression[] = result.expressions.filter(
+    (expr: any) => expr.target && expr.mother
+  );
+
+  console.log(`✅ [AI Service] Extracted ${expressions.length} expressions via router`);
+  logger.info('Expressions extracted successfully', { count: expressions.length });
+
+  return expressions;
+};

@@ -142,23 +142,23 @@ export const AI_CONFIG: Record<AITask, ProviderConfig[] | TTSConfig[]> = {
 
   /**
    * TEXT EXPLANATION (Grammar/phrase explanations)
-   * Similar to word explanation
+   * Deepseek is better for structured explanations
    */
   'text-explanation': [
     {
-      provider: 'gemini',
-      percentage: 40,
-      model: 'gemini-2.5-flash'
-    },
-    {
       provider: 'deepseek',
-      percentage: 40,
+      percentage: 60,  // Prioritize Deepseek for better explanations
       model: 'deepseek-chat'
     },
     {
       provider: 'groq',
-      percentage: 20,
+      percentage: 30,
       model: 'mixtral-8x7b-32768'
+    },
+    {
+      provider: 'gemini',
+      percentage: 10,  // Gemini as fallback only
+      model: 'gemini-2.5-flash'
     }
   ],
 
