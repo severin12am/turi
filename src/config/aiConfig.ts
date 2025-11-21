@@ -125,40 +125,40 @@ export const AI_CONFIG: Record<AITask, ProviderConfig[] | TTSConfig[]> = {
   'word-explanation': [
     {
       provider: 'gemini',
-      percentage: 40,  // Gemini good for structured output
+      percentage: 50,  // Gemini good for structured output
       model: 'gemini-2.5-flash'
     },
     {
-      provider: 'deepseek',
-      percentage: 40,  // Deepseek is good at explanations
-      model: 'deepseek-chat'
+      provider: 'groq',
+      percentage: 40,  // Groq as primary fallback
+      model: 'llama-3.3-70b-versatile'
     },
     {
-      provider: 'groq',
-      percentage: 20,
-      model: 'llama-3.3-70b-versatile'
+      provider: 'deepseek',
+      percentage: 10,  // Reduced due to balance issues
+      model: 'deepseek-chat'
     }
   ],
 
   /**
    * TEXT EXPLANATION (Grammar/phrase explanations)
-   * Deepseek is better for structured explanations
+   * Using Groq/Gemini primarily due to Deepseek balance issues
    */
   'text-explanation': [
     {
-      provider: 'deepseek',
-      percentage: 60,  // Prioritize Deepseek for better explanations
-      model: 'deepseek-chat'
-    },
-    {
       provider: 'groq',
-      percentage: 30,
+      percentage: 50,  // Groq is fast and free
       model: 'llama-3.3-70b-versatile'
     },
     {
       provider: 'gemini',
-      percentage: 10,  // Gemini as fallback only
+      percentage: 40,  // Gemini as main fallback
       model: 'gemini-2.5-flash'
+    },
+    {
+      provider: 'deepseek',
+      percentage: 10,  // Reduced due to balance issues
+      model: 'deepseek-chat'
     }
   ],
 

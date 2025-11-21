@@ -945,8 +945,18 @@ Be accurate and natural. For transliteration, approximate the ORIGINAL ${sourceL
     throw new Error('No response generated from AI');
   }
 
+  // Validate response structure before accessing
+  if (!data.candidates[0].content || !data.candidates[0].content.parts || !data.candidates[0].content.parts[0]) {
+    console.error('Invalid AI response structure:', JSON.stringify(data, null, 2));
+    throw new Error('Invalid AI response structure - missing content or parts');
+  }
+
   const generatedText = data.candidates[0].content.parts[0].text;
   
+  if (!generatedText) {
+    throw new Error('AI returned empty text response');
+  }
+
   // Parse JSON response
   const cleanedText = generatedText.replace(/```json\n?|\n?```/g, '').trim();
   const result = JSON.parse(cleanedText);
