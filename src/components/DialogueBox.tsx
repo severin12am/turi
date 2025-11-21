@@ -1953,13 +1953,17 @@ Return ONLY the transliteration, nothing else.`;
           sourceLanguage: targetLanguage,
           targetLanguage: motherLanguage,
           motherLanguage: motherLanguage,
-          includeTransliteration: false // Don't use the buggy transliteration
+          includeTransliteration: true // Use built-in transliteration as fallback
         }),
-        generateTransliteration(userText, targetLanguage, motherLanguage)
+        generateTransliteration(userText, targetLanguage, motherLanguage).catch(() => '')
       ]);
       
       console.log('[Missions] User text translation:', userTranslation);
       console.log('[Missions] User text transliteration:', userTransliteration);
+      
+      // Use transliteration from translation API if the separate call failed
+      const finalUserTransliteration = userTransliteration || userTranslation.transliteration || '';
+      console.log('[Missions] Final user transliteration:', finalUserTransliteration);
       
       // Save the recording with the correct step number if provided
       if (recordingBlob) {
@@ -1977,7 +1981,7 @@ Return ONLY the transliteration, nothing else.`;
         step: userStepNumber,
         speaker: 'User',
         phrase: userText,
-        transcription: userTransliteration,
+        transcription: finalUserTransliteration,
         translation: userTranslation.translation || '',
         isCompleted: true
       };
@@ -2014,13 +2018,17 @@ Return ONLY the transliteration, nothing else.`;
           sourceLanguage: targetLanguage,
           targetLanguage: motherLanguage,
           motherLanguage: motherLanguage,
-          includeTransliteration: false // Don't use the buggy transliteration
+          includeTransliteration: true // Use built-in transliteration as fallback
         }),
-        generateTransliteration(npcResponse.response, targetLanguage, motherLanguage)
+        generateTransliteration(npcResponse.response, targetLanguage, motherLanguage).catch(() => '')
       ]);
       
       console.log('[Missions] NPC response translation:', npcTranslation);
       console.log('[Missions] NPC response transliteration:', npcTransliteration);
+      
+      // Use transliteration from translation API if the separate call failed
+      const finalNpcTransliteration = npcTransliteration || npcTranslation.transliteration || '';
+      console.log('[Missions] Final NPC transliteration:', finalNpcTransliteration);
       
       // Add NPC response to history with translation and transliteration
       const npcEntry: ConversationEntry = {
@@ -2028,7 +2036,7 @@ Return ONLY the transliteration, nothing else.`;
         step: newHistory.length + 1,
         speaker: 'NPC',
         phrase: npcResponse.response,
-        transcription: npcTransliteration,
+        transcription: finalNpcTransliteration,
         translation: npcTranslation.translation || '',
         isCompleted: true
       };
