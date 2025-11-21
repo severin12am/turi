@@ -65,7 +65,7 @@ export const AI_CONFIG: Record<AITask, ProviderConfig[] | TTSConfig[]> = {
     {
       provider: 'groq',
       percentage: 30,  // 30% Groq (fast and free)
-      model: 'mixtral-8x7b-32768'  // or 'llama2-70b-4096'
+      model: 'llama-3.3-70b-versatile'  // Updated: mixtral-8x7b-32768 decommissioned
     },
     {
       provider: 'deepseek',
@@ -82,7 +82,7 @@ export const AI_CONFIG: Record<AITask, ProviderConfig[] | TTSConfig[]> = {
     {
       provider: 'groq',
       percentage: 60,  // Groq is fast for real-time conversations
-      model: 'mixtral-8x7b-32768'
+      model: 'llama-3.3-70b-versatile'  // Updated: mixtral-8x7b-32768 decommissioned
     },
     {
       provider: 'gemini',
@@ -104,7 +104,7 @@ export const AI_CONFIG: Record<AITask, ProviderConfig[] | TTSConfig[]> = {
     {
       provider: 'groq',
       percentage: 70,  // Groq is very fast for this
-      model: 'mixtral-8x7b-32768'
+      model: 'llama-3.3-70b-versatile'  // Updated: mixtral-8x7b-32768 decommissioned
     },
     {
       provider: 'deepseek',
@@ -136,7 +136,7 @@ export const AI_CONFIG: Record<AITask, ProviderConfig[] | TTSConfig[]> = {
     {
       provider: 'groq',
       percentage: 20,
-      model: 'mixtral-8x7b-32768'
+      model: 'llama-3.3-70b-versatile'
     }
   ],
 
@@ -153,7 +153,7 @@ export const AI_CONFIG: Record<AITask, ProviderConfig[] | TTSConfig[]> = {
     {
       provider: 'groq',
       percentage: 30,
-      model: 'mixtral-8x7b-32768'
+      model: 'llama-3.3-70b-versatile'
     },
     {
       provider: 'gemini',
@@ -180,7 +180,7 @@ export const AI_CONFIG: Record<AITask, ProviderConfig[] | TTSConfig[]> = {
     {
       provider: 'groq',
       percentage: 20,
-      model: 'mixtral-8x7b-32768'
+      model: 'llama-3.3-70b-versatile'
     }
   ],
 
@@ -202,7 +202,7 @@ export const AI_CONFIG: Record<AITask, ProviderConfig[] | TTSConfig[]> = {
     {
       provider: 'groq',
       percentage: 20,
-      model: 'mixtral-8x7b-32768'
+      model: 'llama-3.3-70b-versatile'
     }
   ],
 
@@ -260,11 +260,9 @@ export const MODEL_FALLBACKS: Record<AIProvider, string[]> = {
   ],
   
   groq: [
-    'mixtral-8x7b-32768',       // Fast and capable
-    'llama2-70b-4096',           // Powerful but slower
-    'llama-3.3-70b-versatile',   // Latest Llama
-    'gemma2-9b-it',              // Lightweight
-    'llama-3.1-8b-instant'       // Very fast
+    'llama-3.3-70b-versatile',   // Latest Llama (default)
+    'llama-3.1-8b-instant',      // Very fast fallback
+    'gemma2-9b-it'               // Lightweight fallback
   ],
   
   deepseek: [
