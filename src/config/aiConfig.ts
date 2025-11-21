@@ -76,22 +76,22 @@ export const AI_CONFIG: Record<AITask, ProviderConfig[] | TTSConfig[]> = {
 
   /**
    * NPC RESPONSES (Mission conversations)
-   * Requires natural, conversational responses
+   * Requires natural, conversational responses - primarily Groq for speed
    */
   'npc-response': [
     {
       provider: 'groq',
-      percentage: 60,  // Groq is fast for real-time conversations
-      model: 'llama-3.3-70b-versatile'  // Updated: mixtral-8x7b-32768 decommissioned
+      percentage: 70,  // Increased - Groq is fast for real-time conversations
+      model: 'llama-3.3-70b-versatile'
     },
     {
       provider: 'gemini',
-      percentage: 30,
+      percentage: 25,  // Reduced to save rate limits
       model: 'gemini-2.5-flash'
     },
     {
       provider: 'deepseek',
-      percentage: 10,
+      percentage: 5,   // Minimal - out of balance
       model: 'deepseek-chat'
     }
   ],
@@ -103,18 +103,18 @@ export const AI_CONFIG: Record<AITask, ProviderConfig[] | TTSConfig[]> = {
   'helper-robot': [
     {
       provider: 'groq',
-      percentage: 70,  // Groq is very fast for this
-      model: 'llama-3.3-70b-versatile'  // Updated: mixtral-8x7b-32768 decommissioned
-    },
-    {
-      provider: 'deepseek',
-      percentage: 20,
-      model: 'deepseek-chat'
+      percentage: 80,  // Increased - Groq is very fast and free
+      model: 'llama-3.3-70b-versatile'
     },
     {
       provider: 'gemini',
-      percentage: 10,
-      model: 'gemini-2.5-flash-lite'  // Fast model for quick checks
+      percentage: 15,  // Reduced to save rate limits
+      model: 'gemini-2.5-flash-lite'
+    },
+    {
+      provider: 'deepseek',
+      percentage: 5,   // Minimal - out of balance
+      model: 'deepseek-chat'
     }
   ],
 
@@ -186,22 +186,22 @@ export const AI_CONFIG: Record<AITask, ProviderConfig[] | TTSConfig[]> = {
 
   /**
    * TRANSLATION (AI fallback when database translation missing)
-   * Accuracy is critical - primarily using Gemini for reliable JSON output
+   * Balanced between Groq (fast) and Gemini (reliable JSON)
    */
   'translation': [
     {
-      provider: 'gemini',
-      percentage: 70,  // Increased - most reliable for JSON
-      model: 'gemini-2.5-flash'
-    },
-    {
       provider: 'groq',
-      percentage: 25,  // Increased as fallback
+      percentage: 50,  // Increased - Groq is fast and free
       model: 'llama-3.3-70b-versatile'
     },
     {
+      provider: 'gemini',
+      percentage: 45,  // Reduced to avoid rate limits
+      model: 'gemini-2.5-flash'
+    },
+    {
       provider: 'deepseek',
-      percentage: 5,   // Reduced - currently out of balance
+      percentage: 5,   // Minimal - out of balance
       model: 'deepseek-chat'
     }
   ],

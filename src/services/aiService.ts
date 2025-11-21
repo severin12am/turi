@@ -941,28 +941,12 @@ Be accurate and natural. For transliteration, approximate the ORIGINAL ${sourceL
 
   const data = await routeAIRequest(aiRequest);
 
+  // Router now validates everything - we just need basic safety checks
   if (!data.candidates || !data.candidates[0]) {
     throw new Error('No response generated from AI');
   }
 
-  // Check if response hit MAX_TOKENS before generating content
-  const finishReason = data.candidates[0].finishReason;
-  if (finishReason === 'MAX_TOKENS') {
-    console.error('⚠️ Translation hit MAX_TOKENS - model thinking used too many tokens');
-    throw new Error('MAX_TOKENS - translation incomplete, will retry with different provider');
-  }
-
-  // Validate response structure before accessing
-  if (!data.candidates[0].content || !data.candidates[0].content.parts || !data.candidates[0].content.parts[0]) {
-    console.error('Invalid AI response structure:', JSON.stringify(data, null, 2));
-    throw new Error('Invalid AI response structure - missing content or parts');
-  }
-
   const generatedText = data.candidates[0].content.parts[0].text;
-  
-  if (!generatedText) {
-    throw new Error('AI returned empty text response');
-  }
 
   // Parse JSON response
   const cleanedText = generatedText.replace(/```json\n?|\n?```/g, '').trim();

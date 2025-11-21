@@ -256,6 +256,19 @@ function normalizeProviderResponse(provider: AIProvider, data: any): any {
   switch (provider) {
     case 'gemini':
       // Gemini returns: { candidates: [{ content: { parts: [{ text: "..." }] } }] }
+      
+      // VALIDATE: Check for MAX_TOKENS before returning (so fallback can trigger)
+      if (data.candidates?.[0]?.finishReason === 'MAX_TOKENS') {
+        console.error('⚠️ Gemini hit MAX_TOKENS - triggering fallback');
+        throw new Error('Gemini hit MAX_TOKENS - trying fallback provider');
+      }
+      
+      // VALIDATE: Ensure response has actual content
+      if (!data.candidates?.[0]?.content?.parts?.[0]?.text) {
+        console.error('⚠️ Gemini returned incomplete response - no text content');
+        throw new Error('Gemini returned incomplete response - trying fallback');
+      }
+      
       return data; // Already in expected format for existing code
     
     case 'deepseek':
