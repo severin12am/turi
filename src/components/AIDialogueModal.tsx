@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Sparkles, Loader2, AlertCircle } from 'lucide-react';
-import { generateAIDialogue, AIDialogueStep, GenerateDialogueParams } from '../services/gemini';
+import { generateAIDialogue, AIDialogueStep, GenerateDialogueParams } from '../services/aiService';
 import { useStore } from '../store';
 import { getTranslation } from '../constants/translations';
 import AppPanel from './AppPanel';

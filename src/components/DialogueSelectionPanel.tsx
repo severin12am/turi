@@ -8,7 +8,7 @@ import AppPanel from './AppPanel';
 import { PanelBackdrop } from './AppPanel';
 import { PanelTitle, PanelButton } from './PanelElements';
 import AIDialogueModal from './AIDialogueModal';
-import { AIDialogueStep } from '../services/gemini';
+import { AIDialogueStep } from '../services/aiService';
 import { getScenarioName, DIALOGUES_PER_SCENARIO } from '../constants/scenarios';
 import { getMissionsForScenario, Mission } from '../constants/missions';
 

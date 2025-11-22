@@ -12,7 +12,7 @@ import DialogueBox from '../components/DialogueBox';
 import DialogueSelectionPanel from '../components/DialogueSelectionPanel';
 import ScenarioSelectionPanel from '../components/ScenarioSelectionPanel';
 import MissionSelectionPanel from '../components/MissionSelectionPanel';
-import { AIDialogueStep } from '../services/gemini';
+import { AIDialogueStep } from '../services/aiService';
 import { Mission } from '../constants/missions';
 import MobileControls from '../components/MobileControls';
 import { NPC_CHARACTERS } from '../constants/characters';
