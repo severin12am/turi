@@ -439,9 +439,11 @@ export const fetchDialoguesWithFallback = async (
     
     const needsTargetTranslation = data.some(phrase => !phrase[targetColumn]);
     const needsMotherTranslation = data.some(phrase => !phrase[motherColumn]);
+    // Only generate transliteration if column exists and is empty
+    // Don't generate it if column doesn't exist (saves API calls)
     const needsTransliteration = hasTransliterationColumn 
       ? data.some(phrase => !phrase[transliterationColumn])
-      : true; // If column doesn't exist, we'll generate transliteration in memory
+      : false; // Don't generate transliteration via AI if column doesn't exist
 
     console.log('🔍 TRANSLATION CHECK:', {
       targetColumn,
@@ -459,10 +461,11 @@ export const fetchDialoguesWithFallback = async (
       } : null
     });
 
-    // If we have all the data, return it
-    if (!needsTargetTranslation && !needsMotherTranslation && !needsTransliteration) {
-      logger.info('All translations present in Supabase', { tableName, dialogueId });
-      console.log('✅ All translations present, returning data as-is');
+    // If we have the essential data (target + mother translations), return it
+    // Transliteration is optional and can be generated on-demand in UI if needed
+    if (!needsTargetTranslation && !needsMotherTranslation) {
+      logger.info('Essential translations present in Supabase', { tableName, dialogueId });
+      console.log('✅ Essential translations present, returning data (transliteration optional)');
       return data;
     }
 

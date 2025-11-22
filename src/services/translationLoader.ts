@@ -103,68 +103,22 @@ async function fetchTranslationsFromSupabase(language: SupportedLanguage): Promi
       }
     }
     
-    // If there are missing translations, use AI
+    // If there are missing translations, use English as fallback
+    // AI translation disabled to avoid excessive API calls
     if (missingKeys.length > 0) {
-      console.log(`🤖 Using AI to translate ${missingKeys.length} missing UI strings for ${language}`);
-      logger.info('AI fallback for UI translations', { language, missingCount: missingKeys.length });
+      console.log(`ℹ️ ${missingKeys.length} UI strings missing for ${language}, using English fallback`);
+      logger.info('Using English fallback for missing UI translations', { language, missingCount: missingKeys.length });
       
-      // Translate missing keys with AI (in batches to avoid rate limits)
-      const batchSize = 5;
-      for (let i = 0; i < missingKeys.length; i += batchSize) {
-        const batch = missingKeys.slice(i, i + batchSize);
-        
-        await Promise.all(batch.map(async (key) => {
-          try {
-            let englishText: string;
-            
-            // Get English text for this key
-            if (key.startsWith('characterNames.')) {
-              const charId = key.split('.')[1];
-              englishText = englishTranslations.characterNames?.[parseInt(charId)] || `Character ${charId}`;
-            } else {
-              englishText = englishTranslations[key as keyof TranslationStrings] as string;
-            }
-            
-            if (!englishText) return;
-            
-            // Translate using AI (Groq/Gemini via router)
-            const result = await translateWithAI({
-              sourceText: englishText,
-              sourceLanguage: 'en',
-              targetLanguage: language,
-              includeTransliteration: false
-            });
-            
-            // Store the translation
-            if (key.startsWith('characterNames.')) {
-              const charId = key.split('.')[1];
-              if (!translationObj.characterNames) {
-                translationObj.characterNames = {};
-              }
-              translationObj.characterNames[parseInt(charId)] = result.translation;
-            } else {
-              translationObj[key] = result.translation;
-            }
-            
-            console.log(`✅ AI translated: ${key} → ${result.translation.substring(0, 50)}...`);
-          } catch (err) {
-            console.error(`Failed to AI-translate ${key}:`, err);
-            // Keep English as fallback for this specific key
-            if (key.startsWith('characterNames.')) {
-              const charId = key.split('.')[1];
-              if (!translationObj.characterNames) {
-                translationObj.characterNames = {};
-              }
-              translationObj.characterNames[parseInt(charId)] = englishTranslations.characterNames?.[parseInt(charId)] || `Character ${charId}`;
-            } else {
-              translationObj[key] = englishTranslations[key as keyof TranslationStrings];
-            }
+      // Simply use English for missing keys
+      for (const key of missingKeys) {
+        if (key.startsWith('characterNames.')) {
+          const charId = key.split('.')[1];
+          if (!translationObj.characterNames) {
+            translationObj.characterNames = {};
           }
-        }));
-        
-        // Small delay between batches to avoid rate limits
-        if (i + batchSize < missingKeys.length) {
-          await new Promise(resolve => setTimeout(resolve, 100));
+          translationObj.characterNames[parseInt(charId)] = englishTranslations.characterNames?.[parseInt(charId)] || `Character ${charId}`;
+        } else {
+          translationObj[key] = englishTranslations[key as keyof TranslationStrings];
         }
       }
     }
