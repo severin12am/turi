@@ -9,8 +9,7 @@ import SignupPrompt from "./SignupPrompt";
 import type { SupportedLanguage } from '../constants/translations';
 import { getTranslation } from '../constants/translations';
 import { fetchDialoguesWithFallback } from '../services/translationFallback'; // Only for data fetching, not AI
-import { translateWord } from '../services/gemini'; // Word dictionary translation (non-AI)
-// New imports for enhanced word interaction
+// All AI calls now go through the router
 import WordExplanationModal from './WordExplanationModal';
 import { addWordToDictionary } from '../services/dictionary';
 // Mission imports
@@ -24,6 +23,7 @@ import {
   generateSpeech, 
   generateTextExplanation,
   translateWithAI,
+  translateWord,
   generateTransliteration,
   checkUserSentence,
   generateHelpSuggestion,

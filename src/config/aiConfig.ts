@@ -198,12 +198,22 @@ export const AI_CONFIG: Record<AITask, ProviderConfig[] | TTSConfig[]> = {
 
   /**
    * TTS - NPC VOICES (Character-specific voices)
-   * Using Google TTS primarily (ElevenLabs API key not configured)
+   * ElevenLabs provides better quality
    */
   'tts-npc': [
     {
+      provider: 'elevenlabs',
+      percentage: 60,  // 60% ElevenLabs for better quality
+      // Get these voice IDs from your ElevenLabs dashboard
+      // https://elevenlabs.io/app/voice-library
+      elevenLabsVoices: {
+        male: '21m00Tcm4TlvDq8ikWAM',      // Default male voice
+        female: 'EXAVITQu4vr4xnSDxMaL'     // Default female voice
+      }
+    } as TTSConfig,
+    {
       provider: 'google',
-      percentage: 100,  // 100% Google TTS (ElevenLabs disabled due to 401 errors)
+      percentage: 40,  // 40% Google TTS (fallback)
     } as TTSConfig
   ] as TTSConfig[],
 
@@ -233,11 +243,11 @@ export const AI_CONFIG: Record<AITask, ProviderConfig[] | TTSConfig[]> = {
  */
 export const MODEL_FALLBACKS: Record<AIProvider, string[]> = {
   gemini: [
-    'gemini-2.5-flash-lite',
-    'gemini-2.5-flash',
-    'gemini-2.0-flash-lite',
-    'gemini-2.0-flash',
-    'gemini-2.0-flash-exp'
+    'gemini-2.5-flash-lite',    // Try lite first (fastest)
+    'gemini-2.5-flash',          // Standard model
+    'gemini-2.0-flash',          // Older stable
+    'gemini-2.0-flash-lite',     // Older lite
+    'gemini-2.0-flash-exp'       // Experimental (last resort)
   ],
   
   groq: [

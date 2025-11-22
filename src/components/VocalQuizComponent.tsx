@@ -8,8 +8,7 @@ import { useStore } from '../store';
 import { logger } from '../services/logger';
 import { trackCompletedDialogue, saveAnonymousProgress } from '../services/auth';
 import { trackCompletedScenarioDialogue } from '../services/progress';
-import { translateWord } from '../services/gemini';
-import { generateSpeech } from '../services/aiService';
+import { generateSpeech, translateWord } from '../services/aiService'; // All AI calls through router
 import { fetchScenarioQuizWords } from '../services/scenarioQuiz';
 import { fetchScenarioExpressions } from '../services/scenarioExpressions';
 import { extractExpressionsFromDialogue, type ExtractedExpression } from '../services/aiService'; // All AI calls go through router

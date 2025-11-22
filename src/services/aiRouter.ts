@@ -330,13 +330,86 @@ export async function routeTTSRequest(request: TTSRequest): Promise<string> {
     
     // Fallback to Google TTS if ElevenLabs fails
     if (selectedConfig.provider === 'elevenlabs') {
-      console.log(`🔄 [TTS Router] Falling back to GOOGLE TTS`);
-      logger.info('[AIRouter] Falling back to Google TTS');
-      return await callGoogleTTS(text, languageCode, gender, voiceName, characterId);
+      try {
+        console.log(`🔄 [TTS Router] Falling back to GOOGLE TTS`);
+        logger.info('[AIRouter] Falling back to Google TTS');
+        return await callGoogleTTS(text, languageCode, gender, voiceName, characterId);
+      } catch (googleError) {
+        console.error(`❌ [TTS Router] Google TTS also failed, falling back to BROWSER TTS`);
+        logger.error('[AIRouter] Google TTS failed, using browser TTS', { error: googleError });
+        return await useBrowserTTS(text, languageCode);
+      }
     }
     
-    throw error;
+    // If Google TTS fails, fall back to browser TTS
+    console.log(`🔄 [TTS Router] Falling back to BROWSER TTS`);
+    logger.info('[AIRouter] Falling back to browser TTS');
+    try {
+      return await useBrowserTTS(text, languageCode);
+    } catch (browserError) {
+      logger.error('[AIRouter] Browser TTS also failed', { error: browserError });
+      throw new Error('All TTS methods failed');
+    }
   }
+}
+
+/**
+ * Browser TTS fallback using Web Speech API
+ * Last resort when all API-based TTS fails
+ */
+async function useBrowserTTS(text: string, languageCode: string): Promise<string> {
+  console.log('🌐 [Browser TTS] Using Web Speech API as fallback');
+  
+  return new Promise((resolve, reject) => {
+    if (!('speechSynthesis' in window)) {
+      reject(new Error('Browser TTS not supported'));
+      return;
+    }
+    
+    const utterance = new SpeechSynthesisUtterance(text);
+    
+    // Map language codes to browser TTS codes
+    const langMap: Record<string, string> = {
+      'en': 'en-US',
+      'es': 'es-ES',
+      'ru': 'ru-RU',
+      'fr': 'fr-FR',
+      'de': 'de-DE',
+      'it': 'it-IT',
+      'pt': 'pt-PT',
+      'ar': 'ar-SA',
+      'CH': 'zh-CN',
+      'ja': 'ja-JP',
+      'ko': 'ko-KR',
+      'hi': 'hi-IN',
+      'tr': 'tr-TR',
+      'pl': 'pl-PL',
+      'uk': 'uk-UA',
+      'nl': 'nl-NL',
+      'ro': 'ro-RO',
+      'el': 'el-GR',
+      'cs': 'cs-CZ',
+      'sv': 'sv-SE',
+      'hu': 'hu-HU'
+    };
+    
+    utterance.lang = langMap[languageCode] || 'en-US';
+    utterance.rate = 0.9; // Slightly slower for language learning
+    
+    utterance.onend = () => {
+      console.log('✅ [Browser TTS] Speech completed');
+      // Return empty string since browser TTS doesn't return audio data
+      // The audio has already been played
+      resolve('');
+    };
+    
+    utterance.onerror = (event) => {
+      console.error('❌ [Browser TTS] Error:', event.error);
+      reject(new Error(`Browser TTS error: ${event.error}`));
+    };
+    
+    window.speechSynthesis.speak(utterance);
+  });
 }
 
 /**

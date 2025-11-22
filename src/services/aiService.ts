@@ -544,6 +544,60 @@ export const generateSpeech = async (
 };
 
 /**
+ * Translate a single word using AI router
+ * Simple translation without detailed explanation
+ */
+export interface TranslateWordParams {
+  word: string;
+  fromLanguage: SupportedLanguage;
+  toLanguage: SupportedLanguage;
+}
+
+export const translateWord = async (params: TranslateWordParams): Promise<string> => {
+  if (!rateLimiter.canMakeRequest()) {
+    throw new Error('Rate limit exceeded. Please wait.');
+  }
+
+  const { word, fromLanguage, toLanguage } = params;
+  
+  const fromLangName = getLanguageName(fromLanguage);
+  const toLangName = getLanguageName(toLanguage);
+  
+  const prompt = `Translate the word "${word}" from ${fromLangName} to ${toLangName}. 
+Provide ONLY the most common translation as a single word or short phrase (2-3 words maximum).
+Do not include explanations, examples, or any additional text.
+Just output the translation.`;
+
+  const request: AIRequest = {
+    task: 'translation',
+    prompt,
+    generationConfig: {
+      temperature: 0.1,
+      topK: 10,
+      topP: 0.5,
+      maxOutputTokens: 50,
+    }
+  };
+
+  console.log(`🔤 [AI Service] Translating word "${word}" from ${fromLanguage} to ${toLanguage} via router`);
+  logger.info('Translating word via router', { word, fromLanguage, toLanguage });
+
+  const data = await routeAIRequest(request);
+  
+  if (!data.candidates || !data.candidates[0]) {
+    logger.error('[AIService] Invalid translation response', { data });
+    return ''; // Return empty string on error
+  }
+
+  const translation = data.candidates[0].content.parts[0].text.trim();
+  
+  console.log(`✅ [AI Service] Word translated: "${word}" → "${translation}"`);
+  logger.info('Word translated successfully via router', { word, translation });
+  
+  return translation;
+};
+
+/**
  * Helper function to get full language name from code
  */
 function getLanguageName(code: SupportedLanguage): string {
