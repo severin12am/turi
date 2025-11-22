@@ -1947,7 +1947,7 @@ Return ONLY the transliteration, nothing else.`;
   /**
    * Handle NPC response in mission mode
    */
-  const handleMissionNPCResponse = async (userText: string, recordingBlob?: Blob) => {
+  const handleMissionNPCResponse = async (userText: string, recordingBlob?: Blob, speculativeNPCResponse?: any) => {
     try {
       console.log('[Missions] Sending approved text to NPC:', userText);
       setCurrentUserInput(''); // Clear unapproved input
@@ -1960,25 +1960,6 @@ Return ONLY the transliteration, nothing else.`;
       const userStepNumber = currentHistory.length + 1;
       console.log('[Missions] 🎙️ User entry will be step:', userStepNumber);
       
-      // MISSION MODE OPTIMIZATION: Run translation and transliteration in parallel
-      const [userTranslation, userTransliteration] = await Promise.all([
-        translateWithAI({
-          sourceText: userText,
-          sourceLanguage: targetLanguage,
-          targetLanguage: motherLanguage,
-          motherLanguage: motherLanguage,
-          includeTransliteration: true // Use built-in transliteration as fallback
-        }),
-        generateTransliteration(userText, targetLanguage, motherLanguage).catch(() => '')
-      ]);
-      
-      console.log('[Missions] User text translation:', userTranslation);
-      console.log('[Missions] User text transliteration:', userTransliteration);
-      
-      // Use transliteration from translation API if the separate call failed
-      const finalUserTransliteration = userTransliteration || userTranslation.transliteration || '';
-      console.log('[Missions] Final user transliteration:', finalUserTransliteration);
-      
       // Save the recording with the correct step number if provided
       if (recordingBlob) {
         setUserRecordings(prev => {
@@ -1989,13 +1970,70 @@ Return ONLY the transliteration, nothing else.`;
         });
       }
       
+      // Get character data for this mission
+      const character = getCharacterByScenario(mission!.scenarioNumber);
+      
+      // Get NPC response (use speculative if available, otherwise generate new)
+      let npcResponse;
+      if (speculativeNPCResponse) {
+        console.log('[Missions] ⚡ Using pre-generated NPC response (speculative execution)');
+        npcResponse = speculativeNPCResponse;
+      } else {
+        console.log('[Missions] 🔄 Generating NPC response (no speculative available)');
+        npcResponse = await generateNPCResponse({
+          targetLanguage,
+          motherLanguage,
+          missionGoal: mission!.goal,
+          npcRole: mission!.npcRole,
+          npcName: character?.name || 'NPC',
+          npcGender: character?.gender || 'male',
+          userLevel: 'A2',
+          conversationHistory: currentHistory.map(e => ({ 
+            speaker: e.speaker.toLowerCase() as 'user' | 'npc', 
+            text: e.phrase 
+          })),
+          userLatestMessage: userText
+        });
+      }
+      
+      console.log('[Missions] NPC responded:', npcResponse.response);
+      
+      // 🚀 MAXIMUM PARALLELIZATION: Run ALL translations and TTS simultaneously
+      const [userTranslation, npcTranslation, npcAudio] = await Promise.all([
+        // User text translation (includes transliteration)
+        translateWithAI({
+          sourceText: userText,
+          sourceLanguage: targetLanguage,
+          targetLanguage: motherLanguage,
+          motherLanguage: motherLanguage,
+          includeTransliteration: true
+        }),
+        // NPC response translation (includes transliteration)
+        translateWithAI({
+          sourceText: npcResponse.response,
+          sourceLanguage: targetLanguage,
+          targetLanguage: motherLanguage,
+          motherLanguage: motherLanguage,
+          includeTransliteration: true
+        }),
+        // NPC audio generation (starts immediately!)
+        generateSpeech(npcResponse.response, targetLanguage, characterGender, characterTTSId).catch(err => {
+          console.error('[Missions] TTS generation failed:', err);
+          return null; // Return null if TTS fails, we'll handle it later
+        })
+      ]);
+      
+      console.log('[Missions] ✅ All parallel operations complete');
+      console.log('[Missions] User translation:', userTranslation);
+      console.log('[Missions] NPC translation:', npcTranslation);
+      
       // Add approved user message to history with translation and transliteration
       const userEntry: ConversationEntry = {
         id: Date.now(), // Use timestamp as ID
         step: userStepNumber,
         speaker: 'User',
         phrase: userText,
-        transcription: finalUserTransliteration,
+        transcription: userTranslation.transliteration || '',
         translation: userTranslation.translation || '',
         isCompleted: true
       };
@@ -2004,53 +2042,13 @@ Return ONLY the transliteration, nothing else.`;
       setConversationHistory(newHistory);
       console.log('[Missions] 📊 History after adding user:', newHistory.length);
       
-      // Get character data for this mission
-      const character = getCharacterByScenario(mission!.scenarioNumber);
-      
-      // Get NPC response
-      const npcResponse = await generateNPCResponse({
-        targetLanguage,
-        motherLanguage,
-        missionGoal: mission!.goal,
-        npcRole: mission!.npcRole,
-        npcName: character?.name || 'NPC',
-        npcGender: character?.gender || 'male',
-        userLevel: 'A2',
-        conversationHistory: newHistory.map(e => ({ 
-          speaker: e.speaker.toLowerCase() as 'user' | 'npc', 
-          text: e.phrase 
-        })),
-        userLatestMessage: userText
-      });
-      
-      console.log('[Missions] NPC responded:', npcResponse.response);
-      
-      // MISSION MODE OPTIMIZATION: Run translation and transliteration in parallel
-      const [npcTranslation, npcTransliteration] = await Promise.all([
-        translateWithAI({
-          sourceText: npcResponse.response,
-          sourceLanguage: targetLanguage,
-          targetLanguage: motherLanguage,
-          motherLanguage: motherLanguage,
-          includeTransliteration: true // Use built-in transliteration as fallback
-        }),
-        generateTransliteration(npcResponse.response, targetLanguage, motherLanguage).catch(() => '')
-      ]);
-      
-      console.log('[Missions] NPC response translation:', npcTranslation);
-      console.log('[Missions] NPC response transliteration:', npcTransliteration);
-      
-      // Use transliteration from translation API if the separate call failed
-      const finalNpcTransliteration = npcTransliteration || npcTranslation.transliteration || '';
-      console.log('[Missions] Final NPC transliteration:', finalNpcTransliteration);
-      
       // Add NPC response to history with translation and transliteration
       const npcEntry: ConversationEntry = {
         id: Date.now() + 1,
         step: newHistory.length + 1,
         speaker: 'NPC',
         phrase: npcResponse.response,
-        transcription: finalNpcTransliteration,
+        transcription: npcTranslation.transliteration || '',
         translation: npcTranslation.translation || '',
         isCompleted: true
       };
@@ -2065,8 +2063,25 @@ Return ONLY the transliteration, nothing else.`;
       console.log('[Missions] 📚 Updated conversation history:', finalHistory.map(e => `${e.speaker}:${e.phrase.substring(0, 20)}`));
       console.log('[Missions] 📚 Total entries in history:', finalHistory.length);
       
-      // Play NPC audio with Gemini TTS
-      await playAudio(npcResponse.response);
+      // Play NPC audio (already generated in parallel!)
+      if (npcAudio) {
+        console.log('[Missions] 🔊 Playing pre-generated audio');
+        npcAudio.playbackRate = playbackSpeed;
+        currentAudioRef.current = npcAudio;
+        await new Promise<void>((resolve, reject) => {
+          npcAudio.onended = () => resolve();
+          npcAudio.onerror = (e) => {
+            console.error('[Missions] Audio playback error:', e);
+            reject(e);
+          };
+          npcAudio.play().catch(reject);
+        }).catch(err => {
+          console.error('[Missions] Failed to play audio:', err);
+        });
+      } else {
+        console.log('[Missions] ⚠️ No audio available, falling back to standard playAudio');
+        await playAudio(npcResponse.response);
+      }
       
       // Check completion
       if (npcResponse.missionCompleted) {
@@ -3827,23 +3842,51 @@ Return ONLY the transliteration, nothing else.`;
         const currentHistory = conversationHistoryRef.current;
         console.log('[Missions] 💭 Sending to Turi with conversation history:', currentHistory.length, 'entries');
         
-        // Send to Turi for approval with conversation context
-        const decision = await checkUserSentence({
-          userText: transcript,
-          targetLanguage,
-          motherLanguage,
-          missionGoal: mission.goal,
-          npcRole: mission.npcRole,
-          conversationHistory: currentHistory.map(e => ({
-            speaker: e.speaker.toLowerCase() as 'user' | 'npc',
-            text: e.phrase
-          }))
-        });
+        // Get character data for speculative NPC generation
+        const character = getCharacterByScenario(mission.scenarioNumber);
         
+        // 🚀 SPECULATIVE EXECUTION: Start both Helper Robot check AND NPC response generation in parallel
+        console.log('[Missions] ⚡ Starting parallel: Helper Robot check + Speculative NPC generation');
+        const [decision, speculativeNPCResponse] = await Promise.all([
+          // Helper Robot check
+          checkUserSentence({
+            userText: transcript,
+            targetLanguage,
+            motherLanguage,
+            missionGoal: mission.goal,
+            npcRole: mission.npcRole,
+            conversationHistory: currentHistory.map(e => ({
+              speaker: e.speaker.toLowerCase() as 'user' | 'npc',
+              text: e.phrase
+            }))
+          }),
+          
+          // Speculative NPC response (generated optimistically!)
+          generateNPCResponse({
+            targetLanguage,
+            motherLanguage,
+            missionGoal: mission.goal,
+            npcRole: mission.npcRole,
+            npcName: character?.name || 'NPC',
+            npcGender: character?.gender || 'male',
+            userLevel: 'A2',
+            conversationHistory: currentHistory.map(e => ({ 
+              speaker: e.speaker.toLowerCase() as 'user' | 'npc', 
+              text: e.phrase 
+            })),
+            userLatestMessage: transcript
+          }).catch(err => {
+            console.log('[Missions] ⚠️ Speculative NPC generation failed (OK if rejected):', err);
+            return null; // Return null if fails, we'll regenerate if approved
+          })
+        ]);
+        
+        console.log('[Missions] ✅ Parallel operations complete');
         console.log('[Missions] Turi decision:', decision.decision);
+        console.log('[Missions] Speculative NPC available:', !!speculativeNPCResponse);
         
         if (decision.decision === 'No errors') {
-          // Approved! Send to NPC
+          // ✅ Approved! Use speculative NPC response
           setAwaitingMissionApproval(false);
           const youSaidLabel = getTranslation(motherLanguage, 'youSaid') || 'You said:';
           const approvedLabel = getTranslation(motherLanguage, 'sentenceApproved') || 'Approved!';
@@ -3853,10 +3896,13 @@ Return ONLY the transliteration, nothing else.`;
           const recordingBlob = tempRecordingBlobRef.current;
           tempRecordingBlobRef.current = null;
           
-          // MISSION MODE: No delay - immediately get NPC response
-          handleMissionNPCResponse(transcript, recordingBlob || undefined);
+          // Pass speculative NPC response to avoid regenerating!
+          console.log('[Missions] ⚡ Using speculative NPC response - instant response!');
+          handleMissionNPCResponse(transcript, recordingBlob || undefined, speculativeNPCResponse);
         } else {
-          // Rejected - show correction
+          // ❌ Rejected - discard speculative response
+          console.log('[Missions] ❌ Discarding speculative NPC response (sentence rejected)');
+          
           // Mark that help was used (correction counts as help)
           setUsedHelpInMission(true);
           setAwaitingMissionApproval(false);

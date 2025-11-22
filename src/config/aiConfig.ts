@@ -76,12 +76,12 @@ export const AI_CONFIG: Record<AITask, ProviderConfig[] | TTSConfig[]> = {
   'npc-response': [
     {
       provider: 'groq',
-      percentage: 75,  // Increased - Groq is fast and reliable
+      percentage: 95,  // Maximized for mission speed - Groq is very fast (~1s)
       model: 'llama-3.3-70b-versatile'
     },
     {
       provider: 'gemini',
-      percentage: 25,  // Gemini as backup
+      percentage: 5,  // Minimal backup only
       model: 'gemini-2.5-flash-lite'
     }
   ],
