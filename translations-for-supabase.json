@@ -481,6 +481,11 @@
   },
   {
     "language_code": "ru",
+    "translation_key": "youSaid",
+    "translation_value": "Вы сказали:"
+  },
+  {
+    "language_code": "ru",
     "translation_key": "helpMe",
     "translation_value": "Помогите мне"
   },

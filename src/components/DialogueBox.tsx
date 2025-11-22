@@ -3784,7 +3784,9 @@ Return ONLY the transliteration, nothing else.`;
         if (decision.decision === 'No errors') {
           // Approved! Send to NPC
           setAwaitingMissionApproval(false);
-          setMissionHelperMessage(getTranslation(motherLanguage, 'sentenceApproved') || 'Approved!');
+          const youSaidLabel = getTranslation(motherLanguage, 'youSaid') || 'You said:';
+          const approvedLabel = getTranslation(motherLanguage, 'sentenceApproved') || 'Approved!';
+          setMissionHelperMessage(`${youSaidLabel} ${transcript}\n\n${approvedLabel}`);
           
           // Get the recording blob and clear the temp ref
           const recordingBlob = tempRecordingBlobRef.current;
@@ -3797,7 +3799,8 @@ Return ONLY the transliteration, nothing else.`;
           // Mark that help was used (correction counts as help)
           setUsedHelpInMission(true);
           setAwaitingMissionApproval(false);
-          const correctionMsg = `${decision.explanation}\n\n${decision.correctedSentence}`;
+          const youSaidLabel = getTranslation(motherLanguage, 'youSaid') || 'You said:';
+          const correctionMsg = `${youSaidLabel} ${transcript}\n\n${decision.explanation}\n\n${decision.correctedSentence}`;
           setMissionHelperMessage(correctionMsg);
           setCurrentUserInput(''); // Clear unapproved input
           

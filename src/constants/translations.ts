@@ -139,6 +139,7 @@ export interface TranslationStrings {
   helperRobotChecking?: string;
   waitingForApproval?: string;
   sentenceApproved?: string;
+  youSaid?: string;
   helpMe?: string;
   taskCompleted?: string;
   taskCompletedMessage?: string;
@@ -465,6 +466,7 @@ export const translations: Record<'en', TranslationStrings> = {
     helperRobotChecking: 'Turi is checking...',
     waitingForApproval: 'Waiting for approval',
     sentenceApproved: 'Sentence approved!',
+    youSaid: 'You said:',
     helpMe: 'Help me',
     taskCompleted: 'Task completed!',
     taskCompletedMessage: 'Task completed, you\'re one step closer to fluency!',
