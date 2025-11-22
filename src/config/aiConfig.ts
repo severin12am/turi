@@ -71,18 +71,13 @@ export const AI_CONFIG: Record<AITask, ProviderConfig[] | TTSConfig[]> = {
 
   /**
    * NPC RESPONSES (Mission conversations)
-   * Requires natural, conversational responses - primarily Groq for speed
+   * Requires natural, conversational responses - Groq for maximum speed
    */
   'npc-response': [
     {
       provider: 'groq',
-      percentage: 95,  // Maximized for mission speed - Groq is very fast (~1s)
+      percentage: 100,  // 100% Groq - fastest provider (~1s responses)
       model: 'llama-3.3-70b-versatile'
-    },
-    {
-      provider: 'gemini',
-      percentage: 5,  // Minimal backup only
-      model: 'gemini-2.5-flash-lite'
     }
   ],
 
@@ -168,22 +163,18 @@ export const AI_CONFIG: Record<AITask, ProviderConfig[] | TTSConfig[]> = {
 
   /**
    * TTS - NPC VOICES (Character-specific voices)
-   * ElevenLabs provides better quality
+   * ElevenLabs provides much better quality for mission dialogues
    */
   'tts-npc': [
     {
       provider: 'elevenlabs',
-      percentage: 60,  // 60% ElevenLabs for better quality
+      percentage: 100,  // 100% ElevenLabs for mission dialogues - best quality
       // Get these voice IDs from your ElevenLabs dashboard
       // https://elevenlabs.io/app/voice-library
       elevenLabsVoices: {
         male: '21m00Tcm4TlvDq8ikWAM',      // Default male voice
         female: 'EXAVITQu4vr4xnSDxMaL'     // Default female voice
       }
-    } as TTSConfig,
-    {
-      provider: 'google',
-      percentage: 40,  // 40% Google TTS (fallback)
     } as TTSConfig
   ] as TTSConfig[],
 

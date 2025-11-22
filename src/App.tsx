@@ -50,25 +50,26 @@ function App() {
   // Disable movement when login form is shown
   useEffect(() => {
     setIsMovementDisabled(showLogin);
-  }, [showLogin, setIsMovementDisabled]);
+  }, [showLogin]); // setIsMovementDisabled is stable (Zustand), no need in deps
 
   // Ensure showHelperRobotPanel state is correct based on login status
   useEffect(() => {
     setShowHelperRobotPanel(isLoggedIn);
   }, [isLoggedIn]);
 
-  // Ensure isHelperRobotOpen is reset when App mounts
+  // Reset HelperRobot state on mount ONLY (not on every state change)
   useEffect(() => {
-    // If the helper robot panel is open from a previous session,
-    // close it so we can properly control its visibility
+    // If the helper robot panel is open from a previous session, close it
+    // This should ONLY run once on mount to avoid re-render loops
     if (isHelperRobotOpen) {
       toggleHelperRobot();
     }
-  }, [isHelperRobotOpen, toggleHelperRobot]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty deps = run only once on mount
 
   useEffect(() => {
     initializeModels();
-  }, []);
+  }, []); // initializeModels is stable (Zustand), no need in deps
 
   // Preload translations when languages are selected
   // UI should only be in mother language (the language user already speaks)
@@ -381,7 +382,9 @@ function App() {
         clearTimeout(sessionCheckTimeout);
       }
     };
-  }, [setIsAuthenticated, setUser, setIsLoggedIn, setLanguages, setIsLanguageSelected]);
+    // Note: Zustand setters are stable and don't need to be in dependencies
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleLogin = async (email: string, password: string) => {
     try {
@@ -566,7 +569,8 @@ function App() {
       // After language selection, guide user to the first character
       setInstructions('navigation', 1, 1);
     }
-  }, [isLanguageSelected, isLoading, setInstructions]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLanguageSelected, isLoading]); // setInstructions is stable (Zustand)
 
   // Get dialogue and quiz states directly from the store
   const { isDialogueOpen, isQuizActive } = useStore();
@@ -584,7 +588,8 @@ function App() {
       // Default to navigation when nothing else is active
       setInstructions('navigation', 1, 1);
     }
-  }, [isDialogueOpen, isQuizActive, isLanguageSelected, isLoading, setInstructions]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isDialogueOpen, isQuizActive, isLanguageSelected, isLoading]); // setInstructions is stable (Zustand)
 
   const handleCloseInstructions = () => {
     hideInstructions();
