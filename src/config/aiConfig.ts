@@ -142,23 +142,13 @@ export const AI_CONFIG: Record<AITask, ProviderConfig[] | TTSConfig[]> = {
 
   /**
    * TEXT EXPLANATION (Grammar/phrase explanations)
-   * Using Groq/Gemini primarily due to Deepseek balance issues
+   * Groq is primary (very fast, accurate, and free)
    */
   'text-explanation': [
     {
       provider: 'groq',
-      percentage: 50,  // Groq is fast and free
+      percentage: 100,  // Groq as primary (user preference)
       model: 'llama-3.3-70b-versatile'
-    },
-    {
-      provider: 'gemini',
-      percentage: 40,  // Gemini as main fallback
-      model: 'gemini-2.5-flash'
-    },
-    {
-      provider: 'deepseek',
-      percentage: 10,  // Reduced due to balance issues
-      model: 'deepseek-chat'
     }
   ],
 
@@ -208,22 +198,12 @@ export const AI_CONFIG: Record<AITask, ProviderConfig[] | TTSConfig[]> = {
 
   /**
    * TTS - NPC VOICES (Character-specific voices)
-   * ElevenLabs provides better quality but has limits
+   * Using Google TTS primarily (ElevenLabs API key not configured)
    */
   'tts-npc': [
     {
-      provider: 'elevenlabs',
-      percentage: 60,  // 60% ElevenLabs for better quality
-      // Get these voice IDs from your ElevenLabs dashboard
-      // https://elevenlabs.io/app/voice-library
-      elevenLabsVoices: {
-        male: '21m00Tcm4TlvDq8ikWAM',      // Default male voice (you can change)
-        female: 'EXAVITQu4vr4xnSDxMaL'     // Default female voice (you can change)
-      }
-    } as TTSConfig,
-    {
       provider: 'google',
-      percentage: 40,  // 40% Google TTS (fallback)
+      percentage: 100,  // 100% Google TTS (ElevenLabs disabled due to 401 errors)
     } as TTSConfig
   ] as TTSConfig[],
 

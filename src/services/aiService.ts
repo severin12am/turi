@@ -381,10 +381,17 @@ MISSION_COMPLETE: [true or false]`;
   const data = await routeAIRequest(request);
   
   if (!data.candidates || !data.candidates[0]) {
+    logger.error('[AIService] Invalid NPC response structure', { data });
     throw new Error('No response generated from AI');
   }
 
   const fullResponse = data.candidates[0].content.parts[0].text;
+  
+  // Validate response is a string
+  if (typeof fullResponse !== 'string') {
+    logger.error('[AIService] NPC response is not a string', { fullResponse, type: typeof fullResponse });
+    throw new Error('Invalid response format from AI');
+  }
   
   // Parse response and mission status
   const lines = fullResponse.split('\n');
@@ -395,6 +402,11 @@ MISSION_COMPLETE: [true or false]`;
     .filter((line: string) => !line.includes('MISSION_COMPLETE:'))
     .join('\n')
     .trim();
+
+  if (!response) {
+    logger.error('[AIService] Empty NPC response after parsing', { fullResponse });
+    throw new Error('Empty response from AI');
+  }
 
   logger.info('[AIService] NPC response generated', { missionCompleted });
 

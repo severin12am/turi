@@ -71,14 +71,14 @@ function App() {
   }, []);
 
   // Preload translations when languages are selected
+  // UI should only be in mother language (the language user already speaks)
   useEffect(() => {
     if (motherLanguage && motherLanguage !== 'en') {
       preloadTranslations(motherLanguage);
     }
-    if (targetLanguage && targetLanguage !== 'en') {
-      preloadTranslations(targetLanguage);
-    }
-  }, [motherLanguage, targetLanguage]);
+    // Note: We DON'T load UI translations for targetLanguage
+    // Dialogues are already in both languages from the database
+  }, [motherLanguage]);
 
   // Proper Supabase session management
   useEffect(() => {
