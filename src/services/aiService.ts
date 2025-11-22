@@ -956,6 +956,8 @@ export const translateWithAI = async (request: TranslationRequest): Promise<Tran
 
 Text: "${sourceText}"
 
+IMPORTANT: Return ONLY a valid JSON object. No explanations, no additional text, no markdown.
+
 Return a JSON object with:
 - "translation": keep the same text in ${sourceLangName} (no translation needed)
 - "transliteration": the text written using ${motherLangName} alphabet/script (lowercase, no punctuation)
@@ -966,11 +968,15 @@ Example format:
   "transliteration": "transliterated text here in ${motherLangName} script"
 }
 
-Be accurate and natural. Approximate the ${sourceLangName} sounds using the ${motherLangName} writing system (not English romanization).`;
+Be accurate and natural. Approximate the ${sourceLangName} sounds using the ${motherLangName} writing system (not English romanization).
+
+OUTPUT ONLY THE JSON OBJECT ABOVE. NO OTHER TEXT.`;
   } else {
     prompt = `Translate the following text from ${sourceLangName} to ${targetLangName}.
 
 Text: "${sourceText}"
+
+IMPORTANT: Return ONLY a valid JSON object. No explanations, no additional text, no markdown, no code blocks.
 
 Return a JSON object with:
 - "translation": the translated text in ${targetLangName}`;
@@ -988,7 +994,9 @@ Example format:
   "transliteration": "phonetic transliteration of the original ${sourceLangName} text"
 }
 
-Be accurate and natural. For transliteration, approximate the ORIGINAL ${sourceLangName} sounds (NOT the translation) using the ${motherLangName} writing system.`;
+Be accurate and natural. For transliteration, approximate the ORIGINAL ${sourceLangName} sounds (NOT the translation) using the ${motherLangName} writing system.
+
+OUTPUT ONLY THE JSON OBJECT ABOVE. DO NOT include any explanatory text like "Here is the translation:" or similar.`;
   }
 
   const aiRequest: AIRequest = {
@@ -998,7 +1006,7 @@ Be accurate and natural. For transliteration, approximate the ORIGINAL ${sourceL
       temperature: 0.3,
       topK: 20,
       topP: 0.8,
-      maxOutputTokens: 200,  // Increased to account for Gemini 2.5's thinking tokens
+      maxOutputTokens: 400,  // Increased to prevent MAX_TOKENS errors (Gemini 2.5 uses thinking tokens)
     }
   };
 
