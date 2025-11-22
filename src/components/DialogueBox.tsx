@@ -472,10 +472,14 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
 
   // Get language settings from global store
   const { 
-    motherLanguage, // Language user already knows
-    targetLanguage, // Language user is learning
+    motherLanguage: storeMotherLanguage, // Language user already knows
+    targetLanguage: storeTargetLanguage, // Language user is learning
     user            // Current user data
   } = useStore();
+  
+  // Provide fallback values to prevent errors during unmounting
+  const motherLanguage = storeMotherLanguage || 'en';
+  const targetLanguage = storeTargetLanguage || 'en';
 
   // Helper function to get text in the specified language from a phrase
   const getTextInLanguage = (phrase: DialoguePhrase, language: SupportedLanguage): string => {
@@ -2256,6 +2260,63 @@ Return ONLY the transliteration, nothing else.`;
       
       console.log('🔊 DIALOGUE playAudio called with:', { text, targetLanguage, stepNumber });
       
+      // Check if we already have cached audio for this step
+      if (stepNumber) {
+        const cachedEntry = conversationHistory.find(
+          entry => entry.step === stepNumber && entry.speaker === 'NPC' && entry.audioUrl
+        );
+        
+        if (cachedEntry?.audioUrl) {
+          console.log('🔊 DIALOGUE Using cached audio from conversationHistory for step:', stepNumber);
+          const audio = new Audio(cachedEntry.audioUrl);
+          audio.playbackRate = playbackSpeed;
+          
+          setIsNpcSpeaking(true);
+          if (typeof onNpcSpeakStart === 'function') onNpcSpeakStart();
+          
+          audio.onended = () => {
+            console.log('✅ DIALOGUE Cached audio playback completed');
+            setIsNpcSpeaking(false);
+            if (typeof onNpcSpeakEnd === 'function') onNpcSpeakEnd();
+          };
+          
+          audio.onerror = () => {
+            console.warn('⚠️ DIALOGUE Cached audio failed, regenerating...');
+            setIsNpcSpeaking(false);
+            // Remove the cached URL and regenerate
+            setConversationHistory(prev => 
+              prev.map(entry => 
+                entry.step === stepNumber && entry.speaker === 'NPC'
+                  ? { ...entry, audioUrl: undefined }
+                  : entry
+              )
+            );
+            // Regenerate without using cache
+            playAudioWithoutCache(text, stepNumber);
+          };
+          
+          await audio.play();
+          return;
+        }
+      }
+      
+      // No cached audio, generate new
+      await playAudioWithoutCache(text, stepNumber);
+      
+    } catch (error) {
+      console.error('❌ DIALOGUE playAudio error:', error);
+      setIsNpcSpeaking(false);
+      if (typeof onNpcSpeakEnd === 'function') onNpcSpeakEnd();
+      logger.error('Failed to play audio', { error });
+    }
+  };
+  
+  /**
+   * Internal function to play audio without checking cache
+   * Used by playAudio after cache miss
+   */
+  const playAudioWithoutCache = async (text: string, stepNumber?: number) => {
+    try {
       // For Chinese, check if text contains actual Chinese characters (not pinyin)
       if (targetLanguage === 'CH') {
         const hasChineseCharacters = /[\u4e00-\u9fff]/.test(text);
@@ -2312,10 +2373,10 @@ Return ONLY the transliteration, nothing else.`;
       }
       
     } catch (error) {
-      console.error('❌ DIALOGUE playAudio error:', error);
+      console.error('❌ DIALOGUE playAudioWithoutCache error:', error);
       setIsNpcSpeaking(false);
       if (typeof onNpcSpeakEnd === 'function') onNpcSpeakEnd();
-      logger.error('Failed to play audio', { error });
+      logger.error('Failed to play audio without cache', { error });
     }
   };
 
@@ -4823,7 +4884,8 @@ Return ONLY the transliteration, nothing else.`;
             display: 'flex',
             gap: '10px',
             justifyContent: 'center',
-            padding: '10px'
+            padding: '10px',
+            flexWrap: 'wrap'
           }}>
             {/* Help Me Button */}
             {showHelpMe && (
@@ -4897,6 +4959,27 @@ Return ONLY the transliteration, nothing else.`;
               }}
             >
               {isListening ? 'Stop' : getTranslation(motherLanguage, 'speak')}
+            </button>
+            
+            {/* Speed Control Button */}
+            <button 
+              style={{
+                padding: '12px 24px',
+                backgroundColor: 'rgba(124, 58, 237, 0.8)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontSize: '14px',
+                fontWeight: '600'
+              }}
+              onClick={togglePlaybackSpeed}
+              title={`Current speed: ${playbackSpeed}x. Click to change.`}
+            >
+              <span>{playbackSpeed}x</span>
             </button>
           </div>
         )}
