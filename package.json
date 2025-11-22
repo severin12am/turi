@@ -7,25 +7,10 @@
     "dev": "vite",
     "start": "vite",
     "build": "vite build",
-    "build:mobile": "vite build --mode production",
     "lint": "eslint .",
-    "preview": "vite preview",
-    "init:character": "node --experimental-modules create-character-data.js",
-    "init:dialogue": "node --experimental-modules create-dialogue-data.js",
-    "init:all": "npm run init:character && npm run init:dialogue",
-    "mobile:sync": "npx cap sync",
-    "mobile:build": "npm run build:mobile && npx cap sync",
-    "mobile:run": "npx cap run android",
-    "mobile:open": "npx cap open android"
+    "preview": "vite preview"
   },
   "dependencies": {
-    "@capacitor/android": "^5.6.0",
-    "@capacitor/app": "^5.0.7",
-    "@capacitor/core": "^5.6.0",
-    "@capacitor/haptics": "^5.0.7",
-    "@capacitor/screen-orientation": "^5.0.8",
-    "@capacitor/splash-screen": "^5.0.7",
-    "@capacitor/status-bar": "^5.0.7",
     "@react-three/drei": "^9.122.0",
     "@react-three/fiber": "^8.18.0",
     "@supabase/supabase-js": "^2.49.8",
@@ -39,7 +24,6 @@
     "zustand": "^4.5.6"
   },
   "devDependencies": {
-    "@capacitor/cli": "^7.4.1",
     "@eslint/js": "^8.56.0",
     "@types/react": "^18.3.21",
     "@types/react-dom": "^18.3.7",

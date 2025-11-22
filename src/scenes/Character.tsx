@@ -4,9 +4,7 @@ import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { logger } from '../services/logger';
 
-// Preload the models
-useGLTF.preload('/models/character1.glb');
-useGLTF.preload('/models/character2.glb');
+// Models are loaded on-demand for better initial load performance
 
 /**
  * Props for the Character component

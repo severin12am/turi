@@ -18,37 +18,8 @@ import MobileControls from '../components/MobileControls';
 import { NPC_CHARACTERS } from '../constants/characters';
 import { getTranslation } from '../constants/translations';
 
-// Preload the character models
-useGLTF.preload('/models/character1.glb');
-useGLTF.preload('/models/character2.glb');
-useGLTF.preload('/models/character3.glb');
-useGLTF.preload('/models/character4.glb');
-useGLTF.preload('/models/character5.glb');
-useGLTF.preload('/models/character6.glb');
-useGLTF.preload('/models/character7.glb');
-useGLTF.preload('/models/character8.glb');
-useGLTF.preload('/models/character9.glb');
-useGLTF.preload('/models/character10.glb');
-useGLTF.preload('/models/character11.glb');
-useGLTF.preload('/models/character12.glb');
-useGLTF.preload('/models/character13.glb');
-useGLTF.preload('/models/character14.glb');
-useGLTF.preload('/models/character15.glb');
-useGLTF.preload('/models/character16.glb');
-useGLTF.preload('/models/character17.glb');
-useGLTF.preload('/models/character18.glb');
-useGLTF.preload('/models/character19.glb');
-useGLTF.preload('/models/character20.glb');
-useGLTF.preload('/models/character21.glb');
-useGLTF.preload('/models/character22.glb');
-useGLTF.preload('/models/character23.glb');
-useGLTF.preload('/models/character24.glb');
-useGLTF.preload('/models/character25.glb');
-useGLTF.preload('/models/character26.glb');
-useGLTF.preload('/models/character27.glb');
-useGLTF.preload('/models/character28.glb');
-useGLTF.preload('/models/character29.glb');
-useGLTF.preload('/models/character30.glb');
+// Models are now loaded on-demand when characters are rendered
+// This improves initial load time significantly
 
 const CoordinateTracker: React.FC<{ position: THREE.Vector3 }> = ({ position }) => {
   return (
