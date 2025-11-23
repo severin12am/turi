@@ -4557,7 +4557,7 @@ Return ONLY the transliteration, nothing else.`;
         scenarioNumber={scenarioNumber}
         isMission={isMissionMode}
         missionConversation={isMissionMode ? conversationHistory.map(e => e.phrase).join(' ') : undefined}
-        missionScenarioNumber={isMissionMode ? scenarioNumber : undefined}
+        missionScenarioNumber={isMissionMode ? mission?.scenarioNumber : undefined}
         missionNumber={isMissionMode ? mission?.missionNumber : undefined}
         usedHelpInMission={usedHelpInMission}
       />
