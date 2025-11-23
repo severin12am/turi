@@ -2519,8 +2519,7 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
       <div className="fixed inset-0 bg-black/70 z-[140]" onClick={onClose} />
       
       {/* Quiz content */}
-      <div className="fixed inset-0 flex items-center justify-center z-[150] p-4" style={{ pointerEvents: 'none' }}>
-        <div style={{ pointerEvents: 'auto' }} className="w-full flex items-center justify-center">
+      <div className="fixed inset-0 flex items-center justify-center z-[150] p-4">
         {/* Add error boundary wrapper */}
         {(() => {
           try {
@@ -2534,8 +2533,12 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
           
           return (
             <div 
-              className="w-full max-w-md shadow-2xl rounded-xl bg-slate-900 backdrop-blur-md border-2 border-slate-600 text-white overflow-hidden relative" 
-              style={{ pointerEvents: 'auto', minHeight: '400px', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}
+              className="w-full max-w-md mx-auto shadow-2xl rounded-xl bg-slate-900 text-white overflow-hidden" 
+              style={{ 
+                pointerEvents: 'auto', 
+                minHeight: '500px',
+                border: '3px solid #3b82f6'
+              }}
             >
               {/* Quiz header with close button */}
               <div className="bg-slate-800/80 p-4 flex justify-between items-center border-b border-slate-700">
@@ -2767,7 +2770,6 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
           );
         }
       })()}
-        </div>
       </div>
     </>
   );
