@@ -30,6 +30,11 @@ import {
   generateNPCResponse
 } from '../services/aiService';
 
+// Helper function to remove accents/diacritics from text
+const removeAccents = (str: string): string => {
+  return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+};
+
 // Map supported languages to their speech recognition codes
 const getRecognitionLanguage = (lang: SupportedLanguage): string => {
   const languageMap: Record<string, string> = {
@@ -1052,8 +1057,11 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
     const normalizeText = (text: string, lang: SupportedLanguage): string => {
       let normalized = text.toLowerCase().trim();
       
+      // Remove accents/diacritics for better matching (allows "que" to match "qué")
+      normalized = removeAccents(normalized);
+      
       // Remove common punctuation
-      normalized = normalized.replace(/[.,?!;:]/g, '');
+      normalized = normalized.replace(/[.,?!;:¿¡]/g, '');
       
       // Language-specific normalization
       switch (lang) {
@@ -1262,7 +1270,11 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
     // Use the same normalization as calculateMatchPercentage
     const normalizeText = (text: string, lang: SupportedLanguage): string => {
       let normalized = text.toLowerCase().trim();
-      normalized = normalized.replace(/[.,?!;:]/g, '');
+      
+      // Remove accents/diacritics for better matching (allows "que" to match "qué")
+      normalized = removeAccents(normalized);
+      
+      normalized = normalized.replace(/[.,?!;:¿¡]/g, '');
       
       switch (lang) {
         case 'ja':
@@ -3210,7 +3222,7 @@ Return ONLY the transliteration, nothing else.`;
     if (!word || word.trim() === '') return;
     
     // Normalize the search text by removing punctuation and extra spaces
-    const normalizedWord = word.trim().replace(/[.,?!;:]/g, '');
+    const normalizedWord = word.trim().replace(/[.,?!;:¿¡]/g, '');
     
     // Create the search query with "[word] explanation with examples" format  
     // The search query will be in format: word (in target language) + explanation text (in mother language)
@@ -3242,7 +3254,7 @@ Return ONLY the transliteration, nothing else.`;
   const playWordSound = (word: string) => {
     if (!word || word.trim() === '') return;
     
-    const normalizedWord = word.trim().replace(/[.,?!;:]/g, '');
+    const normalizedWord = word.trim().replace(/[.,?!;:¿¡]/g, '');
     
     // Use Web Speech API for pronunciation
     if ('speechSynthesis' in window) {
@@ -3288,7 +3300,7 @@ Return ONLY the transliteration, nothing else.`;
       return;
     }
     
-    const normalizedWord = word.trim().replace(/[.,?!;:]/g, '');
+    const normalizedWord = word.trim().replace(/[.,?!;:¿¡]/g, '');
     
     // Set loading state
     setAddingWordToDictionary(normalizedWord);
@@ -3343,7 +3355,7 @@ Return ONLY the transliteration, nothing else.`;
   const handleShowWordExplanation = async (word: string) => {
     if (!word || word.trim() === '') return;
     
-    const normalizedWord = word.trim().replace(/[.,?!;:]/g, '');
+    const normalizedWord = word.trim().replace(/[.,?!;:¿¡]/g, '');
     
     // Set up the explanation modal
     setCurrentExplanationWord(normalizedWord);
@@ -3522,9 +3534,9 @@ Return ONLY the transliteration, nothing else.`;
               return <span key={index}>{word}</span>;
             }
             
-            const isHighlighted = highlightedWords.includes(word.toLowerCase().replace(/[.,?!;:]/g, ''));
+            const isHighlighted = highlightedWords.includes(word.toLowerCase().replace(/[.,?!;:¿¡]/g, ''));
             // console.log('📝 Rendering word span:', word, 'with hover events'); // Debug log
-            const cleanWord = word.trim().replace(/[.,?!;:]/g, '');
+            const cleanWord = word.trim().replace(/[.,?!;:¿¡]/g, '');
             const wordKey = `${cleanWord}-${index}`;
             return (
               <span 
@@ -5302,7 +5314,8 @@ if (typeof window !== 'undefined') {
     
     const normalizeJapanese = (text: string): string => {
       let normalized = text.toLowerCase().trim();
-      normalized = normalized.replace(/[.,?!;:]/g, '');
+      normalized = removeAccents(normalized);
+      normalized = normalized.replace(/[.,?!;:¿¡]/g, '');
       
       // Convert full-width to half-width
       normalized = normalized.replace(/[Ａ-Ｚａ-ｚ０-９]/g, (s) => 

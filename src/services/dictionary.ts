@@ -31,7 +31,7 @@ export const addWordToDictionary = async (
 ): Promise<DictionaryEntry | null> => {
   try {
     // Clean the word (remove punctuation)
-    const cleanWord = word.trim().toLowerCase().replace(/[.,?!;:]/g, '');
+    const cleanWord = word.trim().toLowerCase().replace(/[.,?!;:¿¡]/g, '');
     
     if (!cleanWord) {
       logger.warn('Attempted to add empty word to dictionary');
@@ -101,7 +101,7 @@ export const isWordInDictionary = async (
   motherLanguage: SupportedLanguage
 ): Promise<boolean> => {
   try {
-    const cleanWord = word.trim().toLowerCase().replace(/[.,?!;:]/g, '');
+    const cleanWord = word.trim().toLowerCase().replace(/[.,?!;:¿¡]/g, '');
     
     const { data, error } = await supabase
       .from('dictionary')

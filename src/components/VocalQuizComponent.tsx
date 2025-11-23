@@ -968,11 +968,11 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
     
     // Clean up both strings for comparison
     const userClean = removeAccents(transcript.toLowerCase().trim())
-      .replace(/[.,?!;:]/g, '')
+      .replace(/[.,?!;:¿¡]/g, '')
       .replace(/\s+/g, ' ');
     
     const expectedClean = removeAccents(expected.toLowerCase().trim())
-      .replace(/[.,?!;:]/g, '')
+      .replace(/[.,?!;:¿¡]/g, '')
       .replace(/\s+/g, ' ');
     
     console.log(`🔍 Checking: "${userClean}" vs "${expectedClean}"`);
@@ -1373,7 +1373,7 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
             // If still no match, try EXTREMELY lenient matching just for first question
             if (!foundMatch) {
               // Extra lenient matching - check if any transcript has any part of the expected answer
-              const cleanExpected = answerWord.toLowerCase().trim().replace(/[.,?!;:]/g, '');
+              const cleanExpected = removeAccents(answerWord.toLowerCase().trim()).replace(/[.,?!;:¿¡]/g, '');
               
               // Break expected into character pairs and check for them
               if (cleanExpected.length >= 2) {
@@ -1381,7 +1381,7 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
                   const charPair = cleanExpected.substr(i, 2);
                   
                   for (const transcript of transcripts) {
-                    const cleanTranscript = transcript.toLowerCase().trim().replace(/[.,?!;:]/g, '');
+                    const cleanTranscript = removeAccents(transcript.toLowerCase().trim()).replace(/[.,?!;:¿¡]/g, '');
                     
                     if (cleanTranscript.includes(charPair)) {
                       console.log(`✅ SPECIAL FIRST QUESTION MATCH: Found character pair "${charPair}" from "${cleanExpected}" in "${cleanTranscript}"`);
@@ -1889,7 +1889,7 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
       return;
     }
     
-    const normalizedWord = answerWord.trim().replace(/[.,?!;:]/g, '');
+    const normalizedWord = answerWord.trim().replace(/[.,?!;:¿¡]/g, '');
     
     // Set loading state
     setAddingWordToDictionary(true);
