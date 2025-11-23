@@ -919,7 +919,7 @@ export const trackCompletedMission = async (
       });
       
       // Update language level with security validation
-      await secureQuery(
+      const updateResult = await secureQuery(
         'update_mission_progress',
         userId,
         async () => {
@@ -936,6 +936,18 @@ export const trackCompletedMission = async (
         }
       );
       
+      if (updateResult.error) {
+        console.error('❌ Failed to update mission progress:', updateResult.error);
+        logger.error('Failed to update mission progress', { 
+          error: updateResult.error,
+          userId,
+          scenarioNumber,
+          missionNumber
+        });
+        throw new Error(`Failed to update mission progress: ${updateResult.error.message || updateResult.error}`);
+      }
+      
+      console.log('✅ Mission progress updated successfully');
       logger.info('Mission completion tracked successfully', { 
         scenarioNumber, 
         missionNumber, 
@@ -945,7 +957,7 @@ export const trackCompletedMission = async (
       
     } else {
       // Create new language level if doesn't exist
-      await secureQuery(
+      const createResult = await secureQuery(
         'create_language_level_for_mission',
         userId,
         async () => {
@@ -966,6 +978,18 @@ export const trackCompletedMission = async (
         }
       );
       
+      if (createResult.error) {
+        console.error('❌ Failed to create language level:', createResult.error);
+        logger.error('Failed to create language level for mission', { 
+          error: createResult.error,
+          userId,
+          scenarioNumber,
+          missionNumber
+        });
+        throw new Error(`Failed to create language level: ${createResult.error.message || createResult.error}`);
+      }
+      
+      console.log('✅ Language level created successfully');
       logger.info('Created language level with mission progress', { 
         scenarioNumber, 
         missionNumber, 
@@ -974,7 +998,7 @@ export const trackCompletedMission = async (
     }
     
     // ALSO SAVE TO mission_completions TABLE FOR DETAILED TRACKING
-    await secureQuery(
+    const completionResult = await secureQuery(
       'insert_mission_completion',
       userId,
       async () => {
@@ -996,7 +1020,20 @@ export const trackCompletedMission = async (
       }
     );
     
-    logger.info('Mission completion record saved', { scenarioNumber, missionNumber });
+    if (completionResult.error) {
+      console.error('❌ Failed to save mission completion:', completionResult.error);
+      logger.error('Failed to save mission completion', { 
+        error: completionResult.error, 
+        scenarioNumber, 
+        missionNumber,
+        userId 
+      });
+      // Don't throw - mission_progress was already updated above
+      // Just log the error so user knows the detailed record didn't save
+    } else {
+      console.log('✅ Mission completion record saved successfully');
+      logger.info('Mission completion record saved', { scenarioNumber, missionNumber });
+    }
     
     return true;
     
