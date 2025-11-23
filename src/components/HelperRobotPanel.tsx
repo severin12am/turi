@@ -383,6 +383,24 @@ const HelperRobotPanel: React.FC<HelperRobotPanelProps> = ({ onClose }) => {
       return;
     }
     
+    // Pre-check if we have valid words with translations (for current vocabulary)
+    if (source === 'current') {
+      const validWords = sourceWords.filter(word => {
+        const entry = word as DictionaryEntry;
+        return entry.word && entry.word.trim() !== '' && 
+               entry.translation && entry.translation.trim() !== '';
+      });
+      
+      if (validWords.length === 0) {
+        alert('No words with translations available. Please add translations to your saved words.');
+        return;
+      }
+      
+      if (validWords.length < count) {
+        console.warn(`Only ${validWords.length} words with translations available (requested ${count})`);
+      }
+    }
+    
     setQuizSource(source);
     setShowVocabularyQuiz(true);
   };
@@ -390,7 +408,49 @@ const HelperRobotPanel: React.FC<HelperRobotPanelProps> = ({ onClose }) => {
   // Get quiz words based on source
   const getQuizWords = (): VocalQuizWord[] => {
     const count = parseInt(quizWordsCount) || 10;
-    const sourceWords = quizSource === 'current' ? filteredDictionaryEntries : learnedWords;
+    let sourceWords = quizSource === 'current' ? filteredDictionaryEntries : learnedWords;
+    
+    // Filter out words without translations (for dictionary entries)
+    if (quizSource === 'current') {
+      sourceWords = sourceWords.filter(word => {
+        const entry = word as DictionaryEntry;
+        const hasWord = entry.word && entry.word.trim() !== '';
+        const hasTranslation = entry.translation && entry.translation.trim() !== '';
+        
+        if (!hasTranslation) {
+          console.log(`⚠️ Filtering out word without translation: "${entry.word}"`);
+        }
+        
+        return hasWord && hasTranslation;
+      });
+    } else {
+      // For vocabulary progress, filter out words without proper language entries
+      sourceWords = sourceWords.filter(word => {
+        const wordEntry = word as Word;
+        const getLanguageColumn = (lang: string): string => {
+          const columnMap: Record<string, string> = {
+            'en': 'entry_in_en',
+            'ru': 'entry_in_ru',
+            'es': 'entry_in_es',
+            'fr': 'entry_in_fr',
+            'de': 'entry_in_de',
+            'it': 'entry_in_it',
+            'ar': 'entry_in_ar',
+            'CH': 'entry_in_ch',
+            'ja': 'entry_in_ja',
+            'tr': 'entry_in_tr'
+          };
+          return columnMap[lang] || 'entry_in_en';
+        };
+        
+        const targetCol = getLanguageColumn(targetLanguage);
+        const motherCol = getLanguageColumn(motherLanguage);
+        
+        return wordEntry[targetCol] && wordEntry[targetCol].trim() !== '' &&
+               wordEntry[motherCol] && wordEntry[motherCol].trim() !== '';
+      });
+    }
+    
     const maxWords = Math.min(count, sourceWords.length);
     
     console.log('📚 getQuizWords called:', { 
@@ -399,6 +459,11 @@ const HelperRobotPanel: React.FC<HelperRobotPanelProps> = ({ onClose }) => {
       availableWords: sourceWords.length, 
       willUse: maxWords 
     });
+    
+    if (sourceWords.length === 0) {
+      console.warn('⚠️ No valid words available for quiz after filtering');
+      return [];
+    }
     
     // Shuffle and take the requested number of words
     const shuffled = [...sourceWords].sort(() => Math.random() - 0.5);

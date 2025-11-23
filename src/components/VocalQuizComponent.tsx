@@ -251,11 +251,18 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
         setIsLoading(true);
         
         // If custom words are provided (vocabulary quiz), use them directly
-        if (customWords && customWords.length > 0) {
-          console.log('📚 Using custom words for vocabulary quiz:', customWords.length, 'words');
-          setQuizWords(customWords);
-          setIsLoading(false);
-          return;
+        if (isVocabularyQuiz) {
+          if (customWords && customWords.length > 0) {
+            console.log('📚 Using custom words for vocabulary quiz:', customWords.length, 'words');
+            setQuizWords(customWords);
+            setIsLoading(false);
+            return;
+          } else {
+            console.error('⚠️ Vocabulary quiz requested but no valid words provided');
+            setError('No valid words available for quiz. Please ensure your saved words have translations.');
+            setIsLoading(false);
+            return;
+          }
         }
         
         logger.info('Fetching quiz words', { 
