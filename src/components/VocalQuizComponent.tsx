@@ -56,6 +56,8 @@ interface VocalQuizProps {
   missionScenarioNumber?: number; // Scenario number for mission tracking
   missionNumber?: number; // Mission number (1-5) for tracking
   usedHelpInMission?: boolean; // Whether user used help during mission
+  customWords?: VocalQuizWord[]; // Custom words for vocabulary quiz
+  isVocabularyQuiz?: boolean; // Flag to indicate this is a vocabulary quiz (not counted)
 }
 
 import type { SupportedLanguage } from '../constants/translations';
@@ -170,7 +172,9 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
   missionConversation,
   missionScenarioNumber,
   missionNumber,
-  usedHelpInMission = false
+  usedHelpInMission = false,
+  customWords,
+  isVocabularyQuiz = false
 }) => {
   // Log props received
   console.log('🎮 [VocalQuizComponent] Props received:', {
@@ -178,7 +182,9 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
     usedHelpInMission,
     missionScenarioNumber,
     missionNumber,
-    dialogueId
+    dialogueId,
+    isVocabularyQuiz,
+    customWordsCount: customWords?.length
   });
   
   // Get languages from store
@@ -243,6 +249,15 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
     const fetchQuizWords = async () => {
       try {
         setIsLoading(true);
+        
+        // If custom words are provided (vocabulary quiz), use them directly
+        if (customWords && customWords.length > 0) {
+          console.log('📚 Using custom words for vocabulary quiz:', customWords.length, 'words');
+          setQuizWords(customWords);
+          setIsLoading(false);
+          return;
+        }
+        
         logger.info('Fetching quiz words', { 
           dialogueId: safeDialogueId, 
           targetLanguage, 
@@ -555,7 +570,7 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
     };
     
     fetchQuizWords();
-  }, [safeDialogueId, targetLanguage, isScenario, scenarioNumber, characterId, motherLanguage]);
+  }, [safeDialogueId, targetLanguage, isScenario, scenarioNumber, characterId, motherLanguage, customWords]);
   
   // Get current word
   const currentWord = quizWords.length > 0 ? quizWords[currentWordIndex] : null;
@@ -1993,17 +2008,22 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
           
           console.log("VocalQuizComponent - Quiz contains", wordCount, "words for dialogue", dialogueId);
           
-          // Track dialogue completion (this already handles word progress correctly)
-          if (isScenario) {
-            await trackCompletedScenarioDialogue(user.id, characterId, scenarioNumber, dialogueId, passPercentage);
-            console.log("VocalQuizComponent - Scenario dialogue completion tracked for scenario:", scenarioNumber, "dialogue:", dialogueId);
+          // Skip tracking for vocabulary quizzes (user review, not counted)
+          if (!isVocabularyQuiz) {
+            // Track dialogue completion (this already handles word progress correctly)
+            if (isScenario) {
+              await trackCompletedScenarioDialogue(user.id, characterId, scenarioNumber, dialogueId, passPercentage);
+              console.log("VocalQuizComponent - Scenario dialogue completion tracked for scenario:", scenarioNumber, "dialogue:", dialogueId);
+            } else {
+              await trackCompletedDialogue(user.id, characterId, dialogueId, passPercentage);
+              console.log("VocalQuizComponent - Dialogue completion tracked for dialogue:", dialogueId, "with word count:", wordCount);
+            }
           } else {
-            await trackCompletedDialogue(user.id, characterId, dialogueId, passPercentage);
-            console.log("VocalQuizComponent - Dialogue completion tracked for dialogue:", dialogueId, "with word count:", wordCount);
+            console.log("VocalQuizComponent - Vocabulary quiz mode: progress tracking skipped");
           }
           
-          // NEW: Track mission completion if this is a mission quiz
-          if (isMission && missionScenarioNumber !== undefined && missionNumber !== undefined) {
+          // NEW: Track mission completion if this is a mission quiz (not vocabulary quiz)
+          if (!isVocabularyQuiz && isMission && missionScenarioNumber !== undefined && missionNumber !== undefined) {
             console.log("VocalQuizComponent - This is a mission quiz, tracking mission completion");
             
             // Import the function
@@ -2032,18 +2052,19 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
             }
           }
           
-          // Track which words/expressions the user has learned
-          const learnedWords = quizWords
-            .filter((word, index) => {
-              // Consider a word "learned" if answered correctly or if it's from the special 500 words list
-              return (index < correctCount) || word.is_from_500;
-            })
-            .map(word => word.id);
+          // Track which words/expressions the user has learned (skip for vocabulary quizzes)
+          if (!isVocabularyQuiz) {
+            const learnedWords = quizWords
+              .filter((word, index) => {
+                // Consider a word "learned" if answered correctly or if it's from the special 500 words list
+                return (index < correctCount) || word.is_from_500;
+              })
+              .map(word => word.id);
+              
+            console.log("VocalQuizComponent - Number of learned words:", learnedWords.length);
             
-          console.log("VocalQuizComponent - Number of learned words:", learnedWords.length);
-          
-          // Still track individual words if needed
-          if (learnedWords.length > 0) {
+            // Still track individual words if needed
+            if (learnedWords.length > 0) {
             const wordData = learnedWords.map(wordId => ({
               user_id: user.id,
               word_id: wordId,
@@ -2061,6 +2082,7 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
               console.error("VocalQuizComponent - Error upserting learned words:", wordUpsertError);
             } else {
               console.log("VocalQuizComponent - Word update successful for", learnedWords.length, "words");
+            }
             }
           }
         } catch (progressError) {

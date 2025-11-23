@@ -12,6 +12,7 @@ import { PanelTitle, PanelButton, PanelInput } from './PanelElements';
 import { SCENARIO_NAMES, DIALOGUES_PER_SCENARIO, TOTAL_SCENARIOS, getScenarioName, getScenarioProgress } from '../constants/scenarios';
 import { getMissionsForScenario, MISSIONS_PER_SCENARIO, getTotalMissions } from '../constants/missions';
 import { getTranslation } from '../constants/translations';
+import VocalQuizComponent from './VocalQuizComponent';
 
 interface HelperRobotPanelProps {
   onClose: () => void;
@@ -51,6 +52,24 @@ interface LanguagePair {
   user_id?: string;
 }
 
+interface VocalQuizWord {
+  id: number;
+  entry_in_en: string;
+  entry_in_ru: string;
+  entry_in_es?: string;
+  entry_in_fr?: string;
+  entry_in_de?: string;
+  entry_in_it?: string;
+  entry_in_pt?: string;
+  entry_in_ar?: string;
+  entry_in_ch?: string;
+  entry_in_ja?: string;
+  entry_in_av?: string;
+  dialogue_id: number;
+  is_from_500: boolean;
+  [key: string]: any;
+}
+
 const HelperRobotPanel: React.FC<HelperRobotPanelProps> = ({ onClose }) => {
   const { user, isLoggedIn, motherLanguage, targetLanguage, setLanguages, resetState, logout } = useStore();
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -67,6 +86,11 @@ const HelperRobotPanel: React.FC<HelperRobotPanelProps> = ({ onClose }) => {
   const [dictionarySearchTerm, setDictionarySearchTerm] = useState<string>('');
   const [showHelpTooltip, setShowHelpTooltip] = useState<boolean>(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  
+  // Quiz states
+  const [showVocabularyQuiz, setShowVocabularyQuiz] = useState<boolean>(false);
+  const [quizWordsCount, setQuizWordsCount] = useState<string>('10');
+  const [quizSource, setQuizSource] = useState<'current' | 'progress'>('current');
   
   useEffect(() => {
     if (isLoggedIn && user?.id) {
@@ -342,6 +366,106 @@ const HelperRobotPanel: React.FC<HelperRobotPanelProps> = ({ onClose }) => {
       console.error('Error during logout:', error);
     }
   };
+  
+  // Handle starting vocabulary quiz
+  const handleStartQuiz = (source: 'current' | 'progress') => {
+    const count = parseInt(quizWordsCount) || 10;
+    if (count <= 0) {
+      alert('Please enter a valid number of words (greater than 0)');
+      return;
+    }
+    
+    const sourceWords = source === 'current' ? filteredDictionaryEntries : learnedWords;
+    if (sourceWords.length === 0) {
+      alert(`No words available in ${source === 'current' ? 'Current Vocabulary' : 'Vocabulary Progress'}`);
+      return;
+    }
+    
+    setQuizSource(source);
+    setShowVocabularyQuiz(true);
+  };
+  
+  // Get quiz words based on source
+  const getQuizWords = (): VocalQuizWord[] => {
+    const count = parseInt(quizWordsCount) || 10;
+    const sourceWords = quizSource === 'current' ? filteredDictionaryEntries : learnedWords;
+    const maxWords = Math.min(count, sourceWords.length);
+    
+    // Shuffle and take the requested number of words
+    const shuffled = [...sourceWords].sort(() => Math.random() - 0.5);
+    const selectedWords = shuffled.slice(0, maxWords);
+    
+    // Convert to VocalQuizWord format
+    return selectedWords.map((word, index) => {
+      const getLanguageColumn = (lang: string): string => {
+        const columnMap: Record<string, string> = {
+          'en': 'entry_in_en',
+          'ru': 'entry_in_ru',
+          'es': 'entry_in_es',
+          'fr': 'entry_in_fr',
+          'de': 'entry_in_de',
+          'it': 'entry_in_it',
+          'ar': 'entry_in_ar',
+          'CH': 'entry_in_ch',
+          'ja': 'entry_in_ja',
+          'tr': 'entry_in_tr'
+        };
+        return columnMap[lang] || 'entry_in_en';
+      };
+      
+      const targetCol = getLanguageColumn(targetLanguage);
+      const motherCol = getLanguageColumn(motherLanguage);
+      
+      // Check if it's a DictionaryEntry (has target_word) or Word (has word)
+      const targetWord = 'target_word' in word ? word.target_word : word.word;
+      const motherWord = 'translation' in word ? word.translation : '';
+      
+      return {
+        id: word.id,
+        dialogue_id: 1, // Not relevant for vocabulary quiz
+        is_from_500: false,
+        entry_in_en: '',
+        entry_in_ru: '',
+        entry_in_es: '',
+        entry_in_fr: '',
+        entry_in_de: '',
+        entry_in_it: '',
+        entry_in_pt: '',
+        entry_in_ar: '',
+        entry_in_ch: '',
+        entry_in_ja: '',
+        entry_in_tr: '',
+        [targetCol]: targetWord,
+        [motherCol]: motherWord
+      };
+    });
+  };
+  
+  // Handle quiz complete
+  const handleQuizComplete = (passed: boolean) => {
+    console.log('Vocabulary quiz completed, passed:', passed);
+    setShowVocabularyQuiz(false);
+  };
+  
+  // Handle quiz close
+  const handleQuizClose = () => {
+    console.log('Vocabulary quiz closed');
+    setShowVocabularyQuiz(false);
+  };
+  
+  // Show quiz if active
+  if (showVocabularyQuiz) {
+    return (
+      <VocalQuizComponent
+        dialogueId={1}
+        characterId={1}
+        onComplete={handleQuizComplete}
+        onClose={handleQuizClose}
+        customWords={getQuizWords()}
+        isVocabularyQuiz={true}
+      />
+    );
+  }
   
   if (!isLoggedIn || !user) {
     return (
@@ -694,6 +818,29 @@ const HelperRobotPanel: React.FC<HelperRobotPanelProps> = ({ onClose }) => {
                   className="mb-4"
                 />
                 
+                {/* Quiz Controls */}
+                <div className="flex items-center gap-2 mb-4 bg-white/5 rounded-xl p-3">
+                  <button
+                    className="px-3 py-2 text-sm bg-white/10 hover:bg-white/20 text-white/80 rounded-lg transition-colors border border-white/20"
+                    disabled
+                  >
+                    randomly
+                  </button>
+                  <input
+                    type="number"
+                    min="1"
+                    value={quizWordsCount}
+                    onChange={(e) => setQuizWordsCount(e.target.value)}
+                    className="w-20 px-3 py-2 text-sm bg-white/10 text-white rounded-lg border border-white/20 focus:outline-none focus:border-blue-400/50 transition-colors"
+                  />
+                  <button
+                    onClick={() => handleStartQuiz('current')}
+                    className="px-4 py-2 text-sm bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-medium rounded-lg transition-all border border-blue-400/30"
+                  >
+                    quiz me
+                  </button>
+                </div>
+                
                 <div className="max-h-[60vh] overflow-y-auto bg-white/5 rounded-2xl p-4">
                   {filteredDictionaryEntries.length > 0 ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -827,6 +974,29 @@ const HelperRobotPanel: React.FC<HelperRobotPanelProps> = ({ onClose }) => {
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="mb-4"
                 />
+                
+                {/* Quiz Controls */}
+                <div className="flex items-center gap-2 mb-4 bg-white/5 rounded-xl p-3">
+                  <button
+                    className="px-3 py-2 text-sm bg-white/10 hover:bg-white/20 text-white/80 rounded-lg transition-colors border border-white/20"
+                    disabled
+                  >
+                    randomly
+                  </button>
+                  <input
+                    type="number"
+                    min="1"
+                    value={quizWordsCount}
+                    onChange={(e) => setQuizWordsCount(e.target.value)}
+                    className="w-20 px-3 py-2 text-sm bg-white/10 text-white rounded-lg border border-white/20 focus:outline-none focus:border-blue-400/50 transition-colors"
+                  />
+                  <button
+                    onClick={() => handleStartQuiz('progress')}
+                    className="px-4 py-2 text-sm bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-medium rounded-lg transition-all border border-blue-400/30"
+                  >
+                    quiz me
+                  </button>
+                </div>
                 
                 <div className="max-h-[60vh] overflow-y-auto bg-white/5 rounded-2xl p-4">
                   {filteredWords.length > 0 ? (
