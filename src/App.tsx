@@ -691,7 +691,10 @@ function App() {
         {/* Optional UI Elements */}
         {/* Helper Robot Panel - Show for logged in users */}
         {isLoggedIn && showHelperRobotPanel && (
-          <div className="fixed z-40 top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-auto" id="helper-robot-panel-container">
+          <div
+            className="fixed inset-0 z-[200] flex items-center justify-center pointer-events-auto"
+            id="helper-robot-panel-container"
+          >
             <HelperRobotPanel onClose={handleCloseHelperRobotPanel} />
           </div>
         )}
