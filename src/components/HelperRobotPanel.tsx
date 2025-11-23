@@ -35,7 +35,7 @@ interface Word {
   entry_in_ar?: string;
   entry_in_ch?: string;
   entry_in_ja?: string;
-  entry_in_av?: string;
+  entry_in_tr?: string;
   [key: string]: any; // Allow dynamic column access
 }
 
@@ -64,7 +64,7 @@ interface VocalQuizWord {
   entry_in_ar?: string;
   entry_in_ch?: string;
   entry_in_ja?: string;
-  entry_in_av?: string;
+  entry_in_tr?: string;
   dialogue_id: number;
   is_from_500: boolean;
   [key: string]: any;
@@ -376,6 +376,8 @@ const HelperRobotPanel: React.FC<HelperRobotPanelProps> = ({ onClose }) => {
     }
     
     const sourceWords = source === 'current' ? filteredDictionaryEntries : learnedWords;
+    console.log('Starting quiz with source:', source, 'Total words available:', sourceWords.length);
+    
     if (sourceWords.length === 0) {
       alert(`No words available in ${source === 'current' ? 'Current Vocabulary' : 'Vocabulary Progress'}`);
       return;
@@ -391,12 +393,19 @@ const HelperRobotPanel: React.FC<HelperRobotPanelProps> = ({ onClose }) => {
     const sourceWords = quizSource === 'current' ? filteredDictionaryEntries : learnedWords;
     const maxWords = Math.min(count, sourceWords.length);
     
+    console.log('📚 getQuizWords called:', { 
+      source: quizSource, 
+      requestedCount: count, 
+      availableWords: sourceWords.length, 
+      willUse: maxWords 
+    });
+    
     // Shuffle and take the requested number of words
     const shuffled = [...sourceWords].sort(() => Math.random() - 0.5);
     const selectedWords = shuffled.slice(0, maxWords);
     
     // Convert to VocalQuizWord format
-    return selectedWords.map((word, index) => {
+    const result = selectedWords.map((word) => {
       const getLanguageColumn = (lang: string): string => {
         const columnMap: Record<string, string> = {
           'en': 'entry_in_en',
@@ -413,16 +422,10 @@ const HelperRobotPanel: React.FC<HelperRobotPanelProps> = ({ onClose }) => {
         return columnMap[lang] || 'entry_in_en';
       };
       
-      const targetCol = getLanguageColumn(targetLanguage);
-      const motherCol = getLanguageColumn(motherLanguage);
-      
-      // Check if it's a DictionaryEntry (has target_word) or Word (has word)
-      const targetWord = 'target_word' in word ? word.target_word : word.word;
-      const motherWord = 'translation' in word ? word.translation : '';
-      
-      return {
-        id: word.id,
-        dialogue_id: 1, // Not relevant for vocabulary quiz
+      // Initialize all language fields
+      const quizWord: any = {
+        id: typeof word.id === 'string' ? parseInt(word.id) || Date.now() : word.id,
+        dialogue_id: 1,
         is_from_500: false,
         entry_in_en: '',
         entry_in_ru: '',
@@ -434,11 +437,52 @@ const HelperRobotPanel: React.FC<HelperRobotPanelProps> = ({ onClose }) => {
         entry_in_ar: '',
         entry_in_ch: '',
         entry_in_ja: '',
-        entry_in_tr: '',
-        [targetCol]: targetWord,
-        [motherCol]: motherWord
+        entry_in_tr: ''
       };
+      
+      // Check if it's a DictionaryEntry or Word
+      if ('target_language' in word && 'mother_language' in word) {
+        // DictionaryEntry format (from current vocabulary)
+        const entry = word as DictionaryEntry;
+        const targetCol = getLanguageColumn(entry.target_language);
+        const motherCol = getLanguageColumn(entry.mother_language);
+        
+        quizWord[targetCol] = entry.word || '';
+        quizWord[motherCol] = entry.translation || '';
+        
+        console.log('Converting dictionary entry:', { targetCol, motherCol, word: entry.word, translation: entry.translation });
+      } else {
+        // Word format (from vocabulary progress - already has entry_in_XX columns)
+        const wordEntry = word as Word;
+        
+        // Copy all the entry_in_XX fields
+        quizWord.entry_in_en = wordEntry.entry_in_en || '';
+        quizWord.entry_in_ru = wordEntry.entry_in_ru || '';
+        quizWord.entry_in_es = wordEntry.entry_in_es || '';
+        quizWord.entry_in_fr = wordEntry.entry_in_fr || '';
+        quizWord.entry_in_de = wordEntry.entry_in_de || '';
+        quizWord.entry_in_it = wordEntry.entry_in_it || '';
+        quizWord.entry_in_pt = wordEntry.entry_in_pt || '';
+        quizWord.entry_in_ar = wordEntry.entry_in_ar || '';
+        quizWord.entry_in_ch = wordEntry.entry_in_ch || '';
+        quizWord.entry_in_ja = wordEntry.entry_in_ja || '';
+        quizWord.entry_in_tr = wordEntry.entry_in_tr || '';
+        
+        console.log('Converting word entry:', { 
+          targetLang: targetLanguage, 
+          motherLang: motherLanguage,
+          targetWord: wordEntry[getLanguageColumn(targetLanguage)],
+          motherWord: wordEntry[getLanguageColumn(motherLanguage)]
+        });
+      }
+      
+      return quizWord;
     });
+    
+    console.log('📝 Generated quiz words:', result.length, 'words');
+    console.log('First word sample:', result[0]);
+    
+    return result;
   };
   
   // Handle quiz complete
