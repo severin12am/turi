@@ -327,6 +327,22 @@ export const signUp = async (email: string, password: string, motherLanguage: st
       // Don't throw here - user creation succeeded, language level can be created later
     }
 
+    // Attempt automatic sign-in right after signup to avoid extra steps
+    try {
+      const { data: autoLoginData, error: autoLoginError } = await supabase.auth.signInWithPassword({
+        email: sanitizedEmail,
+        password
+      });
+      
+      if (autoLoginError) {
+        logger.warn('Auto sign-in after signup failed', { error: autoLoginError.message });
+      } else if (autoLoginData?.user) {
+        logger.info('Auto sign-in after signup succeeded', { userId: autoLoginData.user.id });
+      }
+    } catch (autoLoginException) {
+      logger.warn('Auto sign-in after signup threw exception', { error: autoLoginException });
+    }
+
     try {
       await transferAnonymousProgressToUser(authData.user.id);
     } catch (transferError) {
@@ -553,6 +569,11 @@ export const transferAnonymousProgressToUser = async (userId: string) => {
   if (!canUseLocalStorage) return;
   
   try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) {
+      logger.warn('Skipping anonymous progress transfer - no authenticated session', { userId });
+      return;
+    }
     const stored = readAnonymousProgressFromStorage();
     if (!stored) return;
     
@@ -561,7 +582,11 @@ export const transferAnonymousProgressToUser = async (userId: string) => {
       return;
     }
     
-    // Transfer dialogue completions
+    const remainingDialogues: AnonymousDialogueProgressEntry[] = [];
+    const remainingMissions: AnonymousMissionProgressEntry[] = [];
+    let dialoguesTransferred = 0;
+    let missionsTransferred = 0;
+    
     for (const dialogue of anonymousProgress.dialogues) {
       try {
         await progressTrackCompletedDialogue(
@@ -570,17 +595,17 @@ export const transferAnonymousProgressToUser = async (userId: string) => {
           dialogue.dialogueId,
           dialogue.score
         );
+        dialoguesTransferred++;
       } catch (error) {
         logger.warn('Failed to transfer anonymous dialogue', { 
           error,
           userId,
           dialogueId: dialogue.dialogueId
         });
+        remainingDialogues.push(dialogue);
       }
     }
     
-    // Transfer mission completions
-    let missionsTransferred = 0;
     for (const mission of anonymousProgress.missions) {
       if (!mission.quizPassed || mission.usedHelp) {
         continue;
@@ -603,18 +628,34 @@ export const transferAnonymousProgressToUser = async (userId: string) => {
           mission: mission.missionNumber,
           scenario: mission.scenarioNumber
         });
+        remainingMissions.push(mission);
       }
     }
     
-    // Clear anonymous progress
-    localStorage.removeItem(LOCAL_STORAGE_ANONYMOUS_USER_KEY);
-    localStorage.removeItem(LEGACY_ANONYMOUS_USER_KEY);
-    
-    logger.info('Anonymous progress transferred to user', { 
-      userId,
-      dialoguesTransferred: anonymousProgress.dialogues.length,
-      missionsTransferred
-    });
+    if (remainingDialogues.length === 0 && remainingMissions.length === 0) {
+      localStorage.removeItem(LOCAL_STORAGE_ANONYMOUS_USER_KEY);
+      localStorage.removeItem(LEGACY_ANONYMOUS_USER_KEY);
+      
+      logger.info('Anonymous progress transferred to user', { 
+        userId,
+        dialoguesTransferred,
+        missionsTransferred
+      });
+    } else {
+      const updatedProgress: AnonymousProgressState = {
+        dialogues: remainingDialogues,
+        missions: remainingMissions,
+        wordProgress: anonymousProgress.wordProgress
+      };
+      persistAnonymousProgress(updatedProgress);
+      logger.warn('Anonymous progress transfer partially completed, pending items remain', {
+        userId,
+        remainingDialogues: remainingDialogues.length,
+        remainingMissions: remainingMissions.length,
+        transferredDialogues: dialoguesTransferred,
+        transferredMissions: missionsTransferred
+      });
+    }
   } catch (error) {
     logger.error('Error transferring anonymous progress', { error });
   }
