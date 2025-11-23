@@ -256,14 +256,17 @@ function App() {
             logger.info('Creating user profile for authenticated user');
             const { data: newProfile, error: createError } = await supabase
               .from('users')
-              .insert([{
+              .upsert([{
                 id: session.user.id,
                 email: session.user.email || '',
                 password: '',
                 mother_language: motherLanguage || 'en',
                 target_language: targetLanguage || 'ru',
                 total_minutes: 0
-              }])
+              }], {
+                onConflict: 'id',
+                ignoreDuplicates: false
+              })
               .select()
               .single();
               
@@ -358,6 +361,16 @@ function App() {
           case 'TOKEN_REFRESHED':
             if (session && mounted) {
               await handleAuthSession(session);
+              
+              // Try to transfer anonymous progress now that we have a valid session
+              if (session.user?.id) {
+                try {
+                  const { transferAnonymousProgressToUser } = await import('./services/auth');
+                  await transferAnonymousProgressToUser(session.user.id);
+                } catch (error) {
+                  logger.error('Failed to transfer anonymous progress on auth state change', { error });
+                }
+              }
             }
             break;
           case 'SIGNED_OUT':
@@ -411,6 +424,8 @@ function App() {
       
       // Show the helper robot panel after login
       setShowHelperRobotPanel(true);
+      
+      // Transfer is already handled in login() and auth state listener
       
       logger.info('Login successful', { email });
     } catch (error) {

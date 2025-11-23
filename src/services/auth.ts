@@ -309,7 +309,10 @@ export const signUp = async (email: string, password: string, motherLanguage: st
 
     const { data: userData, error: userError } = await supabase
       .from('users')
-      .insert([userProfile])
+      .upsert([userProfile], {
+        onConflict: 'id',
+        ignoreDuplicates: false
+      })
       .select()
       .single();
 
