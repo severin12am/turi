@@ -2541,7 +2541,7 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
               }}
             >
               {/* Quiz header with close button */}
-              <div className="bg-slate-800/80 p-4 flex justify-between items-center border-b border-slate-700">
+              <div className="bg-red-600 p-4 flex justify-between items-center border-b border-slate-700" style={{ minHeight: '60px' }}>
                 <h2 className="text-lg font-bold text-white">{t('Vocabulary Quiz', motherLanguage)}</h2>
                 <button 
                   onClick={onClose}
@@ -2552,7 +2552,7 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
                 </button>
               </div>
               
-              <div className="p-6">
+              <div className="p-6 bg-green-600" style={{ minHeight: '400px' }}>
         {/* Progress indicator */}
         <div className="flex justify-between items-center mb-6">
           <span className="text-sm font-medium text-slate-400">
