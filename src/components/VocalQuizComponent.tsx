@@ -1952,9 +1952,11 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
   const finishQuiz = async () => {
     try {
       const passPercentage = (correctCount / quizWords.length) * 100;
-      const passed = passPercentage >= 60; // 60% to pass
+      // For missions: Pass if all questions were answered (eventual completion)
+      // For regular dialogues: Pass if 60% correct on first try
+      const passed = isMission ? true : passPercentage >= 60;
       
-      console.log("VocalQuizComponent - Quiz finished with score:", passPercentage, "passed:", passed);
+      console.log("VocalQuizComponent - Quiz finished with score:", passPercentage, "passed:", passed, "isMission:", isMission);
       
       if (user?.id) {
         try {
@@ -2334,12 +2336,15 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
   // Quiz completed state
   if (currentWordIndex >= quizWords.length) {
     const passPercentage = (correctCount / quizWords.length) * 100;
-    const passed = passPercentage >= 60; // 60% to pass
+    // For missions: Pass if all questions were answered (eventual completion)
+    // For regular dialogues: Pass if 60% correct on first try
+    const passed = isMission ? true : passPercentage >= 60;
     
     console.log('🎯 [QUIZ RESULTS SCREEN] Rendering results:', {
       isMission,
       usedHelpInMission,
       passed,
+      passPercentage,
       missionScenarioNumber,
       missionNumber,
       shouldShowWarning: isMission && usedHelpInMission && passed

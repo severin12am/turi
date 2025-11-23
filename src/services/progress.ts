@@ -984,7 +984,7 @@ export const trackCompletedMission = async (
             user_id: userId,
             scenario_number: scenarioNumber,
             mission_number: missionNumber,
-            score: score,
+            score: Math.round(score), // Round to integer for database
             used_help: usedHelp,
             completed_at: new Date().toISOString()
           }], {

@@ -20,6 +20,7 @@ export interface LanguageLevel {
   email: string;
   scenario_progress?: number;
   scenario_dialogue_progress?: number;
+  mission_progress?: number; // Tracks highest unlocked mission (1-150)
 }
 
 export interface Character {
