@@ -3,11 +3,100 @@ import { logger } from './logger';
 import type { User } from '../types';
 import type { SupportedLanguage } from '../constants/translations';
 import { useStore } from '../store';
-import { syncWordProgress, trackCompletedDialogue as progressTrackCompletedDialogue } from './progress';
+import { 
+  syncWordProgress, 
+  trackCompletedDialogue as progressTrackCompletedDialogue,
+  trackCompletedMission as progressTrackCompletedMission
+} from './progress';
 import { clearSecurityCaches, validateAndSanitizeUserInput, SecurityError } from './security';
 
-const LOCAL_STORAGE_ANONYMOUS_USER_KEY = 'turi_anonymous_user';
+const LOCAL_STORAGE_ANONYMOUS_USER_KEY = 'turi_anonymous_progress';
+const LEGACY_ANONYMOUS_USER_KEY = 'turi_anonymous_user';
 const LOCAL_STORAGE_USER_KEY = 'turi_user';
+
+interface AnonymousDialogueProgressEntry {
+  dialogueId: number;
+  characterId: number;
+  score: number;
+  completed: boolean;
+  completedAt: string;
+}
+
+interface AnonymousMissionProgressEntry {
+  scenarioNumber: number;
+  missionNumber: number;
+  score: number;
+  usedHelp: boolean;
+  quizPassed: boolean;
+  completedAt: string;
+}
+
+interface AnonymousProgressState {
+  dialogues: AnonymousDialogueProgressEntry[];
+  missions: AnonymousMissionProgressEntry[];
+  wordProgress: number;
+}
+
+interface SaveAnonymousProgressOptions {
+  missionScenarioNumber?: number;
+  missionNumber?: number;
+  usedHelpInMission?: boolean;
+  quizPassed?: boolean;
+}
+
+const createEmptyAnonymousProgress = (): AnonymousProgressState => ({
+  dialogues: [],
+  missions: [],
+  wordProgress: 0
+});
+
+const parseAnonymousProgress = (rawValue: string | null): AnonymousProgressState | null => {
+  if (!rawValue) {
+    return null;
+  }
+  
+  try {
+    const parsed = JSON.parse(rawValue);
+    
+    return {
+      dialogues: Array.isArray(parsed.dialogues) ? parsed.dialogues : [],
+      missions: Array.isArray(parsed.missions) ? parsed.missions : [],
+      wordProgress: typeof parsed.wordProgress === 'number' ? parsed.wordProgress : 0
+    };
+  } catch (error) {
+    logger.error('Error parsing anonymous progress from storage', { error });
+    return null;
+  }
+};
+
+const readAnonymousProgressFromStorage = (): { data: AnonymousProgressState; source: 'current' | 'legacy' } | null => {
+  if (!canUseLocalStorage) {
+    return null;
+  }
+  
+  const current = parseAnonymousProgress(localStorage.getItem(LOCAL_STORAGE_ANONYMOUS_USER_KEY));
+  if (current) {
+    return { data: current, source: 'current' };
+  }
+  
+  const legacy = parseAnonymousProgress(localStorage.getItem(LEGACY_ANONYMOUS_USER_KEY));
+  if (legacy) {
+    return { data: legacy, source: 'legacy' };
+  }
+  
+  return null;
+};
+
+const persistAnonymousProgress = (progress: AnonymousProgressState) => {
+  if (!canUseLocalStorage) {
+    return;
+  }
+  
+  localStorage.setItem(LOCAL_STORAGE_ANONYMOUS_USER_KEY, JSON.stringify(progress));
+  if (localStorage.getItem(LEGACY_ANONYMOUS_USER_KEY)) {
+    localStorage.removeItem(LEGACY_ANONYMOUS_USER_KEY);
+  }
+};
 
 // Check if we can use local storage as a backup for non-registered users
 const canUseLocalStorage = typeof window !== 'undefined' && window.localStorage;
@@ -238,6 +327,12 @@ export const signUp = async (email: string, password: string, motherLanguage: st
       // Don't throw here - user creation succeeded, language level can be created later
     }
 
+    try {
+      await transferAnonymousProgressToUser(authData.user.id);
+    } catch (transferError) {
+      logger.warn('Anonymous progress transfer after signup failed', { error: transferError });
+    }
+
     logger.info('User signed up successfully', { userId: authData.user.id });
     return userData;
   } catch (error) {
@@ -290,6 +385,12 @@ export const login = async (email: string, password: string): Promise<User> => {
       throw new Error('Failed to fetch user profile');
     }
 
+    try {
+      await transferAnonymousProgressToUser(authData.user.id);
+    } catch (transferError) {
+      logger.warn('Anonymous progress transfer after login failed', { error: transferError });
+    }
+
     logger.info('User logged in successfully', { userId: authData.user.id });
     return userData;
   } catch (error) {
@@ -332,20 +433,23 @@ export const logout = async (): Promise<void> => {
 };
 
 // Functions for anonymous users
-export const saveAnonymousProgress = (dialogueId: number, characterId: number, score: number) => {
+export const saveAnonymousProgress = (
+  dialogueId: number, 
+  characterId: number, 
+  score: number,
+  options?: SaveAnonymousProgressOptions
+) => {
   if (!canUseLocalStorage) return false;
   
   try {
-    // Get existing anonymous progress or create a new one
-    const savedProgress = localStorage.getItem(LOCAL_STORAGE_ANONYMOUS_USER_KEY);
-    const progress = savedProgress ? JSON.parse(savedProgress) : {
-      dialogues: [],
-      wordProgress: 0
-    };
+    const stored = readAnonymousProgressFromStorage();
+    const progress: AnonymousProgressState = stored?.data 
+      ? { ...stored.data }
+      : createEmptyAnonymousProgress();
     
     // Add or update dialogue progress
     const existingDialogueIndex = progress.dialogues.findIndex(
-      (d: any) => d.dialogueId === dialogueId && d.characterId === characterId
+      (d) => d.dialogueId === dialogueId && d.characterId === characterId
     );
     
     if (existingDialogueIndex > -1) {
@@ -367,13 +471,49 @@ export const saveAnonymousProgress = (dialogueId: number, characterId: number, s
     // Update word progress - use the highest dialogue ID as a simple proxy
     const highestDialogueId = Math.max(
       progress.wordProgress || 0,
-      ...progress.dialogues.map((d: any) => d.dialogueId)
+      ...progress.dialogues.map((d) => d.dialogueId)
     );
     progress.wordProgress = highestDialogueId;
     
-    // Save back to local storage
-    localStorage.setItem(LOCAL_STORAGE_ANONYMOUS_USER_KEY, JSON.stringify(progress));
-    logger.info('Anonymous progress saved', { dialogueId, characterId, score });
+    // Optionally track mission completion (only if quiz passed without help)
+    if (
+      typeof options?.missionScenarioNumber === 'number' &&
+      typeof options?.missionNumber === 'number' &&
+      options.quizPassed &&
+      options.usedHelpInMission === false
+    ) {
+      const missionIndex = progress.missions.findIndex(
+        (mission) => 
+          mission.scenarioNumber === options.missionScenarioNumber &&
+          mission.missionNumber === options.missionNumber
+      );
+      
+      const missionEntry: AnonymousMissionProgressEntry = {
+        scenarioNumber: options.missionScenarioNumber,
+        missionNumber: options.missionNumber,
+        score: Math.round(score),
+        usedHelp: false,
+        quizPassed: true,
+        completedAt: new Date().toISOString()
+      };
+      
+      if (missionIndex > -1) {
+        if (missionEntry.score > progress.missions[missionIndex].score) {
+          progress.missions[missionIndex] = missionEntry;
+        }
+      } else {
+        progress.missions.push(missionEntry);
+      }
+    }
+    
+    // Save back to local storage (and clean up legacy key)
+    persistAnonymousProgress(progress);
+    logger.info('Anonymous progress saved', { 
+      dialogueId, 
+      characterId, 
+      score,
+      missionsTracked: progress.missions.length
+    });
     
     return true;
   } catch (error) {
@@ -390,15 +530,17 @@ export const getAnonymousProgress = () => {
       return null;
     }
     
-    // Get progress data from localStorage
-    const anonymousProgress = localStorage.getItem('turi_anonymous_progress');
-    if (!anonymousProgress) {
+    const stored = readAnonymousProgressFromStorage();
+    if (!stored) {
       return null;
     }
     
-    // Parse stored data
-    const progressData = JSON.parse(anonymousProgress);
-    logger.info('Retrieved anonymous progress', { progressData });
+    const progressData = stored.data;
+    logger.info('Retrieved anonymous progress', { 
+      source: stored.source, 
+      dialogues: progressData.dialogues.length,
+      missions: progressData.missions.length
+    });
     
     return progressData;
   } catch (error) {
@@ -411,26 +553,68 @@ export const transferAnonymousProgressToUser = async (userId: string) => {
   if (!canUseLocalStorage) return;
   
   try {
-    const anonymousProgress = getAnonymousProgress();
-    if (!anonymousProgress || !anonymousProgress.dialogues) return;
+    const stored = readAnonymousProgressFromStorage();
+    if (!stored) return;
+    
+    const anonymousProgress = stored.data;
+    if (!anonymousProgress.dialogues?.length && !anonymousProgress.missions?.length) {
+      return;
+    }
     
     // Transfer dialogue completions
     for (const dialogue of anonymousProgress.dialogues) {
-      await progressTrackCompletedDialogue(
-        userId,
-        dialogue.characterId,
-        dialogue.dialogueId,
-        dialogue.score
-      );
+      try {
+        await progressTrackCompletedDialogue(
+          userId,
+          dialogue.characterId,
+          dialogue.dialogueId,
+          dialogue.score
+        );
+      } catch (error) {
+        logger.warn('Failed to transfer anonymous dialogue', { 
+          error,
+          userId,
+          dialogueId: dialogue.dialogueId
+        });
+      }
     }
     
-    // Word progress is already handled by the dialogue completions above
-    // No need for separate word progress transfer
+    // Transfer mission completions
+    let missionsTransferred = 0;
+    for (const mission of anonymousProgress.missions) {
+      if (!mission.quizPassed || mission.usedHelp) {
+        continue;
+      }
+      
+      try {
+        await progressTrackCompletedMission(
+          userId,
+          mission.scenarioNumber,
+          mission.missionNumber,
+          mission.usedHelp,
+          mission.quizPassed,
+          mission.score
+        );
+        missionsTransferred++;
+      } catch (error) {
+        logger.warn('Failed to transfer anonymous mission', { 
+          error,
+          userId,
+          mission: mission.missionNumber,
+          scenario: mission.scenarioNumber
+        });
+      }
+    }
     
     // Clear anonymous progress
     localStorage.removeItem(LOCAL_STORAGE_ANONYMOUS_USER_KEY);
+    localStorage.removeItem(LEGACY_ANONYMOUS_USER_KEY);
     
-    logger.info('Anonymous progress transferred to user', { userId });
+    logger.info('Anonymous progress transferred to user', { 
+      userId,
+      dialoguesTransferred: anonymousProgress.dialogues.length,
+      missionsTransferred
+    });
   } catch (error) {
     logger.error('Error transferring anonymous progress', { error });
   }

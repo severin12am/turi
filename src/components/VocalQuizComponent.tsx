@@ -13,6 +13,8 @@ import { fetchScenarioQuizWords } from '../services/scenarioQuiz';
 import { fetchScenarioExpressions } from '../services/scenarioExpressions';
 import { extractExpressionsFromDialogue, type ExtractedExpression } from '../services/aiService'; // All AI calls go through router
 import { addWordToDictionary } from '../services/dictionary';
+import AppPanel, { PanelBackdrop } from './AppPanel';
+import { PanelButton } from './PanelElements';
 import { getTranslation } from '../constants/translations';
 
 // Add WebSpeechAPI type definitions
@@ -220,6 +222,12 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
   // Helper function to remove accents/diacritics for comparison
   const removeAccents = (str: string): string => {
     return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  };
+
+  const PUNCTUATION_REGEX = /[\u2000-\u206F\u2E00-\u2E7F\u060C\u061B\u061F!"#$%&'()*+,./:;<=>?@[\\\]^_`{|}~،؟؛«»“”‘’…-]/g;
+
+  const stripPunctuation = (value: string): string => {
+    return value.replace(PUNCTUATION_REGEX, '');
   };
   
   // Cleanup cached audio URLs on unmount to prevent memory leaks
@@ -989,12 +997,10 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
     }
     
     // Clean up both strings for comparison
-    const userClean = removeAccents(transcript.toLowerCase().trim())
-      .replace(/[.,?!;:¿¡]/g, '')
+    const userClean = stripPunctuation(removeAccents(transcript.toLowerCase().trim()))
       .replace(/\s+/g, ' ');
     
-    const expectedClean = removeAccents(expected.toLowerCase().trim())
-      .replace(/[.,?!;:¿¡]/g, '')
+    const expectedClean = stripPunctuation(removeAccents(expected.toLowerCase().trim()))
       .replace(/\s+/g, ' ');
     
     console.log(`🔍 Checking: "${userClean}" vs "${expectedClean}"`);
@@ -1395,7 +1401,7 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
             // If still no match, try EXTREMELY lenient matching just for first question
             if (!foundMatch) {
               // Extra lenient matching - check if any transcript has any part of the expected answer
-              const cleanExpected = removeAccents(answerWord.toLowerCase().trim()).replace(/[.,?!;:¿¡]/g, '');
+              const cleanExpected = stripPunctuation(removeAccents(answerWord.toLowerCase().trim()));
               
               // Break expected into character pairs and check for them
               if (cleanExpected.length >= 2) {
@@ -1403,7 +1409,7 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
                   const charPair = cleanExpected.substr(i, 2);
                   
                   for (const transcript of transcripts) {
-                    const cleanTranscript = removeAccents(transcript.toLowerCase().trim()).replace(/[.,?!;:¿¡]/g, '');
+                    const cleanTranscript = stripPunctuation(removeAccents(transcript.toLowerCase().trim()));
                     
                     if (cleanTranscript.includes(charPair)) {
                       console.log(`✅ SPECIAL FIRST QUESTION MATCH: Found character pair "${charPair}" from "${cleanExpected}" in "${cleanTranscript}"`);
@@ -1911,7 +1917,7 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
       return;
     }
     
-    const normalizedWord = answerWord.trim().replace(/[.,?!;:¿¡]/g, '');
+    const normalizedWord = stripPunctuation(answerWord.trim());
     
     // Set loading state
     setAddingWordToDictionary(true);
@@ -2102,8 +2108,17 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
         console.log("VocalQuizComponent - No user logged in, saving progress locally");
         
         if (passed) {
+          const missionOptions = (isMission && typeof missionScenarioNumber === 'number' && typeof missionNumber === 'number')
+            ? {
+                missionScenarioNumber,
+                missionNumber,
+                usedHelpInMission,
+                quizPassed: passed
+              }
+            : undefined;
+          
           // Save anonymous progress to localStorage
-          const saved = saveAnonymousProgress(dialogueId, characterId, passPercentage);
+          const saved = saveAnonymousProgress(dialogueId, characterId, passPercentage, missionOptions);
           
           if (saved) {
             console.log("VocalQuizComponent - Anonymous progress saved locally");
@@ -2392,168 +2407,157 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
     });
     
     return (
-      <>
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[140]" style={{ pointerEvents: 'auto' }} />
-        <div className="fixed inset-0 flex items-center justify-center z-[150]">
-          <div className="w-full max-w-md p-8 mx-4 shadow-2xl rounded-xl bg-slate-900 backdrop-blur-md border-2 border-slate-600 text-white" style={{ pointerEvents: 'auto', minHeight: '400px' }}>
-            <div className="flex flex-col items-center justify-center space-y-6">
-            {passed ? (
-              <div className="p-5 rounded-full bg-green-900/20 border border-green-700/30">
-              <CheckCircle className="w-16 h-16 text-green-500" />
-              </div>
-            ) : (
-              <div className="p-5 rounded-full bg-amber-900/20 border border-amber-700/30">
-                <XCircle className="w-16 h-16 text-amber-500" />
-              </div>
-            )}
-            
-            <h2 className="text-3xl font-bold text-white">
-              {t(passed ? 'Great work!' : 'Let\'s try again!', motherLanguage)}
-            </h2>
-            
-            <div className="text-center bg-slate-800/40 p-5 rounded-xl border border-slate-700/50 w-full">
-              <p className="text-xl text-slate-300 mb-2">
-                {t('Your score:', motherLanguage)}
-              </p>
-              <div className="flex items-center justify-center">
-                <div className="relative w-32 h-32">
-                  <svg className="w-full h-full" viewBox="0 0 100 100">
-                    <circle 
-                      className="text-slate-700" 
-                      strokeWidth="8" 
-                      stroke="currentColor" 
-                      fill="transparent" 
-                      r="40" 
-                      cx="50" 
-                      cy="50" 
-                    />
-                    <circle 
-                      className="text-indigo-500" 
-                      strokeWidth="8" 
-                      stroke="currentColor" 
-                      fill="transparent" 
-                      r="40" 
-                      cx="50" 
-                      cy="50" 
-                      strokeDasharray={`${(passPercentage * 2.51)}, 251`} 
-                      strokeDashoffset="0" 
-                      strokeLinecap="round" 
-                    />
-                  </svg>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-3xl font-bold text-white">{passPercentage.toFixed(0)}%</span>
-                    <span className="text-sm font-medium text-slate-400">{correctCount}/{quizWords.length}</span>
+      <PanelBackdrop zIndex={150} onClick={onClose}>
+        <div className="w-full max-w-2xl px-4" onClick={(e) => e.stopPropagation()}>
+          <AppPanel
+            width="100%"
+            padding={0}
+            className="max-h-[90vh] overflow-hidden"
+            style={{ pointerEvents: 'auto' }}
+          >
+            <div className="p-6 space-y-6 text-white">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <div className={`p-5 rounded-full border ${passed ? 'bg-green-900/20 border-green-700/40' : 'bg-amber-900/20 border-amber-700/40'}`}>
+                    {passed ? (
+                      <CheckCircle className="w-16 h-16 text-green-400" />
+                    ) : (
+                      <XCircle className="w-16 h-16 text-amber-400" />
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.3em] text-white/60 mb-2">
+                      {t('Vocabulary Quiz', motherLanguage)}
+                    </p>
+                    <h2 className="text-3xl font-bold">
+                      {t(passed ? 'Great work!' : 'Let\'s try again!', motherLanguage)}
+                    </h2>
                   </div>
                 </div>
-              </div>
-            </div>
-            
-            <p className="text-lg text-slate-200 text-center bg-indigo-900/20 p-4 rounded-lg border border-indigo-800/40">
-              {t(passed 
-                ? 'Turi is impressed with your progress! You\'re doing great with your language journey.' 
-                : 'Turi believes in you! A little more practice and you\'ll master these words.', motherLanguage)}
-            </p>
-            
-            {/* Warning message if mission wasn't counted due to help usage */}
-            {(() => {
-              const shouldShow = isMission && usedHelpInMission && passed;
-              console.log('⚠️ [MISSION WARNING CHECK]:', {
-                isMission,
-                usedHelpInMission,
-                passed,
-                shouldShow,
-                allPropsReceived: {
-                  isMission,
-                  missionScenarioNumber,
-                  missionNumber,
-                  usedHelpInMission
-                }
-              });
-              if (shouldShow) {
-                console.log('✅ WARNING SHOULD BE VISIBLE NOW!');
-              } else {
-                console.log('❌ Warning NOT showing because:', {
-                  missingMission: !isMission,
-                  missingHelp: !usedHelpInMission,
-                  missingPassed: !passed
-                });
-              }
-              return null;
-            })()}
-            {isMission && usedHelpInMission && passed && (
-              <div className="w-full bg-yellow-900/40 border-2 border-yellow-500/70 p-5 rounded-xl shadow-lg">
-                <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0 text-3xl">
-                    ⚠️
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-base text-yellow-100 font-bold mb-2">
-                      Mission not counted
-                    </p>
-                    <p className="text-sm text-yellow-200/90 leading-relaxed">
-                      You used Turi's help during this mission, so it wasn't counted as completed. Try again without help to unlock the next mission!
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-            
-            <button
-              onClick={() => onComplete(passed)}
-              className="w-full py-3.5 mt-2 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white rounded-lg transition-colors font-medium shadow-md cursor-pointer pointer-events-auto"
-              type="button"
-            >
-              {t('Continue my journey', motherLanguage)}
-            </button>
-            </div>
-          </div>
-        </div>
-      </>
-    );
-  }
-  
-  // Main quiz view (now in a modal window rather than full screen)
-  return (
-    <>
-      {/* Backdrop */}
-      <div className="fixed inset-0 bg-black/70 z-[140]" onClick={onClose} />
-      
-      {/* Quiz content */}
-      <div className="fixed inset-0 flex items-center justify-center z-[150] p-4">
-        {/* Add error boundary wrapper */}
-        {(() => {
-          try {
-          console.log('Rendering quiz UI with:', {
-            currentWordIndex,
-            totalWords: quizWords.length,
-            currentWord: currentWord ? `${currentWord.entry_in_en} / ${currentWord.entry_in_ru}` : 'NULL',
-            displayWord,
-            answerWord
-          });
-          
-          return (
-            <div 
-              className="w-full max-w-md mx-auto shadow-2xl rounded-xl bg-slate-900 text-white overflow-y-auto border-2 border-slate-700" 
-              style={{ 
-                pointerEvents: 'auto', 
-                minHeight: '500px',
-                maxHeight: '90vh',
-                display: 'block'
-              }}
-            >
-              {/* Quiz header with close button */}
-              <div className="bg-slate-800/80 p-4 flex justify-between items-center border-b border-slate-700" style={{ flexShrink: 0 }}>
-                <h2 className="text-lg font-bold text-white">{t('Vocabulary Quiz', motherLanguage)}</h2>
                 <button 
                   onClick={onClose}
-                  className="rounded-full bg-slate-700 hover:bg-slate-600 h-8 w-8 flex items-center justify-center transition-colors"
+                  className="rounded-full bg-white/10 hover:bg-white/20 h-10 w-10 flex items-center justify-center transition-colors"
                   type="button"
+                  aria-label="Close quiz"
                 >
                   ×
                 </button>
               </div>
               
-              <div className="p-6" style={{ display: 'block', flexShrink: 0 }}>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="bg-white/5 border border-white/10 rounded-2xl p-5 text-center">
+                  <p className="text-sm text-white/70 mb-3">
+                    {t('Your score:', motherLanguage)}
+                  </p>
+                  <div className="flex items-center justify-center">
+                    <div className="relative w-32 h-32">
+                      <svg className="w-full h-full" viewBox="0 0 100 100">
+                        <circle 
+                          className="text-white/10" 
+                          strokeWidth="8" 
+                          stroke="currentColor" 
+                          fill="transparent" 
+                          r="40" 
+                          cx="50" 
+                          cy="50" 
+                        />
+                        <circle 
+                          className="text-indigo-400" 
+                          strokeWidth="8" 
+                          stroke="currentColor" 
+                          fill="transparent" 
+                          r="40" 
+                          cx="50" 
+                          cy="50" 
+                          strokeDasharray={`${(passPercentage * 2.51)}, 251`} 
+                          strokeDashoffset="0" 
+                          strokeLinecap="round" 
+                        />
+                      </svg>
+                      <div className="absolute inset-0 flex flex-col items-center justify-center">
+                        <span className="text-3xl font-bold">{passPercentage.toFixed(0)}%</span>
+                        <span className="text-sm font-medium text-white/70">{correctCount}/{quizWords.length}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="bg-white/5 border border-white/10 rounded-2xl p-5 flex items-center justify-center text-center">
+                  <p className="text-base text-white/80">
+                    {t(passed 
+                      ? 'Turi is impressed with your progress! You\'re doing great with your language journey.' 
+                      : 'Turi believes in you! A little more practice and you\'ll master these words.', motherLanguage)}
+                  </p>
+                </div>
+              </div>
+              
+              {isMission && usedHelpInMission && passed && (
+                <div className="w-full bg-yellow-900/30 border border-yellow-500/40 p-5 rounded-2xl shadow-lg">
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 text-2xl">
+                      ⚠️
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-base text-yellow-100 font-bold mb-2">
+                        Mission not counted
+                      </p>
+                      <p className="text-sm text-yellow-100/90 leading-relaxed">
+                        You used Turi's help during this mission, so it wasn't counted as completed. Try again without help to unlock the next mission!
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              <PanelButton
+                variant="primary"
+                onClick={() => onComplete(passed)}
+                className="w-full justify-center"
+                type="button"
+              >
+                {t('Continue my journey', motherLanguage)}
+              </PanelButton>
+            </div>
+          </AppPanel>
+        </div>
+      </PanelBackdrop>
+    );
+  }
+  
+  // Main quiz view (now in a modal window rather than full screen)
+  return (
+    <PanelBackdrop zIndex={150} onClick={onClose}>
+      <div className="w-full max-w-md px-4" onClick={(e) => e.stopPropagation()}>
+        {(() => {
+          try {
+            console.log('Rendering quiz UI with:', {
+              currentWordIndex,
+              totalWords: quizWords.length,
+              currentWord: currentWord ? `${currentWord.entry_in_en} / ${currentWord.entry_in_ru}` : 'NULL',
+              displayWord,
+              answerWord
+            });
+            
+            return (
+              <AppPanel
+                width="100%"
+                padding={0}
+                className="overflow-hidden max-h-[90vh]"
+                style={{ pointerEvents: 'auto' }}
+              >
+                <div className="px-6 py-4 border-b border-white/10 flex justify-between items-center">
+                  <h2 className="text-lg font-semibold text-white">{t('Vocabulary Quiz', motherLanguage)}</h2>
+                  <button 
+                    onClick={onClose}
+                    className="rounded-full bg-white/10 hover:bg-white/20 h-8 w-8 flex items-center justify-center transition-colors"
+                    type="button"
+                    aria-label="Close quiz"
+                  >
+                    ×
+                  </button>
+                </div>
+                
+                <div className="p-6 text-white" style={{ display: 'block', flexShrink: 0 }}>
         {/* Progress indicator */}
         <div className="flex justify-between items-center mb-6">
           <span className="text-sm font-medium text-slate-400">
@@ -2752,27 +2756,29 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
                     </div>
                   </details>
                 </div>
-              </div>
-            </div>
+                </div>
+              </AppPanel>
           );
         } catch (error) {
           console.error('Error rendering quiz UI:', error);
           return (
-            <div className="w-full max-w-md p-8 mx-4 shadow-2xl rounded-xl bg-slate-900 backdrop-blur-md border-2 border-slate-600 text-white">
-              <h2 className="text-xl font-bold mb-4">{t('Something went wrong', motherLanguage)}</h2>
-              <p className="mb-4">{t('We encountered an error while showing the quiz.', motherLanguage)}</p>
-              <button
-                onClick={onClose}
-                className="px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white rounded-lg transition-colors shadow-md"
-              >
-                {t('Go back', motherLanguage)}
-              </button>
-      </div>
+              <AppPanel width="100%" padding={32} className="mx-auto text-white" style={{ pointerEvents: 'auto' }}>
+                <h2 className="text-xl font-bold mb-4">{t('Something went wrong', motherLanguage)}</h2>
+                <p className="mb-4">{t('We encountered an error while showing the quiz.', motherLanguage)}</p>
+                <PanelButton
+                  onClick={onClose}
+                  variant="primary"
+                  className="w-full justify-center"
+                  type="button"
+                >
+                  {t('Go back', motherLanguage)}
+                </PanelButton>
+              </AppPanel>
           );
         }
       })()}
       </div>
-    </>
+    </PanelBackdrop>
   );
 };
 

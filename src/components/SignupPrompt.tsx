@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { User, Check, X } from 'lucide-react';
 import { logger } from '../services/logger';
-import { transferAnonymousProgressToUser } from '../services/auth';
 import AppPanel from './AppPanel';
 import { PanelBackdrop } from './AppPanel';
 import { PanelTitle, PanelButton, PanelInput } from './PanelElements';
