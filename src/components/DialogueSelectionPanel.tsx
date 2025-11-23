@@ -53,6 +53,7 @@ const DialogueSelectionPanel: React.FC<DialogueSelectionPanelProps> = ({
   const [scenarioDialogueProgress, setScenarioDialogueProgress] = useState<number>(0);
   const [missions, setMissions] = useState<Mission[]>([]);
   const [completedMissions, setCompletedMissions] = useState<Set<number>>(new Set());
+  const [previousScenarioMissionsCompleted, setPreviousScenarioMissionsCompleted] = useState<boolean>(true);
   const [showCommonWords, setShowCommonWords] = useState(false);
   const [showScenarioDialogues, setShowScenarioDialogues] = useState(false);
   const [scenarioDialogues, setScenarioDialogues] = useState<number[]>([]);
@@ -187,6 +188,34 @@ const DialogueSelectionPanel: React.FC<DialogueSelectionPanelProps> = ({
             setCompletedMissions(completed);
           } else {
             setCompletedMissions(new Set());
+          }
+          
+          // For scenarios > 1, check if ALL missions from previous scenario are completed
+          if (scenarioNumber > 1) {
+            const { data: prevScenarioData, error: prevError } = await supabase
+              .from('mission_completions')
+              .select('mission_number')
+              .eq('user_id', user.id)
+              .eq('scenario_number', scenarioNumber - 1);
+            
+            if (!prevError && prevScenarioData) {
+              const prevCompleted = new Set(prevScenarioData.map(m => m.mission_number));
+              const allPreviousCompleted = prevCompleted.size === 5 && 
+                [1, 2, 3, 4, 5].every(m => prevCompleted.has(m));
+              
+              setPreviousScenarioMissionsCompleted(allPreviousCompleted);
+              
+              logger.info('[DialogueSelection] Previous scenario mission status', { 
+                scenario: scenarioNumber,
+                previousScenario: scenarioNumber - 1,
+                completedMissions: Array.from(prevCompleted),
+                allCompleted: allPreviousCompleted
+              });
+            } else {
+              setPreviousScenarioMissionsCompleted(false);
+            }
+          } else {
+            setPreviousScenarioMissionsCompleted(true);
           }
           
           // Use dialogue_number if available, otherwise fall back to word_progress
@@ -646,7 +675,11 @@ const DialogueSelectionPanel: React.FC<DialogueSelectionPanelProps> = ({
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {missions.map((mission) => {
                         const isCompleted = completedMissions.has(mission.missionNumber);
-                        const isUnlocked = mission.missionNumber === 1 || completedMissions.has(mission.missionNumber - 1);
+                        // Mission 1: Unlocked if previous scenario's all missions completed (or this is scenario 1)
+                        // Mission N: Unlocked if mission N-1 of same scenario is completed
+                        const isUnlocked = mission.missionNumber === 1 
+                          ? previousScenarioMissionsCompleted 
+                          : completedMissions.has(mission.missionNumber - 1);
                         
                         return (
                           <button

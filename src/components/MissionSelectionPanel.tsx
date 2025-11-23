@@ -31,6 +31,7 @@ const MissionSelectionPanel: React.FC<MissionSelectionPanelProps> = ({
   const { motherLanguage, user } = useStore();
   const [missions, setMissions] = useState<Mission[]>([]);
   const [completedMissions, setCompletedMissions] = useState<Set<number>>(new Set());
+  const [previousScenarioCompleted, setPreviousScenarioCompleted] = useState<boolean>(true);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -66,8 +67,41 @@ const MissionSelectionPanel: React.FC<MissionSelectionPanelProps> = ({
             logger.error('[MissionSelection] Error loading completed missions', { error });
             setCompletedMissions(new Set());
           }
+          
+          // For scenarios > 1, check if ALL missions from previous scenario are completed
+          if (scenarioNumber > 1) {
+            const { data: prevScenarioData, error: prevError } = await supabase
+              .from('mission_completions')
+              .select('mission_number')
+              .eq('user_id', user.id)
+              .eq('scenario_number', scenarioNumber - 1);
+            
+            if (!prevError && prevScenarioData) {
+              // Previous scenario must have all 5 missions completed
+              const prevCompleted = new Set(prevScenarioData.map(m => m.mission_number));
+              const allPreviousCompleted = prevCompleted.size === 5 && 
+                [1, 2, 3, 4, 5].every(m => prevCompleted.has(m));
+              
+              setPreviousScenarioCompleted(allPreviousCompleted);
+              
+              logger.info('[MissionSelection] Previous scenario status', { 
+                previousScenario: scenarioNumber - 1,
+                completedMissions: Array.from(prevCompleted),
+                allCompleted: allPreviousCompleted
+              });
+            } else {
+              setPreviousScenarioCompleted(false);
+              logger.warn('[MissionSelection] Previous scenario not completed', { 
+                previousScenario: scenarioNumber - 1 
+              });
+            }
+          } else {
+            // Scenario 1 is always accessible
+            setPreviousScenarioCompleted(true);
+          }
         } else {
           setCompletedMissions(new Set());
+          setPreviousScenarioCompleted(scenarioNumber === 1);
         }
 
       } catch (error) {
@@ -99,8 +133,19 @@ const MissionSelectionPanel: React.FC<MissionSelectionPanelProps> = ({
 
   // Sequential mission unlocking: Mission N requires Mission N-1 to be completed
   const isMissionUnlocked = (missionNumber: number): boolean => {
-    // Mission 1 is always unlocked
-    if (missionNumber === 1) return true;
+    // For Mission 1: Check if previous scenario is completed (for scenario > 1)
+    if (missionNumber === 1) {
+      const unlocked = previousScenarioCompleted;
+      
+      if (!unlocked) {
+        logger.info('[MissionSelection] Mission 1 locked - previous scenario not completed', {
+          scenarioNumber,
+          previousScenarioCompleted
+        });
+      }
+      
+      return unlocked;
+    }
     
     // Other missions require previous mission to be completed
     const previousMissionCompleted = completedMissions.has(missionNumber - 1);
