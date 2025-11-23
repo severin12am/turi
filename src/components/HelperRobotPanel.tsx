@@ -91,6 +91,7 @@ const HelperRobotPanel: React.FC<HelperRobotPanelProps> = ({ onClose }) => {
   const [showVocabularyQuiz, setShowVocabularyQuiz] = useState<boolean>(false);
   const [quizWordsCount, setQuizWordsCount] = useState<string>('10');
   const [quizSource, setQuizSource] = useState<'current' | 'progress'>('current');
+  const [preparedQuizWords, setPreparedQuizWords] = useState<VocalQuizWord[]>([]);
   
   useEffect(() => {
     if (isLoggedIn && user?.id) {
@@ -401,17 +402,20 @@ const HelperRobotPanel: React.FC<HelperRobotPanelProps> = ({ onClose }) => {
       }
     }
     
+    // Prepare quiz words ONCE before showing the quiz
     setQuizSource(source);
+    const words = getQuizWords(source, count);
+    console.log('📚 Prepared quiz words once:', words.length, 'words');
+    setPreparedQuizWords(words);
     setShowVocabularyQuiz(true);
   };
   
-  // Get quiz words based on source
-  const getQuizWords = (): VocalQuizWord[] => {
-    const count = parseInt(quizWordsCount) || 10;
-    let sourceWords = quizSource === 'current' ? filteredDictionaryEntries : learnedWords;
+  // Get quiz words based on source (called once when starting quiz)
+  const getQuizWords = (source: 'current' | 'progress', count: number): VocalQuizWord[] => {
+    let sourceWords = source === 'current' ? filteredDictionaryEntries : learnedWords;
     
     // Filter out words without translations (for dictionary entries)
-    if (quizSource === 'current') {
+    if (source === 'current') {
       sourceWords = sourceWords.filter(word => {
         const entry = word as DictionaryEntry;
         const hasWord = entry.word && entry.word.trim() !== '';
@@ -554,12 +558,14 @@ const HelperRobotPanel: React.FC<HelperRobotPanelProps> = ({ onClose }) => {
   const handleQuizComplete = (passed: boolean) => {
     console.log('Vocabulary quiz completed, passed:', passed);
     setShowVocabularyQuiz(false);
+    setPreparedQuizWords([]); // Clear quiz words
   };
   
   // Handle quiz close
   const handleQuizClose = () => {
     console.log('Vocabulary quiz closed');
     setShowVocabularyQuiz(false);
+    setPreparedQuizWords([]); // Clear quiz words
   };
   
   // Show quiz if active
@@ -570,7 +576,7 @@ const HelperRobotPanel: React.FC<HelperRobotPanelProps> = ({ onClose }) => {
         characterId={1}
         onComplete={handleQuizComplete}
         onClose={handleQuizClose}
-        customWords={getQuizWords()}
+        customWords={preparedQuizWords}
         isVocabularyQuiz={true}
       />
     );
