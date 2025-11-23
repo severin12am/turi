@@ -2246,8 +2246,8 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
     return (
       <>
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[140]" style={{ pointerEvents: 'auto' }} />
-        <div className="fixed inset-0 flex items-center justify-center z-[150]" style={{ pointerEvents: 'none' }}>
-          <div className="w-full max-w-md p-8 shadow-2xl rounded-xl bg-slate-900/80 backdrop-blur-md border border-slate-700 text-white" style={{ pointerEvents: 'auto', minHeight: '300px' }}>
+        <div className="fixed inset-0 flex items-center justify-center z-[150]">
+          <div className="w-full max-w-md p-8 shadow-2xl rounded-xl bg-slate-900 backdrop-blur-md border-2 border-slate-600 text-white" style={{ pointerEvents: 'auto', minHeight: '300px' }}>
           <div className="flex flex-col items-center justify-center space-y-5">
             <div className="p-4 rounded-full bg-indigo-900/30 border border-indigo-800/40">
             <Loader2 className="w-12 h-12 text-indigo-400 animate-spin" />
@@ -2269,8 +2269,8 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
     return (
       <>
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[140]" style={{ pointerEvents: 'auto' }} />
-        <div className="fixed inset-0 flex items-center justify-center z-[150]" style={{ pointerEvents: 'none' }}>
-          <div className="w-full max-w-md p-8 mx-4 shadow-2xl rounded-xl bg-slate-900/80 backdrop-blur-md border border-slate-700 text-white" style={{ pointerEvents: 'auto', minHeight: '300px' }}>
+        <div className="fixed inset-0 flex items-center justify-center z-[150]">
+          <div className="w-full max-w-md p-8 mx-4 shadow-2xl rounded-xl bg-slate-900 backdrop-blur-md border-2 border-slate-600 text-white" style={{ pointerEvents: 'auto', minHeight: '300px' }}>
           <div className="flex flex-col items-center justify-center space-y-5">
             <div className="p-4 rounded-full bg-red-900/20 border border-red-800/30">
               <XCircle className="w-12 h-12 text-red-500" />
@@ -2318,8 +2318,8 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
     return (
       <>
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[140]" style={{ pointerEvents: 'auto' }} />
-        <div className="fixed inset-0 flex items-center justify-center z-[150]" style={{ pointerEvents: 'none' }}>
-          <div className="w-full max-w-md p-8 mx-4 shadow-2xl rounded-xl bg-slate-900/80 backdrop-blur-md border border-slate-700 text-white" style={{ pointerEvents: 'auto', minHeight: '300px' }}>
+        <div className="fixed inset-0 flex items-center justify-center z-[150]">
+          <div className="w-full max-w-md p-8 mx-4 shadow-2xl rounded-xl bg-slate-900 backdrop-blur-md border-2 border-slate-600 text-white" style={{ pointerEvents: 'auto', minHeight: '300px' }}>
             <div className="flex flex-col items-center justify-center space-y-5">
               <div className="p-4 rounded-full bg-green-900/20 border border-green-800/30">
                 <CheckCircle className="w-12 h-12 text-green-500" />
@@ -2352,8 +2352,8 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
     return (
       <>
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[140]" style={{ pointerEvents: 'auto' }} />
-        <div className="fixed inset-0 flex items-center justify-center z-[150]" style={{ pointerEvents: 'none' }}>
-          <div className="w-full max-w-md p-8 mx-4 shadow-2xl rounded-xl bg-slate-900/80 backdrop-blur-md border border-slate-700 text-white" style={{ pointerEvents: 'auto', minHeight: '300px' }}>
+        <div className="fixed inset-0 flex items-center justify-center z-[150]">
+          <div className="w-full max-w-md p-8 mx-4 shadow-2xl rounded-xl bg-slate-900 backdrop-blur-md border-2 border-slate-600 text-white" style={{ pointerEvents: 'auto', minHeight: '300px' }}>
           <div className="flex flex-col items-center justify-center space-y-5">
             <div className="p-4 rounded-full bg-red-900/20 border border-red-800/30">
               <XCircle className="w-12 h-12 text-red-500" />
@@ -2394,8 +2394,8 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
     return (
       <>
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[140]" style={{ pointerEvents: 'auto' }} />
-        <div className="fixed inset-0 flex items-center justify-center z-[150]" style={{ pointerEvents: 'none' }}>
-          <div className="w-full max-w-md p-8 mx-4 shadow-2xl rounded-xl bg-slate-900/80 backdrop-blur-md border border-slate-700 text-white" style={{ pointerEvents: 'auto', minHeight: '400px' }}>
+        <div className="fixed inset-0 flex items-center justify-center z-[150]">
+          <div className="w-full max-w-md p-8 mx-4 shadow-2xl rounded-xl bg-slate-900 backdrop-blur-md border-2 border-slate-600 text-white" style={{ pointerEvents: 'auto', minHeight: '400px' }}>
             <div className="flex flex-col items-center justify-center space-y-6">
             {passed ? (
               <div className="p-5 rounded-full bg-green-900/20 border border-green-700/30">
@@ -2516,10 +2516,11 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
   return (
     <>
       {/* Backdrop */}
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[140]" style={{ pointerEvents: 'auto' }} />
+      <div className="fixed inset-0 bg-black/70 z-[140]" onClick={onClose} />
       
       {/* Quiz content */}
       <div className="fixed inset-0 flex items-center justify-center z-[150] p-4" style={{ pointerEvents: 'none' }}>
+        <div style={{ pointerEvents: 'auto' }} className="w-full flex items-center justify-center">
         {/* Add error boundary wrapper */}
         {(() => {
           try {
@@ -2533,8 +2534,8 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
           
           return (
             <div 
-              className="w-full max-w-md shadow-2xl rounded-xl bg-slate-900/80 backdrop-blur-md border border-slate-700 text-white overflow-hidden relative" 
-              style={{ pointerEvents: 'auto', minHeight: '400px', maxHeight: '90vh' }}
+              className="w-full max-w-md shadow-2xl rounded-xl bg-slate-900 backdrop-blur-md border-2 border-slate-600 text-white overflow-hidden relative" 
+              style={{ pointerEvents: 'auto', minHeight: '400px', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}
             >
               {/* Quiz header with close button */}
               <div className="bg-slate-800/80 p-4 flex justify-between items-center border-b border-slate-700">
@@ -2753,7 +2754,7 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
         } catch (error) {
           console.error('Error rendering quiz UI:', error);
           return (
-            <div className="w-full max-w-md p-8 mx-4 shadow-2xl rounded-xl bg-slate-900/80 backdrop-blur-md border border-slate-700 text-white">
+            <div className="w-full max-w-md p-8 mx-4 shadow-2xl rounded-xl bg-slate-900 backdrop-blur-md border-2 border-slate-600 text-white">
               <h2 className="text-xl font-bold mb-4">{t('Something went wrong', motherLanguage)}</h2>
               <p className="mb-4">{t('We encountered an error while showing the quiz.', motherLanguage)}</p>
               <button
@@ -2766,6 +2767,7 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
           );
         }
       })()}
+        </div>
       </div>
     </>
   );
