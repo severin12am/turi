@@ -492,6 +492,20 @@ export const saveAnonymousProgress = (
     progress.wordProgress = highestDialogueId;
     
     // Optionally track mission completion (only if quiz passed without help)
+    console.log('🎯 [ANONYMOUS MISSION SAVE] Checking mission options:', {
+      hasOptions: !!options,
+      missionScenarioNumber: options?.missionScenarioNumber,
+      missionNumber: options?.missionNumber,
+      quizPassed: options?.quizPassed,
+      usedHelpInMission: options?.usedHelpInMission,
+      willSave: (
+        typeof options?.missionScenarioNumber === 'number' &&
+        typeof options?.missionNumber === 'number' &&
+        options.quizPassed &&
+        options.usedHelpInMission === false
+      )
+    });
+    
     if (
       typeof options?.missionScenarioNumber === 'number' &&
       typeof options?.missionNumber === 'number' &&
@@ -513,6 +527,8 @@ export const saveAnonymousProgress = (
         completedAt: new Date().toISOString()
       };
       
+      console.log('✅ [ANONYMOUS MISSION SAVE] Saving mission to localStorage:', missionEntry);
+      
       if (missionIndex > -1) {
         if (missionEntry.score > progress.missions[missionIndex].score) {
           progress.missions[missionIndex] = missionEntry;
@@ -524,6 +540,12 @@ export const saveAnonymousProgress = (
     
     // Save back to local storage (and clean up legacy key)
     persistAnonymousProgress(progress);
+    console.log('💾 [ANONYMOUS PROGRESS SAVED] Full progress state:', {
+      dialoguesCount: progress.dialogues.length,
+      missionsCount: progress.missions.length,
+      missions: progress.missions,
+      wordProgress: progress.wordProgress
+    });
     logger.info('Anonymous progress saved', { 
       dialogueId, 
       characterId, 
@@ -575,10 +597,20 @@ export const transferAnonymousProgressToUser = async (userId: string) => {
       return;
     }
     const stored = readAnonymousProgressFromStorage();
-    if (!stored) return;
+    if (!stored) {
+      console.log('🔄 [TRANSFER] No anonymous progress found in storage');
+      return;
+    }
     
     const anonymousProgress = stored.data;
+    console.log('🔄 [TRANSFER] Found anonymous progress:', {
+      dialoguesCount: anonymousProgress.dialogues?.length || 0,
+      missionsCount: anonymousProgress.missions?.length || 0,
+      missions: anonymousProgress.missions
+    });
+    
     if (!anonymousProgress.dialogues?.length && !anonymousProgress.missions?.length) {
+      console.log('🔄 [TRANSFER] No progress to transfer (empty arrays)');
       return;
     }
     
@@ -607,11 +639,23 @@ export const transferAnonymousProgressToUser = async (userId: string) => {
     }
     
     for (const mission of anonymousProgress.missions) {
+      console.log('🔄 [TRANSFER] Processing mission:', mission);
+      
       if (!mission.quizPassed || mission.usedHelp) {
+        console.log('⏭️ [TRANSFER] Skipping mission (quizPassed:', mission.quizPassed, 'usedHelp:', mission.usedHelp, ')');
         continue;
       }
       
       try {
+        console.log('📤 [TRANSFER] Attempting to save mission to database:', {
+          userId,
+          scenarioNumber: mission.scenarioNumber,
+          missionNumber: mission.missionNumber,
+          usedHelp: mission.usedHelp,
+          quizPassed: mission.quizPassed,
+          score: mission.score
+        });
+        
         await progressTrackCompletedMission(
           userId,
           mission.scenarioNumber,
@@ -621,7 +665,9 @@ export const transferAnonymousProgressToUser = async (userId: string) => {
           mission.score
         );
         missionsTransferred++;
+        console.log('✅ [TRANSFER] Mission saved successfully');
       } catch (error) {
+        console.error('❌ [TRANSFER] Failed to save mission:', error);
         logger.warn('Failed to transfer anonymous mission', { 
           error,
           userId,
