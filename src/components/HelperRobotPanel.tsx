@@ -568,17 +568,26 @@ const HelperRobotPanel: React.FC<HelperRobotPanelProps> = ({ onClose }) => {
     setPreparedQuizWords([]); // Clear quiz words
   };
   
-  // Show quiz if active
+  // Show quiz if active - DON'T close parent panel while quiz is active
   if (showVocabularyQuiz) {
     return (
-      <VocalQuizComponent
-        dialogueId={1}
-        characterId={1}
-        onComplete={handleQuizComplete}
-        onClose={handleQuizClose}
-        customWords={preparedQuizWords}
-        isVocabularyQuiz={true}
-      />
+      <>
+        {/* Keep the panel backdrop to prevent parent from closing */}
+        <div 
+          className="fixed inset-0 z-[1000]" 
+          onClick={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
+        >
+          <VocalQuizComponent
+            dialogueId={1}
+            characterId={1}
+            onComplete={handleQuizComplete}
+            onClose={handleQuizClose}
+            customWords={preparedQuizWords}
+            isVocabularyQuiz={true}
+          />
+        </div>
+      </>
     );
   }
   

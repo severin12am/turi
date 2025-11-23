@@ -2533,19 +2533,17 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
           
           return (
             <div 
-              className="w-full max-w-md mx-auto shadow-2xl rounded-xl bg-slate-900 text-white overflow-y-auto" 
+              className="w-full max-w-md mx-auto shadow-2xl rounded-xl bg-slate-900 text-white overflow-y-auto border-2 border-slate-700" 
               style={{ 
                 pointerEvents: 'auto', 
                 minHeight: '500px',
                 maxHeight: '90vh',
-                height: 'auto',
-                border: '3px solid #3b82f6',
                 display: 'block'
               }}
             >
               {/* Quiz header with close button */}
-              <div className="bg-red-600 p-4 flex justify-between items-center border-b border-slate-700" style={{ minHeight: '60px', height: '60px', flexShrink: 0 }}>
-                <h2 className="text-lg font-bold text-white" style={{ fontSize: '32px', color: 'white', display: 'block' }}>TEST HEADER VISIBLE?</h2>
+              <div className="bg-slate-800/80 p-4 flex justify-between items-center border-b border-slate-700" style={{ flexShrink: 0 }}>
+                <h2 className="text-lg font-bold text-white">{t('Vocabulary Quiz', motherLanguage)}</h2>
                 <button 
                   onClick={onClose}
                   className="rounded-full bg-slate-700 hover:bg-slate-600 h-8 w-8 flex items-center justify-center transition-colors"
@@ -2555,10 +2553,7 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
                 </button>
               </div>
               
-              <div className="p-6 bg-green-600" style={{ minHeight: '440px', height: '440px', display: 'block', flexShrink: 0 }}>
-                <div style={{ fontSize: '48px', color: 'white', fontWeight: 'bold', padding: '20px' }}>
-                  QUIZ CONTENT HERE - CAN YOU SEE THIS?
-                </div>
+              <div className="p-6" style={{ display: 'block', flexShrink: 0 }}>
         {/* Progress indicator */}
         <div className="flex justify-between items-center mb-6">
           <span className="text-sm font-medium text-slate-400">
