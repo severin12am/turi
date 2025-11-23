@@ -2244,8 +2244,10 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
   // Loading state
   if (isLoading) {
     return (
-      <div className="fixed inset-0 flex items-center justify-center z-50">
-        <div className="w-full max-w-md p-8 shadow-2xl rounded-xl bg-slate-900/80 backdrop-blur-md border border-slate-700 text-white">
+      <>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[140]" />
+        <div className="fixed inset-0 flex items-center justify-center z-[150]">
+          <div className="w-full max-w-md p-8 shadow-2xl rounded-xl bg-slate-900/80 backdrop-blur-md border border-slate-700 text-white">
           <div className="flex flex-col items-center justify-center space-y-5">
             <div className="p-4 rounded-full bg-indigo-900/30 border border-indigo-800/40">
             <Loader2 className="w-12 h-12 text-indigo-400 animate-spin" />
@@ -2255,8 +2257,9 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
               <div className="h-full bg-gradient-to-r from-indigo-600 to-indigo-400 animate-pulse rounded-full" style={{ width: '70%' }}></div>
             </div>
           </div>
+          </div>
         </div>
-      </div>
+      </>
     );
   }
   
@@ -2264,8 +2267,10 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
   if (error) {
     console.log('Showing error state:', { error });
     return (
-      <div className="fixed inset-0 flex items-center justify-center z-50">
-        <div className="w-full max-w-md p-8 mx-4 shadow-2xl rounded-xl bg-slate-900/80 backdrop-blur-md border border-slate-700 text-white">
+      <>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[140]" />
+        <div className="fixed inset-0 flex items-center justify-center z-[150]">
+          <div className="w-full max-w-md p-8 mx-4 shadow-2xl rounded-xl bg-slate-900/80 backdrop-blur-md border border-slate-700 text-white">
           <div className="flex flex-col items-center justify-center space-y-5">
             <div className="p-4 rounded-full bg-red-900/20 border border-red-800/30">
               <XCircle className="w-12 h-12 text-red-500" />
@@ -2280,8 +2285,9 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
               {t('Go back', motherLanguage)}
             </button>
           </div>
+          </div>
         </div>
-      </div>
+      </>
     );
   }
   
@@ -2310,11 +2316,13 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
     };
     
     return (
-      <div className="fixed inset-0 flex items-center justify-center z-50">
-        <div className="w-full max-w-md p-8 mx-4 shadow-2xl rounded-xl bg-slate-900/80 backdrop-blur-md border border-slate-700 text-white pointer-events-auto">
-          <div className="flex flex-col items-center justify-center space-y-5">
-            <div className="p-4 rounded-full bg-green-900/20 border border-green-800/30">
-              <CheckCircle className="w-12 h-12 text-green-500" />
+      <>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[140]" />
+        <div className="fixed inset-0 flex items-center justify-center z-[150]">
+          <div className="w-full max-w-md p-8 mx-4 shadow-2xl rounded-xl bg-slate-900/80 backdrop-blur-md border border-slate-700 text-white pointer-events-auto">
+            <div className="flex flex-col items-center justify-center space-y-5">
+              <div className="p-4 rounded-full bg-green-900/20 border border-green-800/30">
+                <CheckCircle className="w-12 h-12 text-green-500" />
             </div>
             <p className="text-xl font-medium text-white text-center">
               {t('Great work!', motherLanguage)}
@@ -2331,9 +2339,10 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
             >
               {t('Continue', motherLanguage)} →
             </button>
+            </div>
           </div>
         </div>
-      </div>
+      </>
     );
   }
   
@@ -2341,8 +2350,10 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
   if (quizWords.length === 0) {
     console.log('Showing error state: no quiz words');
     return (
-      <div className="fixed inset-0 flex items-center justify-center z-50">
-        <div className="w-full max-w-md p-8 mx-4 shadow-2xl rounded-xl bg-slate-900/80 backdrop-blur-md border border-slate-700 text-white">
+      <>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[140]" />
+        <div className="fixed inset-0 flex items-center justify-center z-[150]">
+          <div className="w-full max-w-md p-8 mx-4 shadow-2xl rounded-xl bg-slate-900/80 backdrop-blur-md border border-slate-700 text-white">
           <div className="flex flex-col items-center justify-center space-y-5">
             <div className="p-4 rounded-full bg-red-900/20 border border-red-800/30">
               <XCircle className="w-12 h-12 text-red-500" />
@@ -2357,8 +2368,9 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
               {t('Go back', motherLanguage)}
             </button>
           </div>
+          </div>
         </div>
-      </div>
+      </>
     );
   }
   
@@ -2380,9 +2392,11 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
     });
     
     return (
-      <div className="fixed inset-0 flex items-center justify-center z-50">
-        <div className="w-full max-w-md p-8 mx-4 shadow-2xl rounded-xl bg-slate-900/80 backdrop-blur-md border border-slate-700 text-white pointer-events-auto">
-          <div className="flex flex-col items-center justify-center space-y-6">
+      <>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[140]" />
+        <div className="fixed inset-0 flex items-center justify-center z-[150]">
+          <div className="w-full max-w-md p-8 mx-4 shadow-2xl rounded-xl bg-slate-900/80 backdrop-blur-md border border-slate-700 text-white pointer-events-auto">
+            <div className="flex flex-col items-center justify-center space-y-6">
             {passed ? (
               <div className="p-5 rounded-full bg-green-900/20 border border-green-700/30">
               <CheckCircle className="w-16 h-16 text-green-500" />
@@ -2491,18 +2505,24 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
             >
               {t('Continue my journey', motherLanguage)}
             </button>
+            </div>
           </div>
         </div>
-      </div>
+      </>
     );
   }
   
   // Main quiz view (now in a modal window rather than full screen)
   return (
-    <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
-      {/* Add error boundary wrapper */}
-      {(() => {
-        try {
+    <>
+      {/* Backdrop */}
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[140]" />
+      
+      {/* Quiz content */}
+      <div className="fixed inset-0 flex items-center justify-center z-[150] p-4">
+        {/* Add error boundary wrapper */}
+        {(() => {
+          try {
           console.log('Rendering quiz UI with:', {
             currentWordIndex,
             totalWords: quizWords.length,
@@ -2746,7 +2766,8 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
           );
         }
       })()}
-    </div>
+      </div>
+    </>
   );
 };
 
