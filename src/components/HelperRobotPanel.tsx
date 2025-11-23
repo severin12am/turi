@@ -568,29 +568,6 @@ const HelperRobotPanel: React.FC<HelperRobotPanelProps> = ({ onClose }) => {
     setPreparedQuizWords([]); // Clear quiz words
   };
   
-  // Show quiz if active - DON'T close parent panel while quiz is active
-  if (showVocabularyQuiz) {
-    return (
-      <>
-        {/* Keep the panel backdrop to prevent parent from closing */}
-        <div 
-          className="fixed inset-0 z-[1000]" 
-          onClick={(e) => e.stopPropagation()}
-          onMouseDown={(e) => e.stopPropagation()}
-        >
-          <VocalQuizComponent
-            dialogueId={1}
-            characterId={1}
-            onComplete={handleQuizComplete}
-            onClose={handleQuizClose}
-            customWords={preparedQuizWords}
-            isVocabularyQuiz={true}
-          />
-        </div>
-      </>
-    );
-  }
-  
   if (!isLoggedIn || !user) {
     return (
       <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/40 backdrop-blur-sm">
@@ -629,8 +606,29 @@ const HelperRobotPanel: React.FC<HelperRobotPanelProps> = ({ onClose }) => {
   );
   
   return (
-    <PanelBackdrop zIndex={100}>
-      <AppPanel 
+    <>
+      {/* Quiz Overlay - rendered OVER everything when active */}
+      {showVocabularyQuiz && (
+        <div 
+          className="fixed inset-0 z-[1000]" 
+          onClick={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
+        >
+          <VocalQuizComponent
+            dialogueId={1}
+            characterId={1}
+            onComplete={handleQuizComplete}
+            onClose={handleQuizClose}
+            customWords={preparedQuizWords}
+            isVocabularyQuiz={true}
+          />
+        </div>
+      )}
+      
+      {/* Main Panel - hidden when quiz is active */}
+      {!showVocabularyQuiz && (
+        <PanelBackdrop zIndex={100}>
+          <AppPanel 
         width={700} 
         height="auto" 
         className="helper-robot-panel max-h-[90vh] overflow-y-auto"
@@ -1203,8 +1201,10 @@ const HelperRobotPanel: React.FC<HelperRobotPanelProps> = ({ onClose }) => {
             </div>
           </>
         )}
-      </AppPanel>
-    </PanelBackdrop>
+          </AppPanel>
+        </PanelBackdrop>
+      )}
+    </>
   );
 };
 
