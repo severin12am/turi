@@ -38,8 +38,9 @@ const isUnlocked = mission.missionNumber === 1 || completedMissions.has(mission.
 ### Implementation
 
 **Files Changed:**
-1. `src/components/MissionSelectionPanel.tsx`
-2. `src/components/DialogueSelectionPanel.tsx`
+1. `src/components/MissionSelectionPanel.tsx` - Main mission selection panel
+2. `src/components/DialogueSelectionPanel.tsx` - Missions section in dialogue panel
+3. `src/components/HelperRobotPanel.tsx` - Mission progress display in Turi panel
 
 **Key Changes:**
 
@@ -231,6 +232,7 @@ mission_progress: 1 → 2 → 3 → 6  ❌ (skipped 4 & 5!)
 |------|--------------|---------|
 | `MissionSelectionPanel.tsx` | 31-123 | Added previous scenario check in main mission panel |
 | `DialogueSelectionPanel.tsx` | 178-220, 647-650 | Added previous scenario check in dialogue panel missions section |
+| `HelperRobotPanel.tsx` | 486-515 | Fixed mission display colors in Turi progress panel |
 
 ---
 

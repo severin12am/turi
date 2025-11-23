@@ -489,11 +489,32 @@ const HelperRobotPanel: React.FC<HelperRobotPanelProps> = ({ onClose }) => {
                                 mc => mc.scenario_number === scenarioNum && mc.mission_number === mission.missionNumber
                               );
                               
-                              const isPreviousCompleted = mission.missionNumber === 1 || missionCompletions.some(
-                                mc => mc.scenario_number === scenarioNum && mc.mission_number === mission.missionNumber - 1
-                              );
+                              // For Mission 1: Check if all missions from previous scenario are completed
+                              // For other missions: Check if previous mission in same scenario is completed
+                              let isUnlocked = false;
                               
-                              const isUnlocked = mission.missionNumber === 1 || isPreviousCompleted;
+                              if (mission.missionNumber === 1) {
+                                if (scenarioNum === 1) {
+                                  // First scenario's first mission is always unlocked
+                                  isUnlocked = true;
+                                } else {
+                                  // Check if ALL 5 missions of previous scenario are completed
+                                  const prevScenarioMissions = missionCompletions.filter(
+                                    mc => mc.scenario_number === scenarioNum - 1
+                                  );
+                                  const allPreviousCompleted = prevScenarioMissions.length === 5 &&
+                                    [1, 2, 3, 4, 5].every(m => 
+                                      prevScenarioMissions.some(mc => mc.mission_number === m)
+                                    );
+                                  isUnlocked = allPreviousCompleted;
+                                }
+                              } else {
+                                // Mission N requires mission N-1 of same scenario
+                                const isPreviousCompleted = missionCompletions.some(
+                                  mc => mc.scenario_number === scenarioNum && mc.mission_number === mission.missionNumber - 1
+                                );
+                                isUnlocked = isPreviousCompleted;
+                              }
                               
                               return (
                                 <div

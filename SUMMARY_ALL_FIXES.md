@@ -29,6 +29,7 @@
 | `src/types/index.ts` | Added `mission_progress` field |
 | `src/components/MissionSelectionPanel.tsx` | Sequential unlocking with previous scenario check |
 | `src/components/DialogueSelectionPanel.tsx` | Sequential unlocking in missions section |
+| `src/components/HelperRobotPanel.tsx` | Fixed mission colors in Turi progress display |
 
 ---
 
