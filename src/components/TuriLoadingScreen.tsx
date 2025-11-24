@@ -3,31 +3,36 @@ import { Canvas } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 
+// Preload the model immediately so it appears right away
+useGLTF.preload('/models/helper-robot.glb');
+
 interface TuriLoadingScreenProps {
   onLoadingComplete: () => void;
-  minimumLoadTime?: number; // Minimum time to show loading screen (ms)
+  minimumLoadTime?: number;
+  shouldMoveAway?: boolean; // Control when Turi should move away
 }
 
 // Turi's 3D Model Component for Loading Screen
-const TuriModel: React.FC<{ isMovingAway: boolean }> = ({ isMovingAway }) => {
+const TuriModel: React.FC<{ shouldMoveAway: boolean }> = ({ shouldMoveAway }) => {
   const { scene } = useGLTF('/models/helper-robot.glb');
   const modelRef = React.useRef<THREE.Group>(null);
   
   useEffect(() => {
     if (modelRef.current) {
-      // Position and scale Turi appropriately
+      // Position and scale Turi appropriately - match HelperRobot scaling
       modelRef.current.rotation.y = Math.PI * 1.55;
-      modelRef.current.position.set(0, -0.5, 0);
+      modelRef.current.position.set(0, 0, 0);
+      modelRef.current.scale.set(2, 2, 2); // Match HelperRobotModel scale
     }
   }, []);
   
-  // Animate Turi moving to the side when loading completes
+  // Animate Turi moving to the side when shouldMoveAway is true
   useEffect(() => {
-    if (isMovingAway && modelRef.current) {
+    if (shouldMoveAway && modelRef.current) {
       const startTime = Date.now();
-      const duration = 800; // 800ms animation
+      const duration = 1000; // 1 second smooth animation
       const startX = 0;
-      const endX = -5; // Move to the left
+      const endX = -8; // Move further to the left
       
       const animate = () => {
         if (!modelRef.current) return;
@@ -47,10 +52,10 @@ const TuriModel: React.FC<{ isMovingAway: boolean }> = ({ isMovingAway }) => {
       
       animate();
     }
-  }, [isMovingAway]);
+  }, [shouldMoveAway]);
   
   return (
-    <group ref={modelRef} scale={[1.5, 1.5, 1.5]}>
+    <group ref={modelRef}>
       <primitive object={scene.clone()} />
     </group>
   );
@@ -58,28 +63,33 @@ const TuriModel: React.FC<{ isMovingAway: boolean }> = ({ isMovingAway }) => {
 
 const TuriLoadingScreen: React.FC<TuriLoadingScreenProps> = ({ 
   onLoadingComplete,
-  minimumLoadTime = 2000 
+  minimumLoadTime = 2000,
+  shouldMoveAway = false
 }) => {
   const [fadeOut, setFadeOut] = useState(false);
-  const [isMovingAway, setIsMovingAway] = useState(false);
+  const [shouldHide, setShouldHide] = useState(false);
 
   useEffect(() => {
-    // Minimum load time + fade out
-    const timer = setTimeout(() => {
-      setIsMovingAway(true); // Start moving Turi away
-      setTimeout(() => {
+    // When shouldMoveAway is triggered, start the exit animation
+    if (shouldMoveAway) {
+      // Wait for Turi to move, then fade out
+      const timer = setTimeout(() => {
         setFadeOut(true);
-        // Wait for fade animation to complete before calling onLoadingComplete
+        // Wait for fade animation to complete before hiding completely
         setTimeout(() => {
+          setShouldHide(true);
           onLoadingComplete();
         }, 500);
-      }, 300); // Small delay before starting fade
-    }, minimumLoadTime);
-
-    return () => {
-      clearTimeout(timer);
-    };
-  }, [onLoadingComplete, minimumLoadTime]);
+      }, 1200); // Give time for move animation to complete
+      
+      return () => clearTimeout(timer);
+    }
+  }, [shouldMoveAway, onLoadingComplete]);
+  
+  // Completely hide the component after animation
+  if (shouldHide) {
+    return null;
+  }
 
   return (
     <div 
@@ -88,21 +98,18 @@ const TuriLoadingScreen: React.FC<TuriLoadingScreenProps> = ({
       }`}
     >
       <div className="flex flex-col items-center justify-center w-full">
-        {/* Turi's 3D Model */}
-        <div className="w-96 h-96 mb-4">
+        {/* Turi's 3D Model - Match HelperRobot size and position */}
+        <div className="w-96 h-96 mb-2">
           <Canvas
-            camera={{ position: [0, 0, 4], fov: 45 }}
+            camera={{ position: [0, 0, 5], fov: 50 }}
             gl={{ alpha: true, antialias: true }}
             style={{ background: 'transparent' }}
           >
-            {/* Brighter lighting to make Turi visible */}
-            <ambientLight intensity={1.5} />
-            <directionalLight position={[5, 5, 5]} intensity={2} />
-            <directionalLight position={[-5, 5, 5]} intensity={1} />
-            <pointLight position={[0, 5, 3]} intensity={1.2} color="#a78bfa" />
-            <pointLight position={[0, -2, 2]} intensity={0.5} color="#818cf8" />
+            {/* Match HelperRobot lighting exactly for consistent appearance */}
+            <ambientLight intensity={0.5} />
+            <pointLight position={[10, 10, 10]} />
             <React.Suspense fallback={null}>
-              <TuriModel isMovingAway={isMovingAway} />
+              <TuriModel shouldMoveAway={shouldMoveAway} />
             </React.Suspense>
           </Canvas>
         </div>
@@ -143,9 +150,6 @@ const TuriLoadingScreen: React.FC<TuriLoadingScreenProps> = ({
     </div>
   );
 };
-
-// Preload the model to ensure it appears quickly
-useGLTF.preload('/models/helper-robot.glb');
 
 export default TuriLoadingScreen;
 
