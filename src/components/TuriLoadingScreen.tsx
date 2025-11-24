@@ -19,18 +19,18 @@ const loadingTranslations = [
 ];
 
 const TuriLoadingScreen: React.FC<TuriLoadingScreenProps> = () => {
-  const [currentTranslation, setCurrentTranslation] = useState(loadingTranslations[0]);
-  const indexRef = React.useRef(0);
+  const [counter, setCounter] = useState(0);
 
   useEffect(() => {
     console.log('🎬 TuriLoadingScreen MOUNTED');
     
-    // Cycle through translations every 3 seconds
+    // Simple counter test - increment every 3 seconds
     const intervalId = setInterval(() => {
-      indexRef.current = (indexRef.current + 1) % loadingTranslations.length;
-      const newTranslation = loadingTranslations[indexRef.current];
-      console.log(`🔄 Translation changed to index ${indexRef.current}: "${newTranslation}"`);
-      setCurrentTranslation(newTranslation);
+      setCounter(prev => {
+        const next = prev + 1;
+        console.log(`🔄 Counter: ${prev} → ${next}`);
+        return next;
+      });
     }, 3000);
     
     console.log('⏰ Interval created');
@@ -49,7 +49,7 @@ const TuriLoadingScreen: React.FC<TuriLoadingScreenProps> = () => {
         {/* Loading text - centered with smooth transition */}
         <div className="text-center space-y-6">
           <p className="text-indigo-200 text-xl font-medium min-h-[2rem]">
-            [{indexRef.current}] {currentTranslation}
+            Counter: {counter} - {loadingTranslations[counter % loadingTranslations.length]}
           </p>
 
           {/* Loading bar */}
