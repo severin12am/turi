@@ -695,12 +695,16 @@ function App() {
         <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900"></div>
         
         {/* CityScene - ALWAYS mounted, never unmounts */}
+        {/* Characters only render after language selection to avoid blocking UI */}
         <div className="absolute inset-0 z-0 pointer-events-none">
-          <CityScene onReady={() => {
-            const delta = Math.round(performance.now() - loadStartRef.current);
-            console.log(`✅ CityScene preloaded @ ${delta}ms`);
-            setCitySceneReady(true);
-          }} />
+          <CityScene 
+            renderCharacters={!needsLanguageSelection}
+            onReady={() => {
+              const delta = Math.round(performance.now() - loadStartRef.current);
+              console.log(`✅ CityScene preloaded @ ${delta}ms`);
+              setCitySceneReady(true);
+            }} 
+          />
         </div>
         
         {/* Conditional UI overlays */}

@@ -207,9 +207,10 @@ if (typeof window !== 'undefined') {
 
 interface CitySceneProps {
   onReady?: () => void;
+  renderCharacters?: boolean; // Control whether to render characters (they're expensive!)
 }
 
-const CityScene: React.FC<CitySceneProps> = ({ onReady }) => {
+const CityScene: React.FC<CitySceneProps> = ({ onReady, renderCharacters = true }) => {
   const [playerPosition, setPlayerPosition] = useState(new THREE.Vector3(53, 1.7, 11));
   const [character, setCharacter] = useState<CharacterType | null>(null);
   const [character2, setCharacter2] = useState<CharacterType | null>(null);
@@ -1754,7 +1755,8 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady }) => {
           mobileMovement={mobileMovement}
           mobileLook={mobileLook}
         />
-        {character && (
+        {/* Only render characters after language selection to avoid blocking the main thread during initial load */}
+        {renderCharacters && character && (
           <Character 
             position={[character.position_x, character.position_y, character.position_z]}
             scale={[character.scale_x, character.scale_y, character.scale_z]}
@@ -1765,7 +1767,7 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady }) => {
             characterId={1}
           />
         )}
-        {character2 && (
+        {renderCharacters && character2 && (
           <Character 
             position={[character2.position_x, character2.position_y, character2.position_z]}
             scale={[character2.scale_x, character2.scale_y, character2.scale_z]}
@@ -1776,7 +1778,7 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady }) => {
             characterId={2}
           />
         )}
-        {character3 && (
+        {renderCharacters && character3 && (
           <Character 
             position={[character3.position_x, character3.position_y, character3.position_z]}
             scale={[character3.scale_x, character3.scale_y, character3.scale_z]}
@@ -1787,7 +1789,7 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady }) => {
             characterId={3}
           />
         )}
-        {character4 && (
+        {renderCharacters && character4 && (
           <Character 
             position={[character4.position_x, character4.position_y, character4.position_z]}
             scale={[character4.scale_x, character4.scale_y, character4.scale_z]}
@@ -1798,7 +1800,7 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady }) => {
             characterId={4}
           />
         )}
-        {character5 && (
+        {renderCharacters && character5 && (
           <Character 
             position={[character5.position_x, character5.position_y, character5.position_z]}
             scale={[character5.scale_x, character5.scale_y, character5.scale_z]}
@@ -1809,7 +1811,7 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady }) => {
             characterId={5}
           />
         )}
-        {character6 && (
+        {renderCharacters && character6 && (
           <Character 
             position={[character6.position_x, character6.position_y, character6.position_z]}
             scale={[character6.scale_x, character6.scale_y, character6.scale_z]}
@@ -1820,7 +1822,7 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady }) => {
             characterId={6}
           />
         )}
-        {character7 && (
+        {renderCharacters && character7 && (
           <Character 
             position={[character7.position_x, character7.position_y, character7.position_z]}
             scale={[character7.scale_x, character7.scale_y, character7.scale_z]}
@@ -1831,7 +1833,7 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady }) => {
             characterId={7}
           />
         )}
-        {character8 && (
+        {renderCharacters && character8 && (
           <Character 
             position={[character8.position_x, character8.position_y, character8.position_z]}
             scale={[character8.scale_x, character8.scale_y, character8.scale_z]}
@@ -1842,7 +1844,7 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady }) => {
             characterId={8}
           />
         )}
-        {character9 && (
+        {renderCharacters && character9 && (
           <Character 
             position={[character9.position_x, character9.position_y, character9.position_z]}
             scale={[character9.scale_x, character9.scale_y, character9.scale_z]}
@@ -1853,7 +1855,7 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady }) => {
             characterId={9}
           />
         )}
-        {character10 && (
+        {renderCharacters && character10 && (
           <Character 
             position={[character10.position_x, character10.position_y, character10.position_z]}
             scale={[character10.scale_x, character10.scale_y, character10.scale_z]}
@@ -1864,7 +1866,7 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady }) => {
             characterId={10}
           />
         )}
-        {character11 && (
+        {renderCharacters && character11 && (
           <Character 
             position={[character11.position_x, character11.position_y, character11.position_z]}
             scale={[character11.scale_x, character11.scale_y, character11.scale_z]}
@@ -1875,7 +1877,7 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady }) => {
             characterId={11}
           />
         )}
-        {character12 && (
+        {renderCharacters && character12 && (
           <Character 
             position={[character12.position_x, character12.position_y, character12.position_z]}
             scale={[character12.scale_x, character12.scale_y, character12.scale_z]}
@@ -1886,7 +1888,7 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady }) => {
             characterId={12}
           />
         )}
-        {character13 && (
+        {renderCharacters && character13 && (
           <Character 
             position={[character13.position_x, character13.position_y, character13.position_z]}
             scale={[character13.scale_x, character13.scale_y, character13.scale_z]}
@@ -1897,7 +1899,7 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady }) => {
             characterId={13}
           />
         )}
-        {character14 && (
+        {renderCharacters && character14 && (
           <Character 
             position={[character14.position_x, character14.position_y, character14.position_z]}
             scale={[character14.scale_x, character14.scale_y, character14.scale_z]}
@@ -1908,7 +1910,7 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady }) => {
             characterId={14}
           />
         )}
-        {character15 && (
+        {renderCharacters && character15 && (
           <Character 
             position={[character15.position_x, character15.position_y, character15.position_z]}
             scale={[character15.scale_x, character15.scale_y, character15.scale_z]}
@@ -1919,7 +1921,7 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady }) => {
             characterId={15}
           />
         )}
-        {character16 && (
+        {renderCharacters && character16 && (
           <Character 
             position={[character16.position_x, character16.position_y, character16.position_z]}
             scale={[character16.scale_x, character16.scale_y, character16.scale_z]}
@@ -1930,7 +1932,7 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady }) => {
             characterId={16}
           />
         )}
-        {character17 && (
+        {renderCharacters && character17 && (
           <Character 
             position={[character17.position_x, character17.position_y, character17.position_z]}
             scale={[character17.scale_x, character17.scale_y, character17.scale_z]}
@@ -1941,7 +1943,7 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady }) => {
             characterId={17}
           />
         )}
-        {character18 && (
+        {renderCharacters && character18 && (
           <Character 
             position={[character18.position_x, character18.position_y, character18.position_z]}
             scale={[character18.scale_x, character18.scale_y, character18.scale_z]}
@@ -1952,7 +1954,7 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady }) => {
             characterId={18}
           />
         )}
-        {character19 && (
+        {renderCharacters && character19 && (
           <Character 
             position={[character19.position_x, character19.position_y, character19.position_z]}
             scale={[character19.scale_x, character19.scale_y, character19.scale_z]}
@@ -1963,7 +1965,7 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady }) => {
             characterId={19}
           />
         )}
-        {character20 && (
+        {renderCharacters && character20 && (
           <Character 
             position={[character20.position_x, character20.position_y, character20.position_z]}
             scale={[character20.scale_x, character20.scale_y, character20.scale_z]}
@@ -1974,7 +1976,7 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady }) => {
             characterId={20}
           />
         )}
-        {character21 && (
+        {renderCharacters && character21 && (
           <Character 
             position={[character21.position_x, character21.position_y, character21.position_z]}
             scale={[character21.scale_x, character21.scale_y, character21.scale_z]}
@@ -1985,7 +1987,7 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady }) => {
             characterId={21}
           />
         )}
-        {character22 && (
+        {renderCharacters && character22 && (
           <Character 
             position={[character22.position_x, character22.position_y, character22.position_z]}
             scale={[character22.scale_x, character22.scale_y, character22.scale_z]}
@@ -1996,7 +1998,7 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady }) => {
             characterId={22}
           />
         )}
-        {character23 && (
+        {renderCharacters && character23 && (
           <Character 
             position={[character23.position_x, character23.position_y, character23.position_z]}
             scale={[character23.scale_x, character23.scale_y, character23.scale_z]}
@@ -2007,7 +2009,7 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady }) => {
             characterId={23}
           />
         )}
-        {character24 && (
+        {renderCharacters && character24 && (
           <Character 
             position={[character24.position_x, character24.position_y, character24.position_z]}
             scale={[character24.scale_x, character24.scale_y, character24.scale_z]}
@@ -2018,7 +2020,7 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady }) => {
             characterId={24}
           />
         )}
-        {character25 && (
+        {renderCharacters && character25 && (
           <Character 
             position={[character25.position_x, character25.position_y, character25.position_z]}
             scale={[character25.scale_x, character25.scale_y, character25.scale_z]}
@@ -2029,7 +2031,7 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady }) => {
             characterId={25}
           />
         )}
-        {character26 && (
+        {renderCharacters && character26 && (
           <Character 
             position={[character26.position_x, character26.position_y, character26.position_z]}
             scale={[character26.scale_x, character26.scale_y, character26.scale_z]}
@@ -2040,7 +2042,7 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady }) => {
             characterId={26}
           />
         )}
-        {character27 && (
+        {renderCharacters && character27 && (
           <Character 
             position={[character27.position_x, character27.position_y, character27.position_z]}
             scale={[character27.scale_x, character27.scale_y, character27.scale_z]}
@@ -2051,7 +2053,7 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady }) => {
             characterId={27}
           />
         )}
-        {character28 && (
+        {renderCharacters && character28 && (
           <Character 
             position={[character28.position_x, character28.position_y, character28.position_z]}
             scale={[character28.scale_x, character28.scale_y, character28.scale_z]}
@@ -2062,7 +2064,7 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady }) => {
             characterId={28}
           />
         )}
-        {character29 && (
+        {renderCharacters && character29 && (
           <Character 
             position={[character29.position_x, character29.position_y, character29.position_z]}
             scale={[character29.scale_x, character29.scale_y, character29.scale_z]}
@@ -2073,7 +2075,7 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady }) => {
             characterId={29}
           />
         )}
-        {character30 && (
+        {renderCharacters && character30 && (
           <Character 
             position={[character30.position_x, character30.position_y, character30.position_z]}
             scale={[character30.scale_x, character30.scale_y, character30.scale_z]}
