@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
 
 interface TuriLoadingScreenProps {
-  onLoadingComplete: () => void;
-  minimumLoadTime?: number;
+  // No props needed - parent controls visibility by mounting/unmounting
 }
 
 // Translations for the loading message
@@ -19,11 +18,7 @@ const loadingTranslations = [
   'Preparazione del tuo viaggio di apprendimento linguistico...'
 ];
 
-const TuriLoadingScreen: React.FC<TuriLoadingScreenProps> = ({ 
-  onLoadingComplete,
-  minimumLoadTime = 1500
-}) => {
-  const [fadeOut, setFadeOut] = useState(false);
+const TuriLoadingScreen: React.FC<TuriLoadingScreenProps> = () => {
   const [currentTranslationIndex, setCurrentTranslationIndex] = useState(0);
 
   useEffect(() => {
@@ -32,26 +27,14 @@ const TuriLoadingScreen: React.FC<TuriLoadingScreenProps> = ({
       setCurrentTranslationIndex(prev => (prev + 1) % loadingTranslations.length);
     }, 3000);
 
-    // Fade out after minimum load time
-    const timer = setTimeout(() => {
-      setFadeOut(true);
-      // Call onLoadingComplete after fade animation
-      setTimeout(() => {
-        onLoadingComplete();
-      }, 500);
-    }, minimumLoadTime);
-
     return () => {
       clearInterval(translationInterval);
-      clearTimeout(timer);
     };
-  }, [onLoadingComplete, minimumLoadTime]);
+  }, []);
 
   return (
     <div 
-      className={`fixed inset-0 z-[9999] bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center transition-opacity duration-500 ${
-        fadeOut ? 'opacity-0' : 'opacity-100'
-      }`}
+      className="fixed inset-0 z-[9999] bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center"
     >
       <div className="flex flex-col items-center justify-center w-full space-y-8">
         {/* Loading text - centered with smooth transition */}

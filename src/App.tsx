@@ -631,7 +631,6 @@ function App() {
   // Check if we should show language selection immediately
   const needsLanguageSelection = !isLanguageSelected && !isLoading;
   const [citySceneReady, setCitySceneReady] = useState(false);
-  const [helperRobotKey, setHelperRobotKey] = useState(0); // Prevent remounting
   const showLanguageSelection = needsLanguageSelection && initialLoadComplete && citySceneReady;
 
   // If languages aren't selected, show loading screen then language selection
@@ -643,20 +642,17 @@ function App() {
           {/* Minimal background */}
           <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900"></div>
           
-          {/* Preload CityScene in background - only mount once */}
-          {!citySceneReady && (
-            <div className="absolute inset-0 z-0 pointer-events-none">
-              <CityScene onReady={() => {
-                console.log("✅ CityScene preloaded");
-                setCitySceneReady(true);
-              }} />
-            </div>
-          )}
+          {/* Preload CityScene in background - keep mounted */}
+          <div className="absolute inset-0 z-0 pointer-events-none">
+            <CityScene onReady={() => {
+              console.log("✅ CityScene preloaded");
+              setCitySceneReady(true);
+            }} />
+          </div>
           
-          {/* HelperRobot with language selection - use key to prevent unnecessary remounting */}
+          {/* HelperRobot with language selection */}
           <div className="fixed top-10 left-10 z-50">
             <HelperRobot
-              key={helperRobotKey}
               instructions={{ mode: "language_selection" }}
               onLanguageSelect={handleLanguageSelectRobot}
               onLogin={handleLoginClickRobot}
@@ -670,15 +666,8 @@ function App() {
           </div>
         </div>
         
-        {/* Loading screen - hides after both HelperRobot AND CityScene are ready */}
-        {(!initialLoadComplete || !citySceneReady) && (
-          <TuriLoadingScreen 
-            onLoadingComplete={() => {
-              console.log("✅ Loading screen complete");
-            }}
-            minimumLoadTime={1500}
-          />
-        )}
+        {/* Loading screen - automatically hides when both HelperRobot AND CityScene are ready */}
+        {(!initialLoadComplete || !citySceneReady) && <TuriLoadingScreen />}
       </>
     );
   }
