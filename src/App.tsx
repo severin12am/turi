@@ -667,7 +667,9 @@ function App() {
         </div>
         
         {/* Loading screen - automatically hides when both HelperRobot AND CityScene are ready */}
-        {(!initialLoadComplete || !citySceneReady) && <TuriLoadingScreen />}
+        {(!initialLoadComplete || !citySceneReady) && (
+          <TuriLoadingScreen key="loading-screen" />
+        )}
       </>
     );
   }

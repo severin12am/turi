@@ -1,45 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 
 interface TuriLoadingScreenProps {
   // No props needed - parent controls visibility by mounting/unmounting
 }
 
-// Translations for the loading message
-const loadingTranslations = [
-  'Preparing your language learning journey...',
-  '正在为您准备语言学习之旅……',
-  'Preparando tu viaje de aprendizaje de idiomas...',
-  'جارٍ تجهيز رحلة تعلّم اللغة الخاصة بك...',
-  'Preparando sua jornada de aprendizado de idiomas...',
-  'Подготовка к вашему путешествию по изучению языка...',
-  '言語学習の旅を準備しています…',
-  'Vorbereitung deiner Sprachlernreise...',
-  'Préparation de votre parcours d\'apprentissage linguistique...',
-  'Preparazione del tuo viaggio di apprendimento linguistico...'
-];
-
 const TuriLoadingScreen: React.FC<TuriLoadingScreenProps> = () => {
-  const [counter, setCounter] = useState(0);
-
-  useEffect(() => {
-    console.log('🎬 TuriLoadingScreen MOUNTED');
-    
-    // Simple counter test - increment every 3 seconds
-    const intervalId = setInterval(() => {
-      setCounter(prev => {
-        const next = prev + 1;
-        console.log(`🔄 Counter: ${prev} → ${next}`);
-        return next;
-      });
-    }, 3000);
-    
-    console.log('⏰ Interval created');
-
-    return () => {
-      console.log('🛑 TuriLoadingScreen UNMOUNTED - clearing interval');
-      clearInterval(intervalId);
-    };
-  }, []);
 
   return (
     <div 
@@ -48,8 +13,8 @@ const TuriLoadingScreen: React.FC<TuriLoadingScreenProps> = () => {
       <div className="flex flex-col items-center justify-center w-full space-y-8">
         {/* Loading text - centered with smooth transition */}
         <div className="text-center space-y-6">
-          <p className="text-indigo-200 text-xl font-medium min-h-[2rem]">
-            Counter: {counter} - {loadingTranslations[counter % loadingTranslations.length]}
+          <p className="text-indigo-200 text-xl font-medium">
+            Preparing your language learning journey...
           </p>
 
           {/* Loading bar */}
