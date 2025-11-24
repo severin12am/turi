@@ -20,22 +20,16 @@ const loadingTranslations = [
 
 const TuriLoadingScreen: React.FC<TuriLoadingScreenProps> = () => {
   const [currentTranslationIndex, setCurrentTranslationIndex] = useState(0);
-  const [fade, setFade] = useState(true);
 
   useEffect(() => {
-    // Cycle through translations every 3 seconds with fade effect
+    // Cycle through translations every 3 seconds
     const translationInterval = setInterval(() => {
-      console.log('🔄 Cycling translation'); // Debug log
-      setFade(false); // Start fade out
-      setTimeout(() => {
-        setCurrentTranslationIndex(prev => {
-          const next = (prev + 1) % loadingTranslations.length;
-          console.log(`📝 Translation ${prev} → ${next}`); // Debug log
-          return next;
-        });
-        setFade(true); // Fade back in
-      }, 300); // Fade transition time
-    }, 3000); // Cycle every 3 seconds
+      setCurrentTranslationIndex(prev => {
+        const next = (prev + 1) % loadingTranslations.length;
+        console.log(`🔄 Translation cycling: ${prev} → ${next}: "${loadingTranslations[next]}"`);
+        return next;
+      });
+    }, 3000);
 
     return () => {
       clearInterval(translationInterval);
@@ -49,11 +43,7 @@ const TuriLoadingScreen: React.FC<TuriLoadingScreenProps> = () => {
       <div className="flex flex-col items-center justify-center w-full space-y-8">
         {/* Loading text - centered with smooth transition */}
         <div className="text-center space-y-6">
-          <p 
-            className={`text-indigo-200 text-xl font-medium transition-opacity duration-200 min-h-[2rem] ${
-              fade ? 'opacity-100' : 'opacity-0'
-            }`}
-          >
+          <p className="text-indigo-200 text-xl font-medium min-h-[2rem]">
             {loadingTranslations[currentTranslationIndex]}
           </p>
 
