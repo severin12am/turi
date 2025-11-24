@@ -631,7 +631,8 @@ function App() {
   // Check if we should show language selection immediately
   const needsLanguageSelection = !isLanguageSelected && !isLoading;
   const [citySceneReady, setCitySceneReady] = useState(false);
-  const showLanguageSelection = needsLanguageSelection && initialLoadComplete && citySceneReady;
+  const [helperRobotReady, setHelperRobotReady] = useState(false);
+  const showLanguageSelection = needsLanguageSelection && helperRobotReady && citySceneReady;
 
   // If languages aren't selected, show loading screen then language selection
   if (needsLanguageSelection) {
@@ -660,14 +661,14 @@ function App() {
               onReady={() => {
                 // HelperRobot signals it's ready
                 console.log("✅ HelperRobot ready");
-                setInitialLoadComplete(true);
+                setHelperRobotReady(true);
               }}
             />
           </div>
         </div>
         
         {/* Loading screen - automatically hides when both HelperRobot AND CityScene are ready */}
-        {(!initialLoadComplete || !citySceneReady) && (
+        {(!helperRobotReady || !citySceneReady) && (
           <TuriLoadingScreen key="loading-screen" />
         )}
       </>

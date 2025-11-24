@@ -8,7 +8,7 @@ const TuriLoadingScreen: React.FC<TuriLoadingScreenProps> = () => {
 
   return (
     <div 
-      className="fixed inset-0 z-[9999] bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center"
+      className="fixed inset-0 z-[9999] bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center animate-fade-in"
     >
       <div className="flex flex-col items-center justify-center w-full space-y-8">
         {/* Loading text - centered with smooth transition */}
@@ -40,8 +40,19 @@ const TuriLoadingScreen: React.FC<TuriLoadingScreenProps> = () => {
             margin-left: 100%;
           }
         }
+        @keyframes fade-in {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
         .animate-loading-bar {
           animation: loading-bar 2s ease-in-out infinite;
+        }
+        .animate-fade-in {
+          animation: fade-in 0.3s ease-in-out;
         }
       `}</style>
     </div>
