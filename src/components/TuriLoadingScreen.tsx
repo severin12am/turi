@@ -1,37 +1,82 @@
 import React, { useEffect, useState } from 'react';
+import { Canvas } from '@react-three/fiber';
+import { useGLTF } from '@react-three/drei';
+import * as THREE from 'three';
 
 interface TuriLoadingScreenProps {
   onLoadingComplete: () => void;
   minimumLoadTime?: number; // Minimum time to show loading screen (ms)
 }
 
+// Turi's 3D Model Component for Loading Screen
+const TuriModel: React.FC<{ isMovingAway: boolean }> = ({ isMovingAway }) => {
+  const { scene } = useGLTF('/models/helper-robot.glb');
+  const modelRef = React.useRef<THREE.Group>(null);
+  
+  useEffect(() => {
+    if (modelRef.current) {
+      // Position and scale Turi appropriately
+      modelRef.current.rotation.y = Math.PI * 1.55;
+      modelRef.current.position.set(0, -0.5, 0);
+    }
+  }, []);
+  
+  // Animate Turi moving to the side when loading completes
+  useEffect(() => {
+    if (isMovingAway && modelRef.current) {
+      const startTime = Date.now();
+      const duration = 800; // 800ms animation
+      const startX = 0;
+      const endX = -5; // Move to the left
+      
+      const animate = () => {
+        if (!modelRef.current) return;
+        
+        const elapsed = Date.now() - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        
+        // Ease out cubic function for smooth deceleration
+        const eased = 1 - Math.pow(1 - progress, 3);
+        
+        modelRef.current.position.x = startX + (endX - startX) * eased;
+        
+        if (progress < 1) {
+          requestAnimationFrame(animate);
+        }
+      };
+      
+      animate();
+    }
+  }, [isMovingAway]);
+  
+  return (
+    <group ref={modelRef} scale={[1.5, 1.5, 1.5]}>
+      <primitive object={scene.clone()} />
+    </group>
+  );
+};
+
 const TuriLoadingScreen: React.FC<TuriLoadingScreenProps> = ({ 
   onLoadingComplete,
   minimumLoadTime = 2000 
 }) => {
-  const [dots, setDots] = useState('');
   const [fadeOut, setFadeOut] = useState(false);
+  const [isMovingAway, setIsMovingAway] = useState(false);
 
   useEffect(() => {
-    // Animated dots effect
-    const dotsInterval = setInterval(() => {
-      setDots(prev => {
-        if (prev === '...') return '';
-        return prev + '.';
-      });
-    }, 400);
-
     // Minimum load time + fade out
     const timer = setTimeout(() => {
-      setFadeOut(true);
-      // Wait for fade animation to complete before calling onLoadingComplete
+      setIsMovingAway(true); // Start moving Turi away
       setTimeout(() => {
-        onLoadingComplete();
-      }, 500);
+        setFadeOut(true);
+        // Wait for fade animation to complete before calling onLoadingComplete
+        setTimeout(() => {
+          onLoadingComplete();
+        }, 500);
+      }, 300); // Small delay before starting fade
     }, minimumLoadTime);
 
     return () => {
-      clearInterval(dotsInterval);
       clearTimeout(timer);
     };
   }, [onLoadingComplete, minimumLoadTime]);
@@ -42,50 +87,28 @@ const TuriLoadingScreen: React.FC<TuriLoadingScreenProps> = ({
         fadeOut ? 'opacity-0' : 'opacity-100'
       }`}
     >
-      <div className="text-center">
-        {/* Turi Logo/Icon */}
-        <div className="mb-8 flex justify-center">
-          <div className="relative">
-            {/* Pulsing circles */}
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-24 h-24 bg-purple-500/20 rounded-full animate-ping"></div>
-            </div>
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-20 h-20 bg-indigo-500/30 rounded-full animate-pulse"></div>
-            </div>
-            
-            {/* Center icon */}
-            <div className="relative w-24 h-24 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg shadow-purple-500/50">
-              <svg 
-                className="w-12 h-12 text-white" 
-                fill="none" 
-                stroke="currentColor" 
-                viewBox="0 0 24 24"
-              >
-                <path 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round" 
-                  strokeWidth={2} 
-                  d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" 
-                />
-              </svg>
-            </div>
-          </div>
+      <div className="flex flex-col items-center justify-center w-full">
+        {/* Turi's 3D Model */}
+        <div className="w-64 h-64 mb-8">
+          <Canvas
+            camera={{ position: [0, 0, 3], fov: 50 }}
+            gl={{ alpha: true, antialias: true }}
+          >
+            <ambientLight intensity={0.8} />
+            <directionalLight position={[5, 5, 5]} intensity={1} />
+            <pointLight position={[-5, 5, -5]} intensity={0.5} />
+            <TuriModel isMovingAway={isMovingAway} />
+          </Canvas>
         </div>
 
-        {/* Loading text with Turi's character */}
-        <div className="space-y-4">
-          <h1 className="text-3xl font-bold text-white">
-            Turi is getting ready
-            <span className="inline-block w-12 text-left">{dots}</span>
-          </h1>
-          
-          <p className="text-indigo-300 text-lg">
-            Preparing your language learning journey
+        {/* Loading text - centered */}
+        <div className="text-center space-y-6">
+          <p className="text-indigo-200 text-xl font-medium">
+            Preparing your language learning journey...
           </p>
 
           {/* Loading bar */}
-          <div className="mt-8 w-64 h-1 bg-slate-700 rounded-full overflow-hidden mx-auto">
+          <div className="w-80 h-1.5 bg-slate-700 rounded-full overflow-hidden mx-auto">
             <div className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 animate-loading-bar"></div>
           </div>
         </div>
