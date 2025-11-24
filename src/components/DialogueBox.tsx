@@ -5085,6 +5085,36 @@ Return ONLY the transliteration, nothing else.`;
                 <span>{isPlayingFullDialogue ? '🛑 Stop Playback' : '▶️ Replay Full Dialogue'}</span>
               </button>
               
+              {/* Speed Control Button */}
+              <button 
+                style={{
+                  padding: '15px 30px',
+                  fontSize: '16px',
+                  fontWeight: 'bold',
+                  backgroundColor: 'rgba(124, 58, 237, 0.8)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '12px',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+                onClick={togglePlaybackSpeed}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'scale(1.05)';
+                  e.currentTarget.style.boxShadow = '0 8px 16px rgba(0, 0, 0, 0.2)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'scale(1)';
+                  e.currentTarget.style.boxShadow = 'none';
+                }}
+                title={`Current speed: ${playbackSpeed}x. Click to change.`}
+              >
+                <span>{playbackSpeed}x</span>
+              </button>
+              
               {/* Go to Quiz Button */}
               <button
                 onClick={handleContinueToQuiz}

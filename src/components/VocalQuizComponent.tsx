@@ -110,9 +110,9 @@ const translations: Record<string, Partial<Record<SupportedLanguage, string>>> =
   'Great work!': { en: 'Great work!', ru: 'Отличная работа!' },
   'Let\'s try again!': { en: 'Let\'s try again!', ru: 'Давайте попробуем ещё раз!' },
   'Your score:': { en: 'Your score:', ru: 'Ваш результат:' },
-  'Turi is impressed with your progress! You\'re doing great with your language journey.': { 
-    en: 'Turi is impressed with your progress! You\'re doing great with your language journey.',
-    ru: 'Тури впечатлен вашим прогрессом! Вы отлично справляетесь с изучением языка.'
+  'I`m impressed with your progress! You\'re doing great with your language journey.': { 
+    en: 'I`m impressed with your progress! You\'re doing great with your language journey.',
+    ru: 'Я впечатлен вашим прогрессом! Вы отлично справляетесь с изучением языка.'
   },
   'Turi believes in you! A little more practice and you\'ll master these words.': {
     en: 'Turi believes in you! A little more practice and you\'ll master these words.',
@@ -224,7 +224,7 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
     return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   };
 
-  const PUNCTUATION_REGEX = /[\u2000-\u206F\u2E00-\u2E7F\u060C\u061B\u061F!"#$%&'()*+,./:;<=>?@[\\\]^_`{|}~،؟؛«»“”‘’…-]/g;
+  const PUNCTUATION_REGEX = /[\u2000-\u206F\u2E00-\u2E7F\u060C\u061B\u061F¿¡!"#$%&'()*+,./:;<=>?@[\\\]^_`{|}~،؟؛«»""''…-]/g;
 
   const stripPunctuation = (value: string): string => {
     return value.replace(PUNCTUATION_REGEX, '');
@@ -2502,7 +2502,7 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
                         Mission not counted
                       </p>
                       <p className="text-sm text-yellow-100/90 leading-relaxed">
-                        You used Turi's help during this mission, so it wasn't counted as completed. Try again without help to unlock the next mission!
+                        You used my help help during this mission, so it wasn't counted as completed. Try again without help to unlock the next mission!
                       </p>
                     </div>
                   </div>
