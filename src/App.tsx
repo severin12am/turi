@@ -649,10 +649,36 @@ function App() {
   const showLanguageSelection = needsLanguageSelection && !isLoading && helperRobotReady;
   const showLoadingScreen = isLoading || !helperRobotReady;
 
-  // Simple mount logging
+  // Detailed timing logs
   useEffect(() => {
-    console.log('[LOAD] App mounted @', performance.now() - loadStartRef.current);
+    const delta = Math.round(performance.now() - loadStartRef.current);
+    console.log(`[LOAD] App mounted @ ${delta}ms`, { isLoading, needsLanguageSelection });
   }, []);
+
+  useEffect(() => {
+    const delta = Math.round(performance.now() - loadStartRef.current);
+    console.log(`[LOAD] helperRobotReady = ${helperRobotReady} @ ${delta}ms`);
+  }, [helperRobotReady]);
+
+  useEffect(() => {
+    const delta = Math.round(performance.now() - loadStartRef.current);
+    console.log(`[LOAD] citySceneReady = ${citySceneReady} @ ${delta}ms`);
+  }, [citySceneReady]);
+
+  useEffect(() => {
+    const delta = Math.round(performance.now() - loadStartRef.current);
+    console.log(`[LOAD] showLoadingScreen = ${showLoadingScreen} @ ${delta}ms`);
+  }, [showLoadingScreen]);
+
+  useEffect(() => {
+    const delta = Math.round(performance.now() - loadStartRef.current);
+    console.log(`[LOAD] showLanguageSelection = ${showLanguageSelection} @ ${delta}ms`);
+  }, [showLanguageSelection]);
+
+  useEffect(() => {
+    const delta = Math.round(performance.now() - loadStartRef.current);
+    console.log(`[LOAD] needsLanguageSelection = ${needsLanguageSelection} @ ${delta}ms`);
+  }, [needsLanguageSelection]);
 
   // SINGLE return - CityScene stays mounted, only overlays change
   return (
@@ -668,7 +694,8 @@ function App() {
         {/* CityScene - ALWAYS mounted, never unmounts */}
         <div className="absolute inset-0 z-0 pointer-events-none">
           <CityScene onReady={() => {
-            console.log('✅ CityScene preloaded');
+            const delta = Math.round(performance.now() - loadStartRef.current);
+            console.log(`✅ CityScene preloaded @ ${delta}ms`);
             setCitySceneReady(true);
           }} />
         </div>
@@ -690,10 +717,11 @@ function App() {
                 onLogin={handleLoginClickRobot}
                 onClick={handleRobotClick}
                 shouldAnimate={helperRobotReady}
-                onReady={() => {
-                  console.log('✅ HelperRobot ready');
-                  setHelperRobotReady(true);
-                }}
+              onReady={() => {
+                const delta = Math.round(performance.now() - loadStartRef.current);
+                console.log(`✅ HelperRobot ready @ ${delta}ms`);
+                setHelperRobotReady(true);
+              }}
               />
             </div>
           </div>
