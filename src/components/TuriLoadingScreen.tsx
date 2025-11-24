@@ -1,74 +1,26 @@
 import React, { useEffect, useState } from 'react';
-import { Canvas } from '@react-three/fiber';
-import { useGLTF } from '@react-three/drei';
-import * as THREE from 'three';
-
-// Preload the model immediately so it appears right away
-useGLTF.preload('/models/helper-robot.glb');
 
 interface TuriLoadingScreenProps {
   onLoadingComplete: () => void;
   minimumLoadTime?: number;
-  shouldMoveAway?: boolean; // Control when Turi should move away
 }
-
-// Turi's 3D Model Component for Loading Screen
-const TuriModel: React.FC<{ shouldMoveAway: boolean }> = ({ shouldMoveAway }) => {
-  const { scene } = useGLTF('/models/helper-robot.glb');
-  const modelRef = React.useRef<THREE.Group>(null);
-  
-  useEffect(() => {
-    if (modelRef.current) {
-      // Position and scale Turi appropriately - match HelperRobot scaling
-      modelRef.current.rotation.y = Math.PI * 1.55;
-      modelRef.current.position.set(0, 0, 0);
-      modelRef.current.scale.set(2, 2, 2); // Match HelperRobotModel scale
-    }
-  }, []);
-  
-  // Animate Turi moving to the side when shouldMoveAway is true
-  useEffect(() => {
-    if (shouldMoveAway && modelRef.current) {
-      const startTime = Date.now();
-      const duration = 1000; // 1 second smooth animation
-      const startX = 0;
-      const endX = -8; // Move further to the left
-      
-      const animate = () => {
-        if (!modelRef.current) return;
-        
-        const elapsed = Date.now() - startTime;
-        const progress = Math.min(elapsed / duration, 1);
-        
-        // Ease out cubic function for smooth deceleration
-        const eased = 1 - Math.pow(1 - progress, 3);
-        
-        modelRef.current.position.x = startX + (endX - startX) * eased;
-        
-        if (progress < 1) {
-          requestAnimationFrame(animate);
-        }
-      };
-      
-      animate();
-    }
-  }, [shouldMoveAway]);
-  
-  return (
-    <group ref={modelRef}>
-      <primitive object={scene.clone()} />
-    </group>
-  );
-};
 
 const TuriLoadingScreen: React.FC<TuriLoadingScreenProps> = ({ 
   onLoadingComplete,
-  minimumLoadTime = 1500,
-  shouldMoveAway = false
+  minimumLoadTime = 1500
 }) => {
   const [fadeOut, setFadeOut] = useState(false);
+  const [dots, setDots] = useState('');
 
   useEffect(() => {
+    // Animated dots effect
+    const dotsInterval = setInterval(() => {
+      setDots(prev => {
+        if (prev === '...') return '';
+        return prev + '.';
+      });
+    }, 400);
+
     // Fade out after minimum load time
     const timer = setTimeout(() => {
       setFadeOut(true);
@@ -79,6 +31,7 @@ const TuriLoadingScreen: React.FC<TuriLoadingScreenProps> = ({
     }, minimumLoadTime);
 
     return () => {
+      clearInterval(dotsInterval);
       clearTimeout(timer);
     };
   }, [onLoadingComplete, minimumLoadTime]);
@@ -89,31 +42,36 @@ const TuriLoadingScreen: React.FC<TuriLoadingScreenProps> = ({
         fadeOut ? 'opacity-0' : 'opacity-100'
       }`}
     >
-      <div className="flex flex-col items-center justify-center w-full">
-        {/* Turi's 3D Model - Match HelperRobot size and position */}
-        <div className="w-96 h-96 mb-2">
-          <Canvas
-            camera={{ position: [0, 0, 5], fov: 50 }}
-            gl={{ alpha: true, antialias: true }}
-            style={{ background: 'transparent' }}
-          >
-            {/* Match HelperRobot lighting exactly for consistent appearance */}
-            <ambientLight intensity={0.5} />
-            <pointLight position={[10, 10, 10]} />
-            <React.Suspense fallback={null}>
-              <TuriModel shouldMoveAway={shouldMoveAway} />
-            </React.Suspense>
-          </Canvas>
+      <div className="flex flex-col items-center justify-center w-full space-y-8">
+        {/* Turi Icon/Logo */}
+        <div className="relative">
+          {/* Pulsing circles for visual interest */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="w-32 h-32 bg-purple-500/20 rounded-full animate-ping"></div>
+          </div>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="w-24 h-24 bg-indigo-500/30 rounded-full animate-pulse"></div>
+          </div>
+          
+          {/* Center gradient circle */}
+          <div className="relative w-32 h-32 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center shadow-2xl shadow-purple-500/50">
+            <div className="text-6xl">🌍</div>
+          </div>
         </div>
 
         {/* Loading text - centered */}
         <div className="text-center space-y-6">
-          <p className="text-indigo-200 text-xl font-medium">
-            Preparing your language learning journey...
+          <h1 className="text-3xl font-bold text-white">
+            Turi is getting ready
+            <span className="inline-block w-12 text-left">{dots}</span>
+          </h1>
+          
+          <p className="text-indigo-200 text-xl">
+            Preparing your language learning journey
           </p>
 
           {/* Loading bar */}
-          <div className="w-80 h-1.5 bg-slate-700 rounded-full overflow-hidden mx-auto">
+          <div className="w-80 h-1.5 bg-slate-700 rounded-full overflow-hidden mx-auto mt-8">
             <div className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 animate-loading-bar"></div>
           </div>
         </div>
