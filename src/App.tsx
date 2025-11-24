@@ -631,7 +631,6 @@ function App() {
   // Check if we should show language selection immediately
   const needsLanguageSelection = !isLanguageSelected && !isLoading;
   const [citySceneReady, setCitySceneReady] = useState(false);
-  const [shouldTuriMoveAway, setShouldTuriMoveAway] = useState(false);
   const showLanguageSelection = needsLanguageSelection && initialLoadComplete && citySceneReady;
 
   // If languages aren't selected, show loading screen then language selection
@@ -655,12 +654,7 @@ function App() {
           <div className="fixed top-10 left-10 z-50">
             <HelperRobot
               instructions={{ mode: "language_selection" }}
-              onLanguageSelect={(mother, target) => {
-                handleLanguageSelectRobot(mother, target);
-                // Trigger Turi to move away when user clicks "Start my journey"
-                console.log("🚀 Start my journey clicked - Turi moving away");
-                setShouldTuriMoveAway(true);
-              }}
+              onLanguageSelect={handleLanguageSelectRobot}
               onLogin={handleLoginClickRobot}
               onClick={handleRobotClick}
               onReady={() => {
@@ -672,15 +666,15 @@ function App() {
           </div>
         </div>
         
-        {/* Loading screen - stays visible during initial load and language selection */}
-        {/* Only moves away and fades when user clicks "Start my journey" */}
-        <TuriLoadingScreen 
-          onLoadingComplete={() => {
-            console.log("✅ Loading screen complete");
-          }}
-          minimumLoadTime={2000}
-          shouldMoveAway={shouldTuriMoveAway}
-        />
+        {/* Loading screen - hides after both HelperRobot AND CityScene are ready */}
+        {(!initialLoadComplete || !citySceneReady) && (
+          <TuriLoadingScreen 
+            onLoadingComplete={() => {
+              console.log("✅ Loading screen complete");
+            }}
+            minimumLoadTime={1500}
+          />
+        )}
       </>
     );
   }

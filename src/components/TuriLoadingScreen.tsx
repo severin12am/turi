@@ -63,33 +63,25 @@ const TuriModel: React.FC<{ shouldMoveAway: boolean }> = ({ shouldMoveAway }) =>
 
 const TuriLoadingScreen: React.FC<TuriLoadingScreenProps> = ({ 
   onLoadingComplete,
-  minimumLoadTime = 2000,
+  minimumLoadTime = 1500,
   shouldMoveAway = false
 }) => {
   const [fadeOut, setFadeOut] = useState(false);
-  const [shouldHide, setShouldHide] = useState(false);
 
   useEffect(() => {
-    // When shouldMoveAway is triggered, start the exit animation
-    if (shouldMoveAway) {
-      // Wait for Turi to move, then fade out
-      const timer = setTimeout(() => {
-        setFadeOut(true);
-        // Wait for fade animation to complete before hiding completely
-        setTimeout(() => {
-          setShouldHide(true);
-          onLoadingComplete();
-        }, 500);
-      }, 1200); // Give time for move animation to complete
-      
-      return () => clearTimeout(timer);
-    }
-  }, [shouldMoveAway, onLoadingComplete]);
-  
-  // Completely hide the component after animation
-  if (shouldHide) {
-    return null;
-  }
+    // Fade out after minimum load time
+    const timer = setTimeout(() => {
+      setFadeOut(true);
+      // Call onLoadingComplete after fade animation
+      setTimeout(() => {
+        onLoadingComplete();
+      }, 500);
+    }, minimumLoadTime);
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [onLoadingComplete, minimumLoadTime]);
 
   return (
     <div 
