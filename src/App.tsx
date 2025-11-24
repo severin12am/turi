@@ -643,10 +643,11 @@ function App() {
   }, [user, isLoggedIn]);
 
   // Track loading states
+  // CRITICAL: needsLanguageSelection should be true until user actually selects languages
   const needsLanguageSelection = !isLanguageSelected;
   const sceneReady = helperRobotReady && citySceneReady;
-  const showLanguageSelection = needsLanguageSelection && sceneReady;
-  const showLoadingScreen = !sceneReady || (!needsLanguageSelection && isLoading);
+  const showLanguageSelection = needsLanguageSelection && !isLoading && helperRobotReady;
+  const showLoadingScreen = isLoading || !helperRobotReady;
 
   useEffect(() => {
     logLoadEvent('App mounted', {
@@ -681,8 +682,9 @@ function App() {
     }
   }, [showLanguageSelection, logLoadEvent]);
 
-  // If still loading auth, show loading screen but start mounting scene in background
-  if (isLoading || needsLanguageSelection) {
+  // Stay in language selection branch until user actually selects languages
+  // Don't switch branches just because ready flags flip
+  if (needsLanguageSelection) {
     return (
       <>
         {/* Loading screen - shows during auth AND scene loading */}
@@ -693,18 +695,22 @@ function App() {
         {/* Mount CityScene and HelperRobot immediately (even during auth) */}
         {/* They load in background while loading screen is visible */}
         <div 
-          className="relative min-h-screen bg-gray-900 transition-opacity duration-300"
+          className="relative min-h-screen bg-gray-900 transition-opacity duration-500"
           style={{ 
-            opacity: sceneReady ? 1 : 0,
-            pointerEvents: sceneReady ? 'auto' : 'none',
+            opacity: helperRobotReady ? 1 : 0,
+            pointerEvents: helperRobotReady ? 'auto' : 'none',
           }}
-          aria-hidden={!sceneReady}
+          aria-hidden={!helperRobotReady}
         >
           {/* Minimal background */}
           <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900"></div>
           
           {/* Preload CityScene in background - keep mounted */}
-          <div className="absolute inset-0 z-0 pointer-events-none">
+          <div 
+            className="absolute inset-0 z-0 pointer-events-none transition-opacity duration-700"
+            style={{ opacity: citySceneReady ? 1 : 0 }}
+            aria-hidden={!citySceneReady}
+          >
             <CityScene onReady={() => {
               console.log("✅ CityScene preloaded");
               setCitySceneReady(true);
@@ -718,7 +724,7 @@ function App() {
               onLanguageSelect={handleLanguageSelectRobot}
               onLogin={handleLoginClickRobot}
               onClick={handleRobotClick}
-              shouldAnimate={showLanguageSelection}
+              shouldAnimate={helperRobotReady}
               onReady={() => {
                 // HelperRobot signals it's ready
                 console.log("✅ HelperRobot ready");
@@ -731,9 +737,22 @@ function App() {
     );
   }
 
-  // App state logging removed to reduce console spam
-  // Enable when debugging specific state issues
+  // If we reach here, languages are selected - show main app
+  // This branch only renders after user completes language selection
+  
+  // Show loading during auth for returning users
+  if (isLoading) {
+    return (
+      <>
+        <TuriLoadingScreen key="auth-loading" />
+        <div className="relative min-h-screen bg-gray-900">
+          <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900"></div>
+        </div>
+      </>
+    );
+  }
 
+  // Main app - only renders after language selection is complete
   return (
     <div className="relative min-h-screen bg-gray-900">
       {/* Background Scene */}

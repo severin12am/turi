@@ -84,14 +84,17 @@ Benefits:
 ### 3. Proper Loading Screen Condition
 ```typescript
 const sceneReady = helperRobotReady && citySceneReady;
-const showLoadingScreen = !sceneReady || (!needsLanguageSelection && isLoading);
+const showLanguageSelection = needsLanguageSelection && helperRobotReady;
+const showLoadingScreen =
+  isLoading ||
+  (needsLanguageSelection ? !helperRobotReady : !sceneReady);
 ```
 
 This keeps the loading overlay visible while:
-- CityScene / HelperRobot are still loading (always)
-- Auth is still loading **and** the user already finished language selection (returning users)
+- Auth is still loading (always)
+- Returning users still wait for both HelperRobot **and** CityScene (so gameplay starts only when the 3D world exists)
 
-For first-time visitors with no languages selected yet, the overlay now hides as soon as the scene is ready (even if Supabase auth is still fetching in the background), so they can start immediately.
+But brand-new visitors (no language picked yet) now see the selection UI as soon as the HelperRobot is ready (≈150 ms) even while the heavy `city.glb` continues loading in the background.
 
 ## Expected Results
 
