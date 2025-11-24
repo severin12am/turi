@@ -49,7 +49,7 @@ const TuriLoadingScreen: React.FC<TuriLoadingScreenProps> = () => {
         {/* Loading text - centered with smooth transition */}
         <div className="text-center space-y-6">
           <p className="text-indigo-200 text-xl font-medium min-h-[2rem]">
-            {currentTranslation}
+            [{indexRef.current}] {currentTranslation}
           </p>
 
           {/* Loading bar */}
