@@ -62,72 +62,8 @@ interface VocalQuizProps {
   isVocabularyQuiz?: boolean; // Flag to indicate this is a vocabulary quiz (not counted)
 }
 
+import { useTranslations } from '../hooks/useTranslations';
 import type { SupportedLanguage } from '../constants/translations';
-
-// Remove hardcoded language restriction - use all supported languages
-const translations: Record<string, Partial<Record<SupportedLanguage, string>>> = {
-  'Vocabulary Quiz': { en: 'Vocabulary Quiz', ru: 'Словарный тест' },
-  'Question': { en: 'Question', ru: 'Вопрос' },
-  'correct': { en: 'correct', ru: 'правильно' },
-  'How do you say': { en: 'How do you say', ru: 'Как сказать' },
-  'in English': { en: 'in English', ru: 'по-английски' },
-  'in Russian': { en: 'in Russian', ru: 'по-русски' },
-  'in Chinese': { en: 'in Chinese', ru: 'по-китайски' },
-  'in Spanish': { en: 'in Spanish', ru: 'по-испански' },
-  'in French': { en: 'in French', ru: 'по-французски' },
-  'in German': { en: 'in German', ru: 'по-немецки' },
-  'in Italian': { en: 'in Italian', ru: 'по-итальянски' },
-  'in Arabic': { en: 'in Arabic', ru: 'по-арабски' },
-  'in Japanese': { en: 'in Japanese', ru: 'по-японски' },
-  'in Turkish': { en: 'in Turkish', ru: 'по-турецки' },
-  'Word to pronounce:': { en: 'Word to pronounce:', ru: 'Слово для произношения:' },
-  'Translation:': { en: 'Translation:', ru: 'Перевод:' },
-  'Say the word...': { en: 'Say the word...', ru: 'Скажите слово...' },
-  'Show hint': { en: 'Show hint', ru: 'Показать подсказку' },
-  'Hide hint': { en: 'Hide hint', ru: 'Скрыть подсказку' },
-  'Skip': { en: 'Skip', ru: 'Пропустить' },
-  'Great job! Turi is proud of you!': { en: 'Great job! Turi is proud of you!', ru: 'Отлично! Тури гордится вами!' },
-  'Debug Accept': { en: 'Debug Accept', ru: 'Принять (отладка)' },
-  'Continue my journey': { en: 'Continue my journey', ru: 'Продолжить обучение' },
-  'Continue': { en: 'Continue', ru: 'Продолжить' },
-  'Debug Info': { en: 'Debug Info', ru: 'Отладочная информация' },
-  'Expected:': { en: 'Expected:', ru: 'Ожидалось:' },
-  'Heard:': { en: 'Heard:', ru: 'Распознано:' },
-  'Target Language:': { en: 'Target Language:', ru: 'Язык изучения:' },
-  'Word Index:': { en: 'Word Index:', ru: 'Номер слова:' },
-  'Something went wrong': { en: 'Something went wrong', ru: 'Что-то пошло не так' },
-  'We encountered an error while showing the quiz.': { en: 'We encountered an error while showing the quiz.', ru: 'Произошла ошибка при отображении теста.' },
-  'Go back': { en: 'Go back', ru: 'Назад' },
-  'Try Again': { en: 'Try Again', ru: 'Попробовать снова' },
-  'Not quite right. Try again!': { en: 'Not quite right. Try again!', ru: 'Не совсем правильно. Попробуйте еще раз!' },
-  'Length difference:': { en: 'Length difference:', ru: 'Разница в длине:' },
-  'Correct answers:': { en: 'Correct answers:', ru: 'Правильные ответы:' },
-  'Play pronunciation': { en: 'Play pronunciation', ru: 'Воспроизвести произношение' },
-  'Listening...': { en: 'Listening...', ru: 'Слушаю...' },
-  'Start listening': { en: 'Start listening', ru: 'Начать прослушивание' },
-  'Click to start listening': { en: 'Click to start listening', ru: 'Нажмите, чтобы начать прослушивание' },
-  // Add new translations for quiz completion panel
-  'Great work!': { en: 'Great work!', ru: 'Отличная работа!' },
-  'Let\'s try again!': { en: 'Let\'s try again!', ru: 'Давайте попробуем ещё раз!' },
-  'Your score:': { en: 'Your score:', ru: 'Ваш результат:' },
-  'I`m impressed with your progress! You\'re doing great with your language journey.': { 
-    en: 'I`m impressed with your progress! You\'re doing great with your language journey.',
-    ru: 'Я впечатлен вашим прогрессом! Вы отлично справляетесь с изучением языка.'
-  },
-  'Turi believes in you! A little more practice and you\'ll master these words.': {
-    en: 'Turi believes in you! A little more practice and you\'ll master these words.',
-    ru: 'Тури верит в вас! Ещё немного практики, и вы освоите эти слова.'
-  },
-  'Save to Dictionary': { en: 'Save to Dictionary', ru: 'Сохранить в словарь' },
-  'Word saved!': { en: 'Word saved!', ru: 'Слово сохранено!' },
-  'Saving...': { en: 'Saving...', ru: 'Сохранение...' },
-  'pleaseSignIn': { en: 'Please sign in to save words to your dictionary.', ru: 'Пожалуйста, войдите, чтобы сохранять слова в словарь.' }
-};
-
-function t(key: string, lang: SupportedLanguage) {
-  // Use the translation if available, fallback to English, then to the key itself
-  return translations[key]?.[lang] || translations[key]?.['en'] || key;
-}
 
 // Map supported languages to their speech recognition codes
 const getRecognitionLanguage = (lang: SupportedLanguage): string => {
@@ -191,6 +127,9 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
   
   // Get languages from store
   const { motherLanguage, targetLanguage, user, setIsQuizActive, setIsMovementDisabled } = useStore();
+  
+  // Get translations
+  const { t } = useTranslations();
   
   // Added ref to track if user manually stopped listening
   const userStoppedListening = useRef(false);
@@ -1913,7 +1852,7 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
     // Check if user is logged in
     if (!user || !user.id) {
       console.log('📚 User not logged in, cannot add word to dictionary');
-      alert(getTranslation(motherLanguage, 'pleaseSignIn') || t('pleaseSignIn', motherLanguage));
+      alert(getTranslation(motherLanguage, 'pleaseSignIn') || t.pleaseSignIn);
       return;
     }
     
@@ -2297,7 +2236,7 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
               onClick={onClose}
               className="px-8 py-3 mt-3 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white rounded-lg transition-colors font-medium shadow-md"
             >
-              {t('Go back', motherLanguage)}
+              {t.goBackButton}
             </button>
           </div>
           </div>
@@ -2340,7 +2279,7 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
                 <CheckCircle className="w-12 h-12 text-green-500" />
             </div>
             <p className="text-xl font-medium text-white text-center">
-              {t('Great work!', motherLanguage)}
+              {t.greatWork}
             </p>
             <p className="text-sm text-slate-300 text-center">
               This scenario dialogue completed successfully!
@@ -2352,7 +2291,7 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
               className="px-8 py-3 mt-3 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-500 hover:to-green-600 text-white rounded-lg transition-colors font-medium shadow-md cursor-pointer"
               type="button"
             >
-              {t('Continue', motherLanguage)} →
+              {t.continueButton} →
             </button>
             </div>
           </div>
@@ -2380,7 +2319,7 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
               onClick={onClose}
               className="px-8 py-3 mt-3 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white rounded-lg transition-colors font-medium shadow-md"
             >
-              {t('Go back', motherLanguage)}
+              {t.goBackButton}
             </button>
           </div>
           </div>
@@ -2427,10 +2366,10 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
                   </div>
                   <div>
                     <p className="text-xs uppercase tracking-[0.3em] text-white/60 mb-2">
-                      {t('Vocabulary Quiz', motherLanguage)}
+                      {t.vocabularyQuiz}
                     </p>
                     <h2 className="text-3xl font-bold">
-                      {t(passed ? 'Great work!' : 'Let\'s try again!', motherLanguage)}
+                      {passed ? t.greatWork : t.letsTryAgain}
                     </h2>
                   </div>
                 </div>
@@ -2447,7 +2386,7 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="bg-white/5 border border-white/10 rounded-2xl p-5 text-center">
                   <p className="text-sm text-white/70 mb-3">
-                    {t('Your score:', motherLanguage)}
+                    {t.yourScore}
                   </p>
                   <div className="flex items-center justify-center">
                     <div className="relative w-32 h-32">
@@ -2484,9 +2423,7 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
                 
                 <div className="bg-white/5 border border-white/10 rounded-2xl p-5 flex items-center justify-center text-center">
                   <p className="text-base text-white/80">
-                    {t(passed 
-                      ? 'Turi is impressed with your progress! You\'re doing great with your language journey.' 
-                      : 'Turi believes in you! A little more practice and you\'ll master these words.', motherLanguage)}
+                    {passed ? t.impressedWithProgress : t.believeInYou}
                   </p>
                 </div>
               </div>
@@ -2499,10 +2436,10 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
                     </div>
                     <div className="flex-1">
                       <p className="text-base text-yellow-100 font-bold mb-2">
-                        Mission not counted
+                        {t.missionNotCounted}
                       </p>
                       <p className="text-sm text-yellow-100/90 leading-relaxed">
-                        You used my help help during this mission, so it wasn't counted as completed. Try again without help to unlock the next mission!
+                        {t.missionNotCountedMessage}
                       </p>
                     </div>
                   </div>
@@ -2515,7 +2452,7 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
                 className="w-full justify-center"
                 type="button"
               >
-                {t('Continue my journey', motherLanguage)}
+                {t.continueMyJourney}
               </PanelButton>
             </div>
           </AppPanel>
@@ -2546,7 +2483,7 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
                 style={{ pointerEvents: 'auto' }}
               >
                 <div className="px-6 py-4 border-b border-white/10 flex justify-between items-center">
-                  <h2 className="text-lg font-semibold text-white">{t('Vocabulary Quiz', motherLanguage)}</h2>
+                  <h2 className="text-lg font-semibold text-white">{t.vocabularyQuiz}</h2>
                   <button 
                     onClick={onClose}
                     className="rounded-full bg-white/10 hover:bg-white/20 h-8 w-8 flex items-center justify-center transition-colors"
@@ -2561,11 +2498,11 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
         {/* Progress indicator */}
         <div className="flex justify-between items-center mb-6">
           <span className="text-sm font-medium text-slate-400">
-                    {t('Question', motherLanguage)} {currentWordIndex + 1} of {quizWords.length}
+                    {t.question} {currentWordIndex + 1} of {quizWords.length}
           </span>
           <div className="flex items-center space-x-1">
             <span className="text-sm font-medium text-slate-400">
-                      {t('correct', motherLanguage)}: {correctCount}
+                      {t.correct}: {correctCount}
             </span>
           </div>
         </div>
@@ -2573,7 +2510,7 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
         {/* Question */}
                 <div className="mb-8 text-center">
                   <h2 className="text-2xl font-bold text-white mb-6">
-                    {t('How do you say', motherLanguage)} "{displayWord}" in {getLanguageName(targetLanguage, motherLanguage)}?
+                    {t.howDoYouSay} "{displayWord}" in {getLanguageName(targetLanguage, motherLanguage)}?
                     {currentWord?.is_from_500 && (
                       <span className="ml-2 text-yellow-400">⭐</span>
                     )}
@@ -2586,7 +2523,7 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
                       onClick={(e) => { e.stopPropagation(); playAudio(); }}
                       className="p-4 rounded-full bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white transition-colors cursor-pointer flex items-center justify-center shadow-lg"
                       style={{ minWidth: '60px', minHeight: '60px' }}
-                      aria-label={t('Play pronunciation', motherLanguage)}
+                      aria-label={t.playPronunciation}
                       type="button"
             >
                       <Volume className="w-8 h-8" />
@@ -2604,7 +2541,7 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
                           : 'bg-gradient-to-r from-green-600 to-green-700 hover:from-green-500 hover:to-green-600'
                       }`}
                       style={{ minWidth: '60px', minHeight: '60px' }}
-                      aria-label={isListening ? t('Listening...', motherLanguage) : t('Start listening', motherLanguage)}
+                      aria-label={isListening ? t.listening : t.startListening}
                       type="button"
                       title={isListening ? '🎤 Listening for your answer (red = active)' : 'Click if not listening'}
                     >
@@ -2617,12 +2554,12 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
                     <div className="mt-4 p-3 bg-indigo-900/30 rounded-lg border border-indigo-800">
                       <div className="flex flex-col gap-2">
                         <div>
-                          <span className="text-slate-400 text-sm">{t('Word to pronounce:', motherLanguage)}</span>
+                          <span className="text-slate-400 text-sm">{t.wordToPronounce}</span>
                           <div className="text-indigo-300 font-medium text-xl">{answerWord}</div>
                         </div>
                         
                         <div className="border-t border-indigo-800 pt-2">
-                          <span className="text-slate-400 text-sm">{t('Translation:', motherLanguage)}</span>
+                          <span className="text-slate-400 text-sm">{t.translation}</span>
                           <div className="text-white font-medium">{displayWord}</div>
                         </div>
                       </div>
@@ -2641,7 +2578,7 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
             `}
           >
             <p className="text-lg font-medium">
-                      {transcript ? transcript : t('Say the word...', motherLanguage)}
+                      {transcript ? transcript : t.sayTheWord}
             </p>
           </div>
         </div>
@@ -2650,7 +2587,7 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
         {isCorrect === true && (
           <div className="mb-6 text-center animate-fade-in">
                     <CheckCircle className="w-14 h-14 text-green-500 mx-auto mb-3" />
-                    <p className="text-lg font-bold text-green-400">{t('Great job! Turi is proud of you!', motherLanguage)}</p>
+                    <p className="text-lg font-bold text-green-400">{t.greatJobTuriProud}</p>
           </div>
         )}
 
@@ -2658,7 +2595,7 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
                 {isCorrect === false && (
                   <div className="mb-6 text-center animate-fade-in">
                     <XCircle className="w-14 h-14 text-red-500 mx-auto mb-3" />
-                    <p className="text-lg font-bold text-red-400">{t('Not quite right. Try again!', motherLanguage)}</p>
+                    <p className="text-lg font-bold text-red-400">{t.notQuiteRight}</p>
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -2670,7 +2607,7 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
                       className="mt-4 px-5 py-2.5 flex items-center gap-1 mx-auto rounded-lg bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 transition-colors text-white font-medium shadow-md"
                       type="button"
                     >
-                      {t('Try Again', motherLanguage)}
+                      {t.tryAgain}
                     </button>
                   </div>
                 )}
@@ -2679,7 +2616,7 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
         {wordAddedFeedback && (
           <div className="mb-4 text-center animate-fade-in">
             <div className="inline-block px-4 py-2 bg-green-900/30 border border-green-700 rounded-lg">
-              <p className="text-green-400 font-medium">{t('Word saved!', motherLanguage)}</p>
+              <p className="text-green-400 font-medium">{t.wordSaved}</p>
             </div>
           </div>
         )}
@@ -2693,7 +2630,7 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
                     type="button"
           >
             <HelpCircle className="w-5 h-5" />
-                    {showHint ? t('Hide hint', motherLanguage) : t('Show hint', motherLanguage)}
+                    {showHint ? t.hideHint : t.showHint}
           </button>
           
           {/* Save to Dictionary button */}
@@ -2705,7 +2642,7 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
             disabled={addingWordToDictionary}
           >
             <BookMarked className="w-5 h-5" />
-            {addingWordToDictionary ? t('Saving...', motherLanguage) : t('Save to Dictionary', motherLanguage)}
+            {addingWordToDictionary ? t.saving : t.saveToDictionary}
           </button>
           
                   {/* Debug Accept button */}
@@ -2715,7 +2652,7 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
                     style={{ minHeight: '44px' }}
                     type="button"
                   >
-                    {t('Debug Accept', motherLanguage)}
+                    {t.debugAccept}
           </button>
         </div>
                 
@@ -2723,12 +2660,12 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
                 <div className="mt-6 pt-3 border-t border-slate-700">
                   <details className="text-sm text-slate-400">
                     <summary className="cursor-pointer hover:text-slate-300 transition-colors">
-                      {t('Debug Info', motherLanguage)}
+                      {t.debugInfo}
                     </summary>
                     <div className="mt-2 bg-slate-800/40 p-3 rounded-lg">
-                      <p>{t('Expected:', motherLanguage)} <span className="text-white font-medium">{answerWord}</span> <span className="text-slate-500">({answerWord.length} chars)</span></p>
-                      <p>{t('Heard:', motherLanguage)} <span className="text-white font-medium">{transcript}</span> <span className="text-slate-500">({transcript.length} chars)</span></p>
-                      <p>{t('Length difference:', motherLanguage)} <span className={`font-medium ${Math.abs(answerWord.length - transcript.length) > 2 ? 'text-red-400' : 'text-green-400'}`}>{Math.abs(answerWord.length - transcript.length)}</span></p>
+                      <p>{t.expected} <span className="text-white font-medium">{answerWord}</span> <span className="text-slate-500">({answerWord.length} chars)</span></p>
+                      <p>{t.heard} <span className="text-white font-medium">{transcript}</span> <span className="text-slate-500">({transcript.length} chars)</span></p>
+                      <p>{t.lengthDifference} <span className={`font-medium ${Math.abs(answerWord.length - transcript.length) > 2 ? 'text-red-400' : 'text-green-400'}`}>{Math.abs(answerWord.length - transcript.length)}</span></p>
                       
                       {targetLanguage === 'ru' && (
                         <div className="mt-2 pt-2 border-t border-slate-700">
@@ -2749,9 +2686,9 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
                       )}
                       
                       <div className="mt-2">
-                        <p>{t('Target Language:', motherLanguage)} <span className="text-white">{targetLanguage}</span></p>
-                        <p>{t('Word Index:', motherLanguage)} <span className="text-white">{currentWordIndex + 1}/{quizWords.length}</span></p>
-                        <p>{t('Correct answers:', motherLanguage)} <span className="text-white">{correctCount}</span></p>
+                        <p>{t.targetLanguageLabel} <span className="text-white">{targetLanguage}</span></p>
+                        <p>{t.wordIndex} <span className="text-white">{currentWordIndex + 1}/{quizWords.length}</span></p>
+                        <p>{t.correctAnswers} <span className="text-white">{correctCount}</span></p>
                       </div>
                     </div>
                   </details>
@@ -2763,15 +2700,15 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
           console.error('Error rendering quiz UI:', error);
           return (
               <AppPanel width="100%" padding={32} className="mx-auto text-white" style={{ pointerEvents: 'auto' }}>
-                <h2 className="text-xl font-bold mb-4">{t('Something went wrong', motherLanguage)}</h2>
-                <p className="mb-4">{t('We encountered an error while showing the quiz.', motherLanguage)}</p>
+                <h2 className="text-xl font-bold mb-4">{t.somethingWentWrong}</h2>
+                <p className="mb-4">{t.quizError}</p>
                 <PanelButton
                   onClick={onClose}
                   variant="primary"
                   className="w-full justify-center"
                   type="button"
                 >
-                  {t('Go back', motherLanguage)}
+                  {t.goBackButton}
                 </PanelButton>
               </AppPanel>
           );

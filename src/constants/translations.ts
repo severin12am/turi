@@ -129,6 +129,58 @@ export interface TranslationStrings {
   // Dictionary
   pleaseSignIn?: string;
   
+  // Quiz UI
+  vocabularyQuiz?: string;
+  question?: string;
+  correct?: string;
+  howDoYouSay?: string;
+  inEnglish?: string;
+  inRussian?: string;
+  inChinese?: string;
+  inSpanish?: string;
+  inFrench?: string;
+  inGerman?: string;
+  inItalian?: string;
+  inArabic?: string;
+  inJapanese?: string;
+  inTurkish?: string;
+  wordToPronounce?: string;
+  translation?: string;
+  sayTheWord?: string;
+  showHint?: string;
+  hideHint?: string;
+  skipWord?: string;
+  greatJobTuriProud?: string;
+  debugAccept?: string;
+  continueMyJourney?: string;
+  continueButton?: string;
+  debugInfo?: string;
+  expected?: string;
+  heard?: string;
+  targetLanguageLabel?: string;
+  wordIndex?: string;
+  somethingWentWrong?: string;
+  quizError?: string;
+  goBackButton?: string;
+  tryAgain?: string;
+  notQuiteRight?: string;
+  lengthDifference?: string;
+  correctAnswers?: string;
+  playPronunciation?: string;
+  listening?: string;
+  startListening?: string;
+  clickToStartListening?: string;
+  greatWork?: string;
+  letsTryAgain?: string;
+  yourScore?: string;
+  impressedWithProgress?: string;
+  believeInYou?: string;
+  saveToDictionary?: string;
+  wordSaved?: string;
+  saving?: string;
+  missionNotCounted?: string;
+  missionNotCountedMessage?: string;
+  
   // Missions
   missions?: string;
   mission?: string;
@@ -455,6 +507,58 @@ export const translations: Record<'en', TranslationStrings> = {
     commonWordsInContext: '500 most common words in context',
     completeInHideOrTranslationMode: 'To prove you\'ve mastered this dialogue, complete in Hide or Translation mode to proceed (click visibility button)',
     pleaseSignIn: 'Please sign in to save words to your dictionary',
+    
+    // Quiz UI
+    vocabularyQuiz: 'Vocabulary Quiz',
+    question: 'Question',
+    correct: 'correct',
+    howDoYouSay: 'How do you say',
+    inEnglish: 'in English',
+    inRussian: 'in Russian',
+    inChinese: 'in Chinese',
+    inSpanish: 'in Spanish',
+    inFrench: 'in French',
+    inGerman: 'in German',
+    inItalian: 'in Italian',
+    inArabic: 'in Arabic',
+    inJapanese: 'in Japanese',
+    inTurkish: 'in Turkish',
+    wordToPronounce: 'Word to pronounce:',
+    translation: 'Translation:',
+    sayTheWord: 'Say the word...',
+    showHint: 'Show hint',
+    hideHint: 'Hide hint',
+    skipWord: 'Skip',
+    greatJobTuriProud: 'Great job! Turi is proud of you!',
+    debugAccept: 'Debug Accept',
+    continueMyJourney: 'Continue my journey',
+    continueButton: 'Continue',
+    debugInfo: 'Debug Info',
+    expected: 'Expected:',
+    heard: 'Heard:',
+    targetLanguageLabel: 'Target Language:',
+    wordIndex: 'Word Index:',
+    somethingWentWrong: 'Something went wrong',
+    quizError: 'We encountered an error while showing the quiz.',
+    goBackButton: 'Go back',
+    tryAgain: 'Try Again',
+    notQuiteRight: 'Not quite right. Try again!',
+    lengthDifference: 'Length difference:',
+    correctAnswers: 'Correct answers:',
+    playPronunciation: 'Play pronunciation',
+    listening: 'Listening...',
+    startListening: 'Start listening',
+    clickToStartListening: 'Click to start listening',
+    greatWork: 'Great work!',
+    letsTryAgain: 'Let\'s try again!',
+    yourScore: 'Your score:',
+    impressedWithProgress: 'I am impressed with your progress! You\'re doing great with your language journey.',
+    believeInYou: 'I believe in you! A little more practice and you\'ll master these words.',
+    saveToDictionary: 'Save to Dictionary',
+    wordSaved: 'Word saved!',
+    saving: 'Saving...',
+    missionNotCounted: 'Mission not counted',
+    missionNotCountedMessage: 'You used my help during this mission, so it wasn\'t counted as completed. Try again without help to unlock the next mission!',
     
     // Missions
     missions: 'Missions',
