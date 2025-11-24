@@ -64,40 +64,11 @@ interface VocalQuizProps {
 
 import { useTranslations } from '../hooks/useTranslations';
 import type { SupportedLanguage } from '../constants/translations';
+import { getSpeechRecognitionLanguage, getLanguageName } from '../utils/languageMappings';
 
-// Map supported languages to their speech recognition codes
-const getRecognitionLanguage = (lang: SupportedLanguage): string => {
-  const languageMap: Partial<Record<SupportedLanguage, string>> = {
-    'en': 'en-US',
-    'ru': 'ru-RU',
-    'es': 'es-ES',
-    'fr': 'fr-FR',
-    'de': 'de-DE',
-    'it': 'it-IT',
-    'ar': 'ar-SA',
-    'CH': 'zh-CN',
-    'ja': 'ja-JP',
-    'tr': 'tr-TR'
-  };
-  return languageMap[lang] || 'en-US'; // Default to English
-};
+// getSpeechRecognitionLanguage is now imported from utils/languageMappings
 
-// Helper function to get language name for display
-const getLanguageName = (lang: SupportedLanguage, displayLang: SupportedLanguage): string => {
-  const languageNames: Partial<Record<SupportedLanguage, Partial<Record<SupportedLanguage, string>>>> = {
-    'en': { en: 'English', ru: 'английском' },
-    'ru': { en: 'Russian', ru: 'русском' },
-    'es': { en: 'Spanish', ru: 'испанском' },
-    'fr': { en: 'French', ru: 'французском' },
-    'de': { en: 'German', ru: 'немецком' },
-    'it': { en: 'Italian', ru: 'итальянском' },
-    'ar': { en: 'Arabic', ru: 'арабском' },
-    'CH': { en: 'Chinese', ru: 'китайском' },
-    'ja': { en: 'Japanese', ru: 'японском' },
-    'tr': { en: 'Turkish', ru: 'турецком' }
-  };
-  return languageNames[lang]?.[displayLang] || lang;
-};
+// getLanguageName is now imported from utils/languageMappings
 
 const VocalQuizComponent: React.FC<VocalQuizProps> = ({ 
   dialogueId, 
@@ -679,8 +650,8 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
         const recognition = new SpeechRecognition();
         
         // Set language based on what the user is learning
-        const recognitionLanguage = getRecognitionLanguage(targetLanguage);
-        recognition.lang = recognitionLanguage;
+        const recognitionLanguage = getSpeechRecognitionLanguage(targetLanguage);
+        recognition.lang = recognitionLanguage || 'en-US';
         
         console.log(`🎤 Creating speech recognition for: ${recognitionLanguage}`);
         
@@ -905,7 +876,7 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
               freshRecognition.continuous = false;
               freshRecognition.interimResults = false;
               freshRecognition.maxAlternatives = 10;
-              freshRecognition.lang = getRecognitionLanguage(targetLanguage);
+              freshRecognition.lang = getSpeechRecognitionLanguage(targetLanguage) || 'en-US';
               
               // Copy existing handlers
               if (recognitionRef.current) {
@@ -1292,7 +1263,7 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
         firstQuestionRecognition.continuous = false;
         firstQuestionRecognition.interimResults = false;
         firstQuestionRecognition.maxAlternatives = 10; // Much higher for first question
-        firstQuestionRecognition.lang = getRecognitionLanguage(targetLanguage);
+        firstQuestionRecognition.lang = getSpeechRecognitionLanguage(targetLanguage) || 'en-US';
         
         console.log(`🎤 Created dedicated recognition for first question (${firstQuestionRecognition.lang})`);
 
@@ -1716,7 +1687,7 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
       const utterance = new SpeechSynthesisUtterance(wordToPlay);
       
       // Set language to match what we're playing
-      utterance.lang = getRecognitionLanguage(targetLanguage);
+      utterance.lang = getSpeechRecognitionLanguage(targetLanguage) || 'en-US';
       utterance.volume = 1.0;  // Maximum volume
       utterance.rate = 0.8;    // Slightly slower
       

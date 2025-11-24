@@ -1,6 +1,7 @@
 import { supabase } from './supabase';
 import { logger } from './logger';
 import type { SupportedLanguage } from '../constants/translations';
+import { getQuizColumnForLanguage, getScenarioColumnForLanguage } from '../utils/languageMappings';
 
 /**
  * Interface for quiz words from the common words table
@@ -23,26 +24,7 @@ export interface ScenarioQuizWord {
   [key: string]: any;
 }
 
-/**
- * Get column name in quiz table for a given language
- */
-const getQuizColumnForLanguage = (language: SupportedLanguage): string => {
-  const columnMap: Record<string, string> = {
-    'en': 'english',
-    'ru': 'russian',
-    'es': 'spanish',
-    'fr': 'french',
-    'de': 'german',
-    'it': 'italian',
-    'pt': 'portuguese',
-    'ar': 'arabic',
-    'CH': 'chinese',
-    'ja': 'japanese',
-    'tr': 'turkish'
-  };
-  
-  return columnMap[language] || 'english';
-};
+// getQuizColumnForLanguage is now imported from utils/languageMappings
 
 /**
  * Extract individual words from dialogue text
@@ -109,7 +91,7 @@ export const fetchScenarioQuizWords = async (
     }
 
     // Step 2: Extract all text from the dialogue in target language
-    const targetColumn = getTargetLanguageColumn(targetLanguage);
+    const targetColumn = getScenarioColumnForLanguage(targetLanguage);
     const allDialogueText = dialogueData
       .map(phrase => phrase[targetColumn] || '')
       .join(' ');
@@ -186,26 +168,7 @@ export const fetchScenarioQuizWords = async (
   }
 };
 
-/**
- * Get the column name for target language in scenario dialogue tables
- */
-const getTargetLanguageColumn = (language: SupportedLanguage): string => {
-  const columnMap: Record<string, string> = {
-    'en': 'en_text',
-    'ru': 'ru_text',
-    'es': 'es_text',
-    'fr': 'fr_text',
-    'de': 'de_text',
-    'it': 'it_text',
-    'pt': 'pt_text',
-    'ar': 'ar_text',
-    'CH': 'ch_text',
-    'ja': 'ja_text',
-    'tr': 'tr_text'
-  };
-  
-  return columnMap[language] || 'en_text';
-};
+// getScenarioColumnForLanguage (formerly getTargetLanguageColumn) is now imported from utils/languageMappings
 
 /**
  * Get scenario quiz statistics (for debugging/tracking)
@@ -232,7 +195,7 @@ export const getScenarioQuizStats = async (
     }
 
     // Extract words
-    const targetColumn = getTargetLanguageColumn(targetLanguage);
+    const targetColumn = getScenarioColumnForLanguage(targetLanguage);
     const allDialogueText = dialogueData
       .map(phrase => phrase[targetColumn] || '')
       .join(' ');
