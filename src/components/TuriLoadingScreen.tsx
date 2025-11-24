@@ -5,21 +5,32 @@ interface TuriLoadingScreenProps {
   minimumLoadTime?: number;
 }
 
+// Translations for the loading message
+const loadingTranslations = [
+  'Preparing your language learning journey...',
+  '正在为您准备语言学习之旅……',
+  'Preparando tu viaje de aprendizaje de idiomas...',
+  'جارٍ تجهيز رحلة تعلّم اللغة الخاصة بك...',
+  'Preparando sua jornada de aprendizado de idiomas...',
+  'Подготовка к вашему путешествию по изучению языка...',
+  '言語学習の旅を準備しています…',
+  'Vorbereitung deiner Sprachlernreise...',
+  'Préparation de votre parcours d\'apprentissage linguistique...',
+  'Preparazione del tuo viaggio di apprendimento linguistico...'
+];
+
 const TuriLoadingScreen: React.FC<TuriLoadingScreenProps> = ({ 
   onLoadingComplete,
   minimumLoadTime = 1500
 }) => {
   const [fadeOut, setFadeOut] = useState(false);
-  const [dots, setDots] = useState('');
+  const [currentTranslationIndex, setCurrentTranslationIndex] = useState(0);
 
   useEffect(() => {
-    // Animated dots effect
-    const dotsInterval = setInterval(() => {
-      setDots(prev => {
-        if (prev === '...') return '';
-        return prev + '.';
-      });
-    }, 400);
+    // Cycle through translations every 3 seconds
+    const translationInterval = setInterval(() => {
+      setCurrentTranslationIndex(prev => (prev + 1) % loadingTranslations.length);
+    }, 3000);
 
     // Fade out after minimum load time
     const timer = setTimeout(() => {
@@ -31,7 +42,7 @@ const TuriLoadingScreen: React.FC<TuriLoadingScreenProps> = ({
     }, minimumLoadTime);
 
     return () => {
-      clearInterval(dotsInterval);
+      clearInterval(translationInterval);
       clearTimeout(timer);
     };
   }, [onLoadingComplete, minimumLoadTime]);
@@ -43,10 +54,10 @@ const TuriLoadingScreen: React.FC<TuriLoadingScreenProps> = ({
       }`}
     >
       <div className="flex flex-col items-center justify-center w-full space-y-8">
-        {/* Loading text - centered */}
+        {/* Loading text - centered with smooth transition */}
         <div className="text-center space-y-6">
-          <p className="text-indigo-200 text-xl font-medium">
-            Preparing your language learning journey...
+          <p className="text-indigo-200 text-xl font-medium transition-opacity duration-500 min-h-[2rem]">
+            {loadingTranslations[currentTranslationIndex]}
           </p>
 
           {/* Loading bar */}
