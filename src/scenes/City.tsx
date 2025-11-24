@@ -301,6 +301,9 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady }) => {
 
   // Fetch character data
   useEffect(() => {
+    console.log("🏙️ CityScene useEffect STARTED - about to call 30 setState operations");
+    const start = performance.now();
+    
     // Set up all 30 characters using centralized character data
     // Position and scale are kept from original setup
     
@@ -725,12 +728,22 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady }) => {
     } as CharacterType);
     
     
-    // Signal ready immediately - don't wait for character states
-    // Character state updates are async and take ~34s, blocking everything
-    if (onReady) {
-      console.log("🏙️ CityScene initialized, calling onReady");
-      onReady();
-    }
+    const end = performance.now();
+    console.log(`🏙️ CityScene useEffect COMPLETED all 30 setState calls in ${Math.round(end - start)}ms (synchronous)`);
+    
+    // Signal ready AFTER this useEffect completes and character states start processing
+    // Use setTimeout to break out of the current execution context
+    // This prevents onReady from being batched with the 30 setCharacter calls
+    setTimeout(() => {
+      if (onReady) {
+        console.log("🏙️ CityScene: Calling onReady() after setState batch");
+        onReady();
+      }
+    }, 0); // 0ms = next tick, after current batch
+    
+    return () => {
+      // Cleanup function (currently empty but good practice)
+    };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Calculate distance between player and characters

@@ -657,7 +657,10 @@ function App() {
 
   useEffect(() => {
     const delta = Math.round(performance.now() - loadStartRef.current);
-    console.log(`[LOAD] helperRobotReady = ${helperRobotReady} @ ${delta}ms`);
+    console.log(`[LOAD] ⚡ helperRobotReady useEffect fired: ${helperRobotReady} @ ${delta}ms`);
+    if (helperRobotReady) {
+      console.log(`[LOAD] 🎉 HelperRobot state FINALLY updated after ${delta}ms`);
+    }
   }, [helperRobotReady]);
 
   useEffect(() => {
@@ -719,8 +722,22 @@ function App() {
                 shouldAnimate={helperRobotReady}
               onReady={() => {
                 const delta = Math.round(performance.now() - loadStartRef.current);
-                console.log(`✅ HelperRobot ready @ ${delta}ms`);
+                console.log(`✅ HelperRobot ready @ ${delta}ms - calling setHelperRobotReady(true) NOW`);
+                const beforeSetState = performance.now();
                 setHelperRobotReady(true);
+                const afterSetState = performance.now();
+                console.log(`⏱️ setHelperRobotReady() call took ${Math.round(afterSetState - beforeSetState)}ms (synchronous part)`);
+                
+                // Check if it updates in the next frame
+                requestAnimationFrame(() => {
+                  const raf1 = Math.round(performance.now() - loadStartRef.current);
+                  console.log(`⏱️ First RAF after setHelperRobotReady @ ${raf1}ms`);
+                });
+                
+                setTimeout(() => {
+                  const timeout = Math.round(performance.now() - loadStartRef.current);
+                  console.log(`⏱️ 100ms timeout after setHelperRobotReady @ ${timeout}ms`);
+                }, 100);
               }}
               />
             </div>
