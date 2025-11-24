@@ -638,8 +638,13 @@ function App() {
   if (needsLanguageSelection) {
     return (
       <>
-        {/* Mount CityScene in background to preload while showing loading screen */}
-        <div className="relative min-h-screen bg-gray-900" style={{ visibility: showLanguageSelection ? 'visible' : 'hidden' }}>
+        {/* Loading screen - FIRST, covers everything */}
+        {(!helperRobotReady || !citySceneReady) && (
+          <TuriLoadingScreen key="loading-screen" />
+        )}
+        
+        {/* Mount CityScene and HelperRobot in background while loading screen is visible */}
+        <div className="relative min-h-screen bg-gray-900">
           {/* Minimal background */}
           <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900"></div>
           
@@ -666,11 +671,6 @@ function App() {
             />
           </div>
         </div>
-        
-        {/* Loading screen - automatically hides when both HelperRobot AND CityScene are ready */}
-        {(!helperRobotReady || !citySceneReady) && (
-          <TuriLoadingScreen key="loading-screen" />
-        )}
       </>
     );
   }

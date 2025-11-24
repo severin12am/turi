@@ -299,14 +299,6 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady }) => {
   const [mobileMovement, setMobileMovement] = useState({ x: 0, z: 0 });
   const [mobileLook, setMobileLook] = useState({ x: 0, y: 0 });
 
-  // Signal ready immediately when component mounts - no artificial delay needed
-  useEffect(() => {
-    if (onReady) {
-      console.log("🏙️ CityScene initialized, calling onReady");
-      onReady();
-    }
-  }, []); // Empty deps, only run once on mount
-  
   // Fetch character data
   useEffect(() => {
     // Set up all 30 characters using centralized character data
@@ -731,6 +723,17 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady }) => {
       rotation_y: Math.PI * 1,
       is_active: true
     } as CharacterType);
+    
+    // Signal that the scene is ready after characters are set up
+    // Give time for 3D models to start loading before hiding loading screen
+    const readyTimer = setTimeout(() => {
+      if (onReady) {
+        console.log("🏙️ CityScene initialized, calling onReady");
+        onReady();
+      }
+    }, 1500); // Wait for models to start loading
+    
+    return () => clearTimeout(readyTimer);
   }, []); // Only run once on mount
 
   // Calculate distance between player and characters

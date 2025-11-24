@@ -189,17 +189,23 @@ const HelperRobot: React.FC<HelperRobotProps> = ({
   useEffect(() => {
     console.log("🤖 HelperRobot component MOUNTED");
     
-    // Signal to parent that component is mounted and ready immediately
-    if (onReady) {
-      onReady();
-    }
-    
-    // Start animation immediately - no delay needed
-    const whatLanguage = allTranslations.en.whatLanguage || "Hi! I'm Turi, I will guide you on your language learning journey! Firstly, what language do you already speak?";
-    const haveAccount = allTranslations.en.alreadyHaveAccount || "Already have an account?";
-    animateAllTexts(whatLanguage, haveAccount);
+    // Signal to parent that component is mounted and ready after a brief delay
+    // This gives the 3D model time to start loading
+    const readyTimer = setTimeout(() => {
+      if (onReady) {
+        onReady();
+      }
+      
+      // Start animation after signaling ready
+      setTimeout(() => {
+        const whatLanguage = allTranslations.en.whatLanguage || "Hi! I'm Turi, I will guide you on your language learning journey! Firstly, what language do you already speak?";
+        const haveAccount = allTranslations.en.alreadyHaveAccount || "Already have an account?";
+        animateAllTexts(whatLanguage, haveAccount);
+      }, 100);
+    }, 100);
     
     return () => {
+      clearTimeout(readyTimer);
       if (animationIntervalRef.current) {
         clearInterval(animationIntervalRef.current);
         animationIntervalRef.current = null;
