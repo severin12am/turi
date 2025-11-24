@@ -43,35 +43,14 @@ const TuriLoadingScreen: React.FC<TuriLoadingScreenProps> = ({
       }`}
     >
       <div className="flex flex-col items-center justify-center w-full space-y-8">
-        {/* Turi Icon/Logo */}
-        <div className="relative">
-          {/* Pulsing circles for visual interest */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-32 h-32 bg-purple-500/20 rounded-full animate-ping"></div>
-          </div>
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-24 h-24 bg-indigo-500/30 rounded-full animate-pulse"></div>
-          </div>
-          
-          {/* Center gradient circle */}
-          <div className="relative w-32 h-32 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center shadow-2xl shadow-purple-500/50">
-            <div className="text-6xl">🌍</div>
-          </div>
-        </div>
-
         {/* Loading text - centered */}
         <div className="text-center space-y-6">
-          <h1 className="text-3xl font-bold text-white">
-            Turi is getting ready
-            <span className="inline-block w-12 text-left">{dots}</span>
-          </h1>
-          
-          <p className="text-indigo-200 text-xl">
-            Preparing your language learning journey
+          <p className="text-indigo-200 text-xl font-medium">
+            Preparing your language learning journey...
           </p>
 
           {/* Loading bar */}
-          <div className="w-80 h-1.5 bg-slate-700 rounded-full overflow-hidden mx-auto mt-8">
+          <div className="w-80 h-1.5 bg-slate-700 rounded-full overflow-hidden mx-auto">
             <div className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 animate-loading-bar"></div>
           </div>
         </div>
