@@ -19,40 +19,24 @@ const loadingTranslations = [
 ];
 
 const TuriLoadingScreen: React.FC<TuriLoadingScreenProps> = () => {
-  const [currentTranslationIndex, setCurrentTranslationIndex] = useState(0);
-  const intervalRef = React.useRef<NodeJS.Timeout | null>(null);
-  const countRef = React.useRef(0);
+  const [, forceUpdate] = useState({});
+  const translationIndexRef = React.useRef(0);
 
   useEffect(() => {
     console.log('🎬 TuriLoadingScreen MOUNTED');
     
     // Cycle through translations every 3 seconds
-    intervalRef.current = setInterval(() => {
-      countRef.current++;
-      console.log(`🔄 Interval fired! Count: ${countRef.current}`);
-      
-      setCurrentTranslationIndex(prev => {
-        const next = (prev + 1) % loadingTranslations.length;
-        console.log(`📝 State update: ${prev} → ${next}: "${loadingTranslations[next]}"`);
-        return next;
-      });
-      
-      // Check if interval is still alive
-      if (intervalRef.current) {
-        console.log('✅ Interval still exists');
-      } else {
-        console.log('❌ Interval was cleared!');
-      }
+    const intervalId = setInterval(() => {
+      translationIndexRef.current = (translationIndexRef.current + 1) % loadingTranslations.length;
+      console.log(`🔄 Translation changed to: ${translationIndexRef.current} - "${loadingTranslations[translationIndexRef.current]}"`);
+      forceUpdate({}); // Force re-render to show new translation
     }, 3000);
     
-    console.log('⏰ Interval created:', intervalRef.current);
+    console.log('⏰ Interval created');
 
     return () => {
       console.log('🛑 TuriLoadingScreen UNMOUNTED - clearing interval');
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
+      clearInterval(intervalId);
     };
   }, []);
 
@@ -64,7 +48,7 @@ const TuriLoadingScreen: React.FC<TuriLoadingScreenProps> = () => {
         {/* Loading text - centered with smooth transition */}
         <div className="text-center space-y-6">
           <p className="text-indigo-200 text-xl font-medium min-h-[2rem]">
-            {loadingTranslations[currentTranslationIndex]}
+            {loadingTranslations[translationIndexRef.current]}
           </p>
 
           {/* Loading bar */}
