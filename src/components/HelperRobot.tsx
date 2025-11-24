@@ -35,6 +35,21 @@ const languages = POPULAR_LANGUAGES.map(lang => ({
   nameRu: `${lang.nativeName} (${lang.name})`  // We'll use native name for all
 }));
 
+// Small dictionary for cycling placeholder translations (visual effect only)
+// These are immediately available without needing to load from Supabase
+const placeholderTranslations: Record<string, string> = {
+  'en': 'Choose your native language',
+  'ru': 'Выберите родной язык',
+  'es': 'Elige tu lengua materna',
+  'fr': 'Choisissez votre langue maternelle',
+  'de': 'Wählen Sie Ihre Muttersprache',
+  'it': 'Scegli la tua lingua madre',
+  'pt': 'Escolha seu idioma nativo',
+  'ar': 'اختر لغتك الأم',
+  'CH': '选择您的母语',
+  'ja': '母国語を選択してください'
+};
+
 // Helper function to get translations from cache or fallback to English
 const getHelperTranslation = (language: string, key: string): string => {
   const lang = language as SupportedLanguage;
@@ -109,7 +124,7 @@ const HelperRobot: React.FC<HelperRobotProps> = ({
     haveAccount: getHelperTranslation(currentLang, 'alreadyHaveAccount'), // Use correct key
     back: getHelperTranslation(currentLang, 'goBack') // Use correct key
   };
-  const placeholderText = getHelperTranslation(placeholderLang, 'chooseLanguageYouSpeak');
+  const placeholderText = placeholderTranslations[placeholderLang] || placeholderTranslations['en'];
 
   // Setup rotation of placeholder languages
   useEffect(() => {
