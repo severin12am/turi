@@ -630,17 +630,27 @@ function App() {
 
   // Check if we should show language selection immediately
   const needsLanguageSelection = !isLanguageSelected && !isLoading;
+  const [citySceneReady, setCitySceneReady] = useState(false);
+  const showLanguageSelection = needsLanguageSelection && initialLoadComplete && citySceneReady;
 
-  // If languages aren't selected, show HelperRobot with language selection
+  // If languages aren't selected, show loading screen then language selection
   if (needsLanguageSelection) {
     return (
       <>
-        {/* HelperRobot mounts immediately so it can initialize in the background */}
-        <div className="relative min-h-screen bg-gray-900">
+        {/* Mount CityScene in background to preload while showing loading screen */}
+        <div className="relative min-h-screen bg-gray-900" style={{ visibility: showLanguageSelection ? 'visible' : 'hidden' }}>
           {/* Minimal background */}
           <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900"></div>
           
-          {/* HelperRobot with language selection - mounts early, hidden by loading screen */}
+          {/* Preload CityScene in background */}
+          <div className="absolute inset-0 z-0 pointer-events-none">
+            <CityScene onReady={() => {
+              console.log("✅ CityScene preloaded");
+              setCitySceneReady(true);
+            }} />
+          </div>
+          
+          {/* HelperRobot with language selection */}
           <div className="fixed top-10 left-10 z-50">
             <HelperRobot
               instructions={{ mode: "language_selection" }}
@@ -648,21 +658,19 @@ function App() {
               onLogin={handleLoginClickRobot}
               onClick={handleRobotClick}
               onReady={() => {
-                // HelperRobot signals it's ready - hide loading screen after short delay
-                console.log("✅ HelperRobot ready, hiding loading screen...");
-                setTimeout(() => {
-                  setInitialLoadComplete(true);
-                }, 500); // Small delay for smooth transition
+                // HelperRobot signals it's ready
+                console.log("✅ HelperRobot ready");
+                setInitialLoadComplete(true);
               }}
             />
           </div>
         </div>
         
-        {/* Loading screen overlay - stays visible until HelperRobot is ready */}
-        {!initialLoadComplete && (
+        {/* Loading screen - stays visible until both HelperRobot AND CityScene are ready */}
+        {(!initialLoadComplete || !citySceneReady) && (
           <TuriLoadingScreen 
             onLoadingComplete={() => {}}
-            minimumLoadTime={999999} // Ignored - we control it with setInitialLoadComplete
+            minimumLoadTime={2000}
           />
         )}
       </>

@@ -89,15 +89,21 @@ const TuriLoadingScreen: React.FC<TuriLoadingScreenProps> = ({
     >
       <div className="flex flex-col items-center justify-center w-full">
         {/* Turi's 3D Model */}
-        <div className="w-64 h-64 mb-8">
+        <div className="w-96 h-96 mb-4">
           <Canvas
-            camera={{ position: [0, 0, 3], fov: 50 }}
+            camera={{ position: [0, 0, 4], fov: 45 }}
             gl={{ alpha: true, antialias: true }}
+            style={{ background: 'transparent' }}
           >
-            <ambientLight intensity={0.8} />
-            <directionalLight position={[5, 5, 5]} intensity={1} />
-            <pointLight position={[-5, 5, -5]} intensity={0.5} />
-            <TuriModel isMovingAway={isMovingAway} />
+            {/* Brighter lighting to make Turi visible */}
+            <ambientLight intensity={1.5} />
+            <directionalLight position={[5, 5, 5]} intensity={2} />
+            <directionalLight position={[-5, 5, 5]} intensity={1} />
+            <pointLight position={[0, 5, 3]} intensity={1.2} color="#a78bfa" />
+            <pointLight position={[0, -2, 2]} intensity={0.5} color="#818cf8" />
+            <React.Suspense fallback={null}>
+              <TuriModel isMovingAway={isMovingAway} />
+            </React.Suspense>
           </Canvas>
         </div>
 
@@ -137,6 +143,9 @@ const TuriLoadingScreen: React.FC<TuriLoadingScreenProps> = ({
     </div>
   );
 };
+
+// Preload the model to ensure it appears quickly
+useGLTF.preload('/models/helper-robot.glb');
 
 export default TuriLoadingScreen;
 

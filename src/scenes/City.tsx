@@ -205,7 +205,11 @@ if (typeof window !== 'undefined') {
   window.addEventListener('keyup', handleKeyUp);
 }
 
-const CityScene: React.FC = () => {
+interface CitySceneProps {
+  onReady?: () => void;
+}
+
+const CityScene: React.FC<CitySceneProps> = ({ onReady }) => {
   const [playerPosition, setPlayerPosition] = useState(new THREE.Vector3(53, 1.7, 11));
   const [character, setCharacter] = useState<CharacterType | null>(null);
   const [character2, setCharacter2] = useState<CharacterType | null>(null);
@@ -719,7 +723,18 @@ const CityScene: React.FC = () => {
       rotation_y: Math.PI * 1,
       is_active: true
     } as CharacterType);
-  }, []);
+    
+    // Signal that the scene is ready after characters are set up
+    // This allows the loading screen to hide once everything is initialized
+    const readyTimer = setTimeout(() => {
+      if (onReady) {
+        console.log("🏙️ CityScene initialized, calling onReady");
+        onReady();
+      }
+    }, 1500); // Give time for models to start loading
+    
+    return () => clearTimeout(readyTimer);
+  }, [onReady]);
 
   // Calculate distance between player and characters
   useEffect(() => {
