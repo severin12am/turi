@@ -22,6 +22,8 @@ const TuriLoadingScreen: React.FC<TuriLoadingScreenProps> = () => {
   const [currentTranslationIndex, setCurrentTranslationIndex] = useState(0);
 
   useEffect(() => {
+    console.log('🎬 TuriLoadingScreen MOUNTED');
+    
     // Cycle through translations every 3 seconds
     const translationInterval = setInterval(() => {
       setCurrentTranslationIndex(prev => {
@@ -32,6 +34,7 @@ const TuriLoadingScreen: React.FC<TuriLoadingScreenProps> = () => {
     }, 3000);
 
     return () => {
+      console.log('🛑 TuriLoadingScreen UNMOUNTED - interval cleared');
       clearInterval(translationInterval);
     };
   }, []);
