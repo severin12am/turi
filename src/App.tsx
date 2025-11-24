@@ -651,122 +651,67 @@ function App() {
 
   // Simple mount logging
   useEffect(() => {
-    logLoadEvent('App mounted', { isLoading, needsLanguageSelection });
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    console.log('[LOAD] App mounted @', performance.now() - loadStartRef.current);
+  }, []);
 
-  // Track when helperRobotReady actually changes
-  useEffect(() => {
-    logLoadEvent(`helperRobotReady changed to: ${helperRobotReady}`);
-  }, [helperRobotReady, logLoadEvent]);
-
-  // Track when citySceneReady actually changes
-  useEffect(() => {
-    logLoadEvent(`citySceneReady changed to: ${citySceneReady}`);
-  }, [citySceneReady, logLoadEvent]);
-
-  // Stay in language selection branch until user actually selects languages
-  // Don't switch branches just because ready flags flip
-  if (needsLanguageSelection) {
-    return (
-      <>
-        {/* Loading screen - shows during auth AND scene loading */}
-        {showLoadingScreen && (
-          <TuriLoadingScreen key="loading-screen" />
-        )}
-        
-        {/* Mount CityScene and HelperRobot immediately (even during auth) */}
-        {/* They load in background while loading screen is visible */}
-        <div 
-          className="relative min-h-screen bg-gray-900 transition-opacity duration-500"
-          style={{ 
-            opacity: helperRobotReady ? 1 : 0,
-            pointerEvents: helperRobotReady ? 'auto' : 'none',
-          }}
-          aria-hidden={!helperRobotReady}
-        >
-          {/* Minimal background */}
-          <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900"></div>
-          
-          {/* Preload CityScene in background - keep mounted */}
-          <div 
-            className="absolute inset-0 z-0 pointer-events-none transition-opacity duration-700"
-            style={{ opacity: citySceneReady ? 1 : 0 }}
-            aria-hidden={!citySceneReady}
-          >
-            <CityScene onReady={() => {
-              const now = performance.now() - (loadStartRef.current || 0);
-              console.log(`✅ CityScene preloaded (calling setState @ ${Math.round(now)}ms)`);
-              logLoadEvent('CityScene onReady callback fired');
-              setCitySceneReady(true);
-              // Log after setState to see if it's instant
-              requestAnimationFrame(() => {
-                logLoadEvent('CityScene setState queued');
-              });
-            }} />
-          </div>
-          
-          {/* HelperRobot with language selection */}
-          <div className="fixed top-10 left-10 z-50">
-            <HelperRobot
-              instructions={{ mode: "language_selection" }}
-              onLanguageSelect={handleLanguageSelectRobot}
-              onLogin={handleLoginClickRobot}
-              onClick={handleRobotClick}
-              shouldAnimate={helperRobotReady}
-              onReady={() => {
-                const now = performance.now() - (loadStartRef.current || 0);
-                console.log(`✅ HelperRobot ready (calling setState @ ${Math.round(now)}ms)`);
-                logLoadEvent('HelperRobot onReady callback fired');
-                setHelperRobotReady(true);
-                // Log after setState to see if it's instant
-                requestAnimationFrame(() => {
-                  logLoadEvent('HelperRobot setState queued');
-                });
-              }}
-            />
-          </div>
-        </div>
-      </>
-    );
-  }
-
-  // If we reach here, languages are selected - show main app
-  // This branch only renders after user completes language selection
-  
-  // Show loading during auth for returning users
-  if (isLoading) {
-    return (
-      <>
-        <TuriLoadingScreen key="auth-loading" />
-        <div className="relative min-h-screen bg-gray-900">
-          <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900"></div>
-        </div>
-      </>
-    );
-  }
-
-  // Main app - only renders after language selection is complete
+  // SINGLE return - CityScene stays mounted, only overlays change
   return (
-    <div className="relative min-h-screen bg-gray-900">
-      {/* Background Scene */}
-      <div className="absolute inset-0 z-0 pointer-events-none">
-        <CityScene />
-      </div>
-
-      {/* Foreground Layer */}
-      <div className="relative z-10">
-        {/* Helper Robot - ALWAYS VISIBLE WITH CONSISTENT Z-INDEX - This should be the ONLY instance */}
-        <div className="fixed top-10 left-10 z-50 pointer-events-auto" style={{ pointerEvents: 'auto' }}>
-          <HelperRobot
-            instructions={robotInstructions}
-            onLanguageSelect={handleLanguageSelectRobot}
-            onLogin={handleLoginClickRobot}
-            onClick={handleRobotClick}
-          />
+    <>
+      {/* Loading screen */}
+      {showLoadingScreen && <TuriLoadingScreen key="loading-screen" />}
+      
+      {/* Main container - ALWAYS rendered */}
+      <div className="relative min-h-screen bg-gray-900">
+        {/* Background gradient */}
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900"></div>
+        
+        {/* CityScene - ALWAYS mounted, never unmounts */}
+        <div className="absolute inset-0 z-0 pointer-events-none">
+          <CityScene onReady={() => {
+            console.log('✅ CityScene preloaded');
+            setCitySceneReady(true);
+          }} />
         </div>
+        
+        {/* Conditional UI overlays */}
+        {needsLanguageSelection ? (
+          /* Language selection mode */
+          <div
+            className="relative z-10 transition-opacity duration-500"
+            style={{ 
+              opacity: helperRobotReady ? 1 : 0,
+              pointerEvents: helperRobotReady ? 'auto' : 'none',
+            }}
+          >
+            <div className="fixed top-10 left-10 z-50">
+              <HelperRobot
+                instructions={{ mode: "language_selection" }}
+                onLanguageSelect={handleLanguageSelectRobot}
+                onLogin={handleLoginClickRobot}
+                onClick={handleRobotClick}
+                shouldAnimate={helperRobotReady}
+                onReady={() => {
+                  console.log('✅ HelperRobot ready');
+                  setHelperRobotReady(true);
+                }}
+              />
+            </div>
+          </div>
+        ) : (
+          /* Main app UI */
+          <div className="relative z-10">
+            {/* HelperRobot - visible in main app too */}
+            <div className="fixed top-10 left-10 z-50">
+              <HelperRobot
+                instructions={robotInstructions}
+                onLanguageSelect={handleLanguageSelectRobot}
+                onLogin={handleLoginClickRobot}
+                onClick={handleRobotClick}
+              />
+            </div>
 
-        {/* Optional UI Elements */}
-        {/* Helper Robot Panel - Show for logged in users */}
+            {/* Optional UI Elements */}
+            {/* Helper Robot Panel - Show for logged in users */}
         {isLoggedIn && showHelperRobotPanel && (
           <div
             className="fixed inset-0 z-[200] flex items-center justify-center pointer-events-auto"
@@ -798,8 +743,10 @@ function App() {
             </div>
           </div>
         )}
+          </div>
+        )}
       </div>
-    </div>
+    </>
   );
 }
 
