@@ -52,7 +52,8 @@ export async function handler(event) {
             stability: 0.5,
             similarity_boost: 0.75,
             style: 0.0,
-            use_speaker_boost: true
+            use_speaker_boost: true,
+            speed: 0.8
           }
         })
       }

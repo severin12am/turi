@@ -483,7 +483,7 @@ async function callGoogleTTS(
     },
     audioConfig: {
       audioEncoding: 'MP3',
-      speakingRate: 0.85,
+      speakingRate: 0.8,
       pitch: 0
     }
   };
