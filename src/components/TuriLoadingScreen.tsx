@@ -20,22 +20,39 @@ const loadingTranslations = [
 
 const TuriLoadingScreen: React.FC<TuriLoadingScreenProps> = () => {
   const [currentTranslationIndex, setCurrentTranslationIndex] = useState(0);
+  const intervalRef = React.useRef<NodeJS.Timeout | null>(null);
+  const countRef = React.useRef(0);
 
   useEffect(() => {
     console.log('🎬 TuriLoadingScreen MOUNTED');
     
     // Cycle through translations every 3 seconds
-    const translationInterval = setInterval(() => {
+    intervalRef.current = setInterval(() => {
+      countRef.current++;
+      console.log(`🔄 Interval fired! Count: ${countRef.current}`);
+      
       setCurrentTranslationIndex(prev => {
         const next = (prev + 1) % loadingTranslations.length;
-        console.log(`🔄 Translation cycling: ${prev} → ${next}: "${loadingTranslations[next]}"`);
+        console.log(`📝 State update: ${prev} → ${next}: "${loadingTranslations[next]}"`);
         return next;
       });
+      
+      // Check if interval is still alive
+      if (intervalRef.current) {
+        console.log('✅ Interval still exists');
+      } else {
+        console.log('❌ Interval was cleared!');
+      }
     }, 3000);
+    
+    console.log('⏰ Interval created:', intervalRef.current);
 
     return () => {
-      console.log('🛑 TuriLoadingScreen UNMOUNTED - interval cleared');
-      clearInterval(translationInterval);
+      console.log('🛑 TuriLoadingScreen UNMOUNTED - clearing interval');
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
     };
   }, []);
 
