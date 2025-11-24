@@ -17,6 +17,11 @@ import { preloadTranslations } from './services/translationLoader';
 function App() {
   useMobile();
 
+  // Loading states - declare at TOP to persist across all render branches
+  const [isLoading, setIsLoading] = useState(true);
+  const [citySceneReady, setCitySceneReady] = useState(false);
+  const [helperRobotReady, setHelperRobotReady] = useState(false);
+
   const [showLogin, setShowLogin] = useState(false);
   const [panelInstructions, setPanelInstructions] = useState<Record<string, string>>({ mode: "language_selection" });
   const [robotInstructions, setRobotInstructions] = useState<Record<string, string>>({ mode: "language_selection" });
@@ -45,7 +50,6 @@ function App() {
     setInstructions,
     setIsMovementDisabled
   } = useStore();
-  const [isLoading, setIsLoading] = useState(true);
 
   // Disable movement when login form is shown
   useEffect(() => {
@@ -628,22 +632,24 @@ function App() {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [user, isLoggedIn]);
 
-  // Check if we should show language selection immediately
+  // Check if we should show language selection
   const needsLanguageSelection = !isLanguageSelected && !isLoading;
-  const [citySceneReady, setCitySceneReady] = useState(false);
-  const [helperRobotReady, setHelperRobotReady] = useState(false);
   const showLanguageSelection = needsLanguageSelection && helperRobotReady && citySceneReady;
 
-  // If languages aren't selected, show loading screen then language selection
-  if (needsLanguageSelection) {
+  // Show loading screen during auth OR during scene loading
+  const showLoadingScreen = isLoading || (!helperRobotReady || !citySceneReady);
+
+  // If still loading auth, show loading screen but start mounting scene in background
+  if (isLoading || needsLanguageSelection) {
     return (
       <>
-        {/* Loading screen - FIRST, covers everything */}
-        {(!helperRobotReady || !citySceneReady) && (
+        {/* Loading screen - shows during auth AND scene loading */}
+        {showLoadingScreen && (
           <TuriLoadingScreen key="loading-screen" />
         )}
         
-        {/* Mount CityScene and HelperRobot in background while loading screen is visible */}
+        {/* Mount CityScene and HelperRobot immediately (even during auth) */}
+        {/* They load in background while loading screen is visible */}
         <div 
           className="relative min-h-screen bg-gray-900 transition-opacity duration-300"
           style={{ 
@@ -680,18 +686,6 @@ function App() {
           </div>
         </div>
       </>
-    );
-  }
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-gray-900 text-white">
-        <div className="text-center">
-          <div className="text-xl font-semibold mb-4">Loading...</div>
-          <div className="text-sm text-gray-400">Initializing authentication</div>
-          <div className="text-xs text-gray-500 mt-2">Check console for details</div>
-        </div>
-      </div>
     );
   }
 
