@@ -724,17 +724,22 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady }) => {
       is_active: true
     } as CharacterType);
     
-    // Signal that the scene is ready after characters are set up
-    // Give time for 3D models to start loading before hiding loading screen
+  }, []); // Only run once on mount
+  
+  // Signal ready AFTER character state updates have settled
+  // Use separate useEffect to avoid blocking the character setup
+  useEffect(() => {
+    if (!character30) return; // Wait for all characters to be set up
+    
     const readyTimer = setTimeout(() => {
       if (onReady) {
         console.log("🏙️ CityScene initialized, calling onReady");
         onReady();
       }
-    }, 1500); // Wait for models to start loading
+    }, 100); // Short delay to let React process character state updates
     
     return () => clearTimeout(readyTimer);
-  }, []); // Only run once on mount
+  }, [character30, onReady]);
 
   // Calculate distance between player and characters
   useEffect(() => {

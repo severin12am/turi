@@ -649,38 +649,20 @@ function App() {
   const showLanguageSelection = needsLanguageSelection && !isLoading && helperRobotReady;
   const showLoadingScreen = isLoading || !helperRobotReady;
 
+  // Simple mount logging
   useEffect(() => {
-    logLoadEvent('App mounted', {
-      isLoading,
-      needsLanguageSelection,
-    });
+    logLoadEvent('App mounted', { isLoading, needsLanguageSelection });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Track when helperRobotReady actually changes
   useEffect(() => {
-    logLoadEvent('Auth loading state changed', { isLoading });
-  }, [isLoading, logLoadEvent]);
-
-  useEffect(() => {
-    if (helperRobotReady) {
-      logLoadEvent('HelperRobot reported ready');
-    }
+    logLoadEvent(`helperRobotReady changed to: ${helperRobotReady}`);
   }, [helperRobotReady, logLoadEvent]);
 
+  // Track when citySceneReady actually changes
   useEffect(() => {
-    if (citySceneReady) {
-      logLoadEvent('CityScene reported ready');
-    }
+    logLoadEvent(`citySceneReady changed to: ${citySceneReady}`);
   }, [citySceneReady, logLoadEvent]);
-
-  useEffect(() => {
-    logLoadEvent('Loading screen visibility changed', { showLoadingScreen });
-  }, [showLoadingScreen, logLoadEvent]);
-
-  useEffect(() => {
-    if (showLanguageSelection) {
-      logLoadEvent('Language selection panel is visible');
-    }
-  }, [showLanguageSelection, logLoadEvent]);
 
   // Stay in language selection branch until user actually selects languages
   // Don't switch branches just because ready flags flip
@@ -712,8 +694,14 @@ function App() {
             aria-hidden={!citySceneReady}
           >
             <CityScene onReady={() => {
-              console.log("✅ CityScene preloaded");
+              const now = performance.now() - (loadStartRef.current || 0);
+              console.log(`✅ CityScene preloaded (calling setState @ ${Math.round(now)}ms)`);
+              logLoadEvent('CityScene onReady callback fired');
               setCitySceneReady(true);
+              // Log after setState to see if it's instant
+              requestAnimationFrame(() => {
+                logLoadEvent('CityScene setState queued');
+              });
             }} />
           </div>
           
@@ -726,9 +714,14 @@ function App() {
               onClick={handleRobotClick}
               shouldAnimate={helperRobotReady}
               onReady={() => {
-                // HelperRobot signals it's ready
-                console.log("✅ HelperRobot ready");
+                const now = performance.now() - (loadStartRef.current || 0);
+                console.log(`✅ HelperRobot ready (calling setState @ ${Math.round(now)}ms)`);
+                logLoadEvent('HelperRobot onReady callback fired');
                 setHelperRobotReady(true);
+                // Log after setState to see if it's instant
+                requestAnimationFrame(() => {
+                  logLoadEvent('HelperRobot setState queued');
+                });
               }}
             />
           </div>
