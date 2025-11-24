@@ -21,6 +21,7 @@ interface HelperRobotProps {
   scale?: number;
   onClick?: () => void;
   onReady?: () => void; // Callback when component is ready to show
+  shouldAnimate?: boolean; // Parent tells us when to start language selection animation
 }
 
 const ANIMATION_SPEED = 30;
@@ -82,7 +83,8 @@ const HelperRobot: React.FC<HelperRobotProps> = ({
   position = { x: 0, y: 0 },
   scale = 1,
   onClick,
-  onReady
+  onReady,
+  shouldAnimate = false
 }) => {
   const { 
     isHelperRobotOpen, 
@@ -100,6 +102,7 @@ const HelperRobot: React.FC<HelperRobotProps> = ({
   const [step, setStep] = useState<'mother' | 'target' | 'ready'>('mother');
   const [isAnimating, setIsAnimating] = useState(true);
   const [hasAnimationStarted, setHasAnimationStarted] = useState(false);
+  const [hasInitialAnimationRun, setHasInitialAnimationRun] = useState(false);
   const [texts, setTexts] = useState({
     question: '',
     account: ''
@@ -195,13 +198,6 @@ const HelperRobot: React.FC<HelperRobotProps> = ({
       if (onReady) {
         onReady();
       }
-      
-      // Start animation after signaling ready
-      setTimeout(() => {
-        const whatLanguage = allTranslations.en.whatLanguage || "Hi! I'm Turi, I will guide you on your language learning journey! Firstly, what language do you already speak?";
-        const haveAccount = allTranslations.en.alreadyHaveAccount || "Already have an account?";
-        animateAllTexts(whatLanguage, haveAccount);
-      }, 100);
     }, 100);
     
     return () => {
@@ -213,6 +209,16 @@ const HelperRobot: React.FC<HelperRobotProps> = ({
       console.log("🤖 HelperRobot component UNMOUNTED");
     };
   }, []); // Empty deps - only run once on mount
+
+  // Start the glitch text animation ONLY when parent tells us
+  useEffect(() => {
+    if (!shouldAnimate || hasInitialAnimationRun) return;
+
+    const whatLanguage = allTranslations.en.whatLanguage || "Hi! I'm Turi, I will guide you on your language learning journey! Firstly, what language do you already speak?";
+    const haveAccount = allTranslations.en.alreadyHaveAccount || "Already have an account?";
+    animateAllTexts(whatLanguage, haveAccount);
+    setHasInitialAnimationRun(true);
+  }, [shouldAnimate, hasInitialAnimationRun]);
 
   // This effect is intentionally empty/removed to prevent re-animation issues
   // The initial animation is handled by the mount effect above

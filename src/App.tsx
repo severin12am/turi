@@ -644,7 +644,14 @@ function App() {
         )}
         
         {/* Mount CityScene and HelperRobot in background while loading screen is visible */}
-        <div className="relative min-h-screen bg-gray-900">
+        <div 
+          className="relative min-h-screen bg-gray-900 transition-opacity duration-300"
+          style={{ 
+            opacity: showLanguageSelection ? 1 : 0,
+            pointerEvents: showLanguageSelection ? 'auto' : 'none',
+          }}
+          aria-hidden={!showLanguageSelection}
+        >
           {/* Minimal background */}
           <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900"></div>
           
@@ -663,6 +670,7 @@ function App() {
               onLanguageSelect={handleLanguageSelectRobot}
               onLogin={handleLoginClickRobot}
               onClick={handleRobotClick}
+              shouldAnimate={showLanguageSelection}
               onReady={() => {
                 // HelperRobot signals it's ready
                 console.log("✅ HelperRobot ready");
