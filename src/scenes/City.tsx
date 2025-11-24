@@ -724,22 +724,14 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady }) => {
       is_active: true
     } as CharacterType);
     
-  }, []); // Only run once on mount
-  
-  // Signal ready AFTER character state updates have settled
-  // Use separate useEffect to avoid blocking the character setup
-  useEffect(() => {
-    if (!character30) return; // Wait for all characters to be set up
     
-    const readyTimer = setTimeout(() => {
-      if (onReady) {
-        console.log("🏙️ CityScene initialized, calling onReady");
-        onReady();
-      }
-    }, 100); // Short delay to let React process character state updates
-    
-    return () => clearTimeout(readyTimer);
-  }, [character30, onReady]);
+    // Signal ready immediately - don't wait for character states
+    // Character state updates are async and take ~34s, blocking everything
+    if (onReady) {
+      console.log("🏙️ CityScene initialized, calling onReady");
+      onReady();
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Calculate distance between player and characters
   useEffect(() => {
