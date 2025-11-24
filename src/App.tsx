@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useStore } from './store/index';
 import CityScene from './scenes/City';
 import HelperRobot from './components/HelperRobot';
@@ -21,6 +21,16 @@ function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [citySceneReady, setCitySceneReady] = useState(false);
   const [helperRobotReady, setHelperRobotReady] = useState(false);
+  const loadStartRef = useRef<number>(typeof performance !== 'undefined' ? performance.now() : 0);
+
+  const logLoadEvent = useCallback((event: string, data?: Record<string, unknown>) => {
+    const delta = typeof performance !== 'undefined' ? Math.round(performance.now() - (loadStartRef.current || 0)) : 0;
+    const payload = { at: `${delta}ms`, ...(data || {}) };
+    logger.info(`[LOAD] ${event}`, payload);
+    if (typeof window !== 'undefined' && ((window as any).__TURI_DEBUG_LOAD || process.env.NODE_ENV !== 'production')) {
+      console.log(`[LOAD] ${event} @ ${payload.at}`, data || {});
+    }
+  }, []);
 
   const [showLogin, setShowLogin] = useState(false);
   const [panelInstructions, setPanelInstructions] = useState<Record<string, string>>({ mode: "language_selection" });
@@ -632,12 +642,44 @@ function App() {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [user, isLoggedIn]);
 
-  // Check if we should show language selection
-  const needsLanguageSelection = !isLanguageSelected && !isLoading;
-  const showLanguageSelection = needsLanguageSelection && helperRobotReady && citySceneReady;
+  // Track loading states
+  const needsLanguageSelection = !isLanguageSelected;
+  const sceneReady = helperRobotReady && citySceneReady;
+  const showLanguageSelection = needsLanguageSelection && sceneReady;
+  const showLoadingScreen = !sceneReady || (!needsLanguageSelection && isLoading);
 
-  // Show loading screen during auth OR during scene loading
-  const showLoadingScreen = isLoading || (!helperRobotReady || !citySceneReady);
+  useEffect(() => {
+    logLoadEvent('App mounted', {
+      isLoading,
+      needsLanguageSelection,
+    });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    logLoadEvent('Auth loading state changed', { isLoading });
+  }, [isLoading, logLoadEvent]);
+
+  useEffect(() => {
+    if (helperRobotReady) {
+      logLoadEvent('HelperRobot reported ready');
+    }
+  }, [helperRobotReady, logLoadEvent]);
+
+  useEffect(() => {
+    if (citySceneReady) {
+      logLoadEvent('CityScene reported ready');
+    }
+  }, [citySceneReady, logLoadEvent]);
+
+  useEffect(() => {
+    logLoadEvent('Loading screen visibility changed', { showLoadingScreen });
+  }, [showLoadingScreen, logLoadEvent]);
+
+  useEffect(() => {
+    if (showLanguageSelection) {
+      logLoadEvent('Language selection panel is visible');
+    }
+  }, [showLanguageSelection, logLoadEvent]);
 
   // If still loading auth, show loading screen but start mounting scene in background
   if (isLoading || needsLanguageSelection) {
@@ -653,10 +695,10 @@ function App() {
         <div 
           className="relative min-h-screen bg-gray-900 transition-opacity duration-300"
           style={{ 
-            opacity: showLanguageSelection ? 1 : 0,
-            pointerEvents: showLanguageSelection ? 'auto' : 'none',
+            opacity: sceneReady ? 1 : 0,
+            pointerEvents: sceneReady ? 'auto' : 'none',
           }}
-          aria-hidden={!showLanguageSelection}
+          aria-hidden={!sceneReady}
         >
           {/* Minimal background */}
           <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900"></div>

@@ -83,12 +83,15 @@ Benefits:
 
 ### 3. Proper Loading Screen Condition
 ```typescript
-const showLoadingScreen = isLoading || (!helperRobotReady || !citySceneReady);
+const sceneReady = helperRobotReady && citySceneReady;
+const showLoadingScreen = !sceneReady || (!needsLanguageSelection && isLoading);
 ```
 
-Shows loading screen during:
-- Auth initialization (`isLoading === true`)
-- Scene loading (`helperRobotReady === false` OR `citySceneReady === false`)
+This keeps the loading overlay visible while:
+- CityScene / HelperRobot are still loading (always)
+- Auth is still loading **and** the user already finished language selection (returning users)
+
+For first-time visitors with no languages selected yet, the overlay now hides as soon as the scene is ready (even if Supabase auth is still fetching in the background), so they can start immediately.
 
 ## Expected Results
 
@@ -144,14 +147,17 @@ Having a single render branch that handles both loading states:
    - ✅ Text animation starts smoothly
    - ✅ No frozen/glitched animation
 
-3. **Check console logs** (enable verbose: `window.enableVerboseLogs()`):
+3. **Check console logs**:
+   - Enable verbose logger: `window.enableVerboseLogs()`
+   - Enable load timeline logs: `window.__TURI_DEBUG_LOAD = true; window.location.reload();`
 ```
 🔐 Initializing authentication...
 🤖 HelperRobot component MOUNTED
-✅ HelperRobot ready
+[LOAD] HelperRobot reported ready @ 120ms
 🏙️ CityScene initialized, calling onReady
-✅ CityScene preloaded
+[LOAD] CityScene reported ready @ 1600ms
 ✅ Session check complete: No session
+[LOAD] Language selection panel is visible @ 1800ms
 ```
 
 All should appear in quick succession (~6s total).
