@@ -4,7 +4,29 @@ import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { logger } from '../services/logger';
 
-// Models are loaded on-demand for better initial load performance
+// ============================================================================
+// BACKGROUND PRELOADING - Start downloading ALL character models immediately
+// This runs at module load time, before React even mounts.
+// Downloads happen in background while user sees loading screen / selects languages.
+// By the time user finishes selecting languages, most models are already cached.
+// ============================================================================
+const CHARACTER_COUNT = 30;
+const preloadStartTime = performance.now();
+
+console.log(`🎭 [PRELOAD] Starting background preload of ${CHARACTER_COUNT} character models...`);
+
+for (let i = 1; i <= CHARACTER_COUNT; i++) {
+  const modelPath = `/models/character${i}.glb`;
+  useGLTF.preload(modelPath);
+}
+
+console.log(`🎭 [PRELOAD] All ${CHARACTER_COUNT} preload requests dispatched @ ${Math.round(performance.now() - preloadStartTime)}ms`);
+
+// Track preload completion for debugging (optional - helps see actual load times)
+if (typeof window !== 'undefined') {
+  (window as any).__characterPreloadStart = preloadStartTime;
+  (window as any).__characterPreloadCount = CHARACTER_COUNT;
+}
 
 /**
  * Props for the Character component
@@ -55,8 +77,20 @@ const Character: React.FC<CharacterProps> = ({
   // Determine which model to load based on characterId
   const modelPath = `/models/character${characterId}.glb`;
   
-  // Load the 3D model using useGLTF
+  // Load the 3D model using useGLTF (should be instant if preloaded)
+  const loadStart = performance.now();
   const { scene, animations } = useGLTF(modelPath);
+  const loadTime = performance.now() - loadStart;
+  
+  // Log first render - if preload worked, this should be nearly instant
+  useEffect(() => {
+    const timeSincePreloadStart = Math.round(performance.now() - preloadStartTime);
+    if (loadTime < 50) {
+      console.log(`🎭 Character ${characterId} loaded from cache in ${loadTime.toFixed(1)}ms (${timeSincePreloadStart}ms since preload start)`);
+    } else {
+      console.log(`🎭 Character ${characterId} loaded in ${loadTime.toFixed(1)}ms - was still downloading (${timeSincePreloadStart}ms since preload start)`);
+    }
+  }, []); // Only log once on mount
   
   // Set up animation mixer and log available animations
   useEffect(() => {

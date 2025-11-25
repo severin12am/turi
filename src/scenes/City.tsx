@@ -211,6 +211,13 @@ interface CitySceneProps {
 }
 
 const CityScene: React.FC<CitySceneProps> = ({ onReady, renderCharacters = true }) => {
+  // Log when renderCharacters changes - helps track when characters start mounting
+  useEffect(() => {
+    if (renderCharacters) {
+      console.log(`🏙️ [CHARACTERS] renderCharacters=true - Character components will now mount and load from cache`);
+    }
+  }, [renderCharacters]);
+  
   const [playerPosition, setPlayerPosition] = useState(new THREE.Vector3(53, 1.7, 11));
   const [character, setCharacter] = useState<CharacterType | null>(null);
   const [character2, setCharacter2] = useState<CharacterType | null>(null);
