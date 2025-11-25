@@ -189,19 +189,24 @@ const HelperRobot: React.FC<HelperRobotProps> = ({
     animationIntervalRef.current = interval;
   };
 
+  // Track if we've already called onReady to prevent duplicates
+  const hasCalledOnReady = React.useRef(false);
+  
+  // Called when the 3D model is actually loaded
+  const handleModelReady = React.useCallback(() => {
+    if (hasCalledOnReady.current) return;
+    hasCalledOnReady.current = true;
+    
+    console.log("🤖 HelperRobot 3D model ready - signaling parent");
+    if (onReady) {
+      onReady();
+    }
+  }, [onReady]);
+  
   useEffect(() => {
     console.log("🤖 HelperRobot component MOUNTED");
     
-    // Signal to parent that component is mounted and ready after a brief delay
-    // This gives the 3D model time to start loading
-    const readyTimer = setTimeout(() => {
-      if (onReady) {
-        onReady();
-      }
-    }, 100);
-    
     return () => {
-      clearTimeout(readyTimer);
       if (animationIntervalRef.current) {
         clearInterval(animationIntervalRef.current);
         animationIntervalRef.current = null;
@@ -326,6 +331,7 @@ const HelperRobot: React.FC<HelperRobotProps> = ({
             <HelperRobotModel 
               path={modelPaths.helperRobot} 
               onClick={() => handleRobotClick(undefined as any)}
+              onModelReady={handleModelReady}
             />
           </Canvas>
         </div>

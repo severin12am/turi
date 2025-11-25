@@ -23,6 +23,36 @@ function App() {
   const [citySceneReady, setCitySceneReady] = useState(false);
   const [helperRobotReady, setHelperRobotReady] = useState(false);
   const loadStartRef = useRef<number>(typeof performance !== 'undefined' ? performance.now() : 0);
+  
+  // DEBUG: Heartbeat to detect main thread blocking
+  useEffect(() => {
+    let lastHeartbeat = performance.now();
+    let heartbeatCount = 0;
+    const HEARTBEAT_INTERVAL = 500; // Check every 500ms
+    const BLOCK_THRESHOLD = 1000; // Log if blocked for >1 second
+    
+    const heartbeat = setInterval(() => {
+      const now = performance.now();
+      const elapsed = now - lastHeartbeat;
+      heartbeatCount++;
+      
+      if (elapsed > BLOCK_THRESHOLD) {
+        console.warn(`⚠️ [HEARTBEAT] Main thread was BLOCKED for ${Math.round(elapsed)}ms (heartbeat #${heartbeatCount} @ ${Math.round(now - loadStartRef.current)}ms)`);
+      }
+      
+      lastHeartbeat = now;
+      
+      // Stop after 30 seconds of monitoring
+      if (heartbeatCount > 60) {
+        clearInterval(heartbeat);
+        console.log(`[HEARTBEAT] Monitoring stopped after 30 seconds`);
+      }
+    }, HEARTBEAT_INTERVAL);
+    
+    console.log(`[HEARTBEAT] Started main thread monitoring (interval: ${HEARTBEAT_INTERVAL}ms, threshold: ${BLOCK_THRESHOLD}ms)`);
+    
+    return () => clearInterval(heartbeat);
+  }, []);
 
   const logLoadEvent = useCallback((event: string, data?: Record<string, unknown>) => {
     const delta = typeof performance !== 'undefined' ? Math.round(performance.now() - (loadStartRef.current || 0)) : 0;
@@ -657,14 +687,20 @@ function App() {
   }, []);
 
   useEffect(() => {
-    const delta = Math.round(performance.now() - loadStartRef.current);
-    console.log(`[LOAD] ⚡ helperRobotReady useEffect fired: ${helperRobotReady} @ ${delta}ms`);
+    // DEBUG: Log at the VERY START of useEffect to see when React actually runs it
+    const effectStartTime = performance.now();
+    const delta = Math.round(effectStartTime - loadStartRef.current);
+    console.log(`[LOAD] ⚡ helperRobotReady useEffect STARTED: ${helperRobotReady} @ ${delta}ms`);
+    
     if (helperRobotReady) {
       console.log(`[LOAD] 🎉 HelperRobot state updated after ${delta}ms - loading screen hiding`);
       // Start preloading ALL characters now that loading screen is hidden
       // User can select languages while characters load in background
       console.log(`[LOAD] 🎭 Starting background preload of all characters...`);
       startRemainingCharacterPreloads();
+      
+      const effectEndTime = performance.now();
+      console.log(`[LOAD] ⚡ helperRobotReady useEffect COMPLETED in ${Math.round(effectEndTime - effectStartTime)}ms`);
     }
   }, [helperRobotReady]);
 

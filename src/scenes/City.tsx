@@ -32,10 +32,13 @@ const CoordinateTracker: React.FC<{ position: THREE.Vector3 }> = ({ position }) 
 };
 
 const CityModel: React.FC = () => {
+  const loadStart = performance.now();
   const { scene } = useGLTF('/models/city.glb');
+  const loadTime = performance.now() - loadStart;
   
   useEffect(() => {
-    logger.info('City model loading attempt', { path: '/models/city.glb' });
+    console.log(`🏙️ City model loaded in ${loadTime.toFixed(1)}ms`);
+    logger.info('City model loaded', { path: '/models/city.glb', loadTime });
   }, []);
   
   return <primitive object={scene} position={[0, 0, 0]} />;

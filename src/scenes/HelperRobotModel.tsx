@@ -9,15 +9,21 @@ import { ThreeEvent } from '@react-three/fiber';
 interface HelperRobotModelProps {
   path: string;
   onClick?: () => void;
+  onModelReady?: () => void; // Called when 3D model is actually loaded
 }
 
-const HelperRobotModel: React.FC<HelperRobotModelProps> = ({ path, onClick }) => {
+const HelperRobotModel: React.FC<HelperRobotModelProps> = ({ path, onClick, onModelReady }) => {
+  const loadStart = performance.now();
   const { scene } = useGLTF(path);
+  const loadTime = performance.now() - loadStart;
+  
   const robotRef = useRef<THREE.Group>(null);
   const { isHelperRobotOpen } = useStore();
   const [hovered, setHovered] = useState(false);
   
   useEffect(() => {
+    console.log(`🤖 HelperRobot 3D model loaded in ${loadTime.toFixed(1)}ms`);
+    
     if (robotRef.current) {
       // Rotate the robot 180 degrees to face the user
       robotRef.current.rotation.y = Math.PI * 1.55;
@@ -30,8 +36,13 @@ const HelperRobotModel: React.FC<HelperRobotModelProps> = ({ path, onClick }) =>
       });
     }
     
-    logger.info('Helper robot model loaded', { path });
-  }, [path]);
+    logger.info('Helper robot model loaded', { path, loadTime });
+    
+    // Signal that model is truly ready
+    if (onModelReady) {
+      onModelReady();
+    }
+  }, [path, onModelReady]);
   
   useFrame((state, delta) => {
     if (robotRef.current) {
