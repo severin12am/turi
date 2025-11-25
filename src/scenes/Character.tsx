@@ -5,24 +5,45 @@ import { useFrame } from '@react-three/fiber';
 import { logger } from '../services/logger';
 
 // ============================================================================
-// BACKGROUND PRELOADING - Start downloading ALL character models immediately
-// This runs at module load time, before React even mounts.
+// BACKGROUND PRELOADING - Start downloading character models with staggered timing
+// This prevents blocking the main thread by spacing out the preload requests.
 // Downloads happen in background while user sees loading screen / selects languages.
-// By the time user finishes selecting languages, most models are already cached.
 // ============================================================================
 const CHARACTER_COUNT = 30;
-const preloadStartTime = performance.now();
+const preloadStartTime = typeof performance !== 'undefined' ? performance.now() : 0;
 
-console.log(`🎭 [PRELOAD] Starting background preload of ${CHARACTER_COUNT} character models...`);
+console.log(`🎭 [PRELOAD] Starting staggered background preload of ${CHARACTER_COUNT} character models...`);
 
-for (let i = 1; i <= CHARACTER_COUNT; i++) {
+// Stagger preloads to avoid blocking main thread when all models finish parsing at once
+// First batch: characters 1-5 immediately (most likely to be encountered first)
+// Then stagger the rest with small delays
+const IMMEDIATE_BATCH = 5;
+const STAGGER_DELAY_MS = 100; // 100ms between each subsequent preload
+
+for (let i = 1; i <= IMMEDIATE_BATCH; i++) {
   const modelPath = `/models/character${i}.glb`;
   useGLTF.preload(modelPath);
+  console.log(`🎭 [PRELOAD] Queued character ${i} (immediate batch)`);
 }
 
-console.log(`🎭 [PRELOAD] All ${CHARACTER_COUNT} preload requests dispatched @ ${Math.round(performance.now() - preloadStartTime)}ms`);
+// Stagger remaining preloads to prevent main thread blocking
+if (typeof window !== 'undefined') {
+  for (let i = IMMEDIATE_BATCH + 1; i <= CHARACTER_COUNT; i++) {
+    const delay = (i - IMMEDIATE_BATCH) * STAGGER_DELAY_MS;
+    setTimeout(() => {
+      const modelPath = `/models/character${i}.glb`;
+      useGLTF.preload(modelPath);
+      console.log(`🎭 [PRELOAD] Queued character ${i} @ ${Math.round(performance.now() - preloadStartTime)}ms`);
+      
+      // Log when all preloads are queued
+      if (i === CHARACTER_COUNT) {
+        console.log(`🎭 [PRELOAD] ✅ All ${CHARACTER_COUNT} preload requests dispatched @ ${Math.round(performance.now() - preloadStartTime)}ms`);
+      }
+    }, delay);
+  }
+}
 
-// Track preload completion for debugging (optional - helps see actual load times)
+// Track preload start for debugging
 if (typeof window !== 'undefined') {
   (window as any).__characterPreloadStart = preloadStartTime;
   (window as any).__characterPreloadCount = CHARACTER_COUNT;
