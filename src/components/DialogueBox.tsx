@@ -1042,7 +1042,7 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
 
     // Initialize speech recognition
     initializeSpeechRecognition();
-  }, [targetLanguage, motherLanguage]);
+  }, [targetLanguage]); // Removed motherLanguage - it's not used in this effect
 
 
 
