@@ -12,7 +12,6 @@ import { logger } from '../services/logger';
  * @property {[number, number, number]} position - 3D coordinates for character placement
  * @property {[number, number, number]} scale - Scale factors for the character model
  * @property {[number, number, number]} rotation - Rotation angles for the character model
- * @property {(characterId: number) => void} [onInteract] - Optional callback when character is interacted with
  * @property {boolean} [isSpeaking] - Optional flag to indicate if the character is speaking
  * @property {boolean} [isDialogueActive] - Optional flag to indicate if the character is in dialogue
  * @property {number} [characterId] - Optional ID of the character to determine which model to load
@@ -21,7 +20,6 @@ interface CharacterProps {
   position: [number, number, number];
   scale: [number, number, number];
   rotation?: [number, number, number];
-  onInteract?: (characterId: number) => void;
   isSpeaking?: boolean;
   isDialogueActive?: boolean;
   characterId?: number;
@@ -43,7 +41,6 @@ const Character: React.FC<CharacterProps> = ({
   position, 
   scale, 
   rotation = [0, 0, 0],
-  onInteract, 
   isSpeaking, 
   isDialogueActive,
   characterId = 1 // Default to character1 if not specified
@@ -134,13 +131,6 @@ const Character: React.FC<CharacterProps> = ({
     }
   }, [isDialogueActive, animations, characterId]);
 
-  const handleInteract = () => {
-    logger.info('Character interaction triggered manually', { characterId });
-    if (onInteract) {
-      onInteract(characterId);
-    }
-  };
-
   return (
     <primitive 
       ref={characterRef}
@@ -148,7 +138,6 @@ const Character: React.FC<CharacterProps> = ({
       position={position}
       scale={scale}
       rotation={rotation}
-      onClick={handleInteract}
     />
   );
 };

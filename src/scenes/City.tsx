@@ -343,9 +343,9 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady, renderCharacters = true 
       position_x: 64,
       position_y: -0.25,
       position_z: -47,
-      scale_x: 1,
-      scale_y: 1,
-      scale_z: 1,
+      scale_x: 0.05,
+      scale_y: 0.05,
+      scale_z: 0.05,
       rotation_y: Math.PI * 1.5,
       is_active: true
     } as CharacterType);
@@ -707,9 +707,9 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady, renderCharacters = true 
       position_x: 37,
       position_y: 0,
       position_z: -40,
-      scale_x: 0.6,
-      scale_y: 0.6,
-      scale_z: 0.6,
+      scale_x: 0.2,
+      scale_y: 0.2,
+      scale_z: 0.2,
       rotation_y: Math.PI * 0,
       is_active: true
     } as CharacterType);
@@ -1563,7 +1563,7 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady, renderCharacters = true 
     return () => clearInterval(interval);
   }, [playerPosition, character, character2, character3, character4, character5, 
       character6, character7, character8, character9, character10, character11, character12, character13, character14, character15, character16, character17, character18, character19, character20, character21, character22, character23, character24, character25, character26, character27, character28, character29, character30,
-      loadingDialogue, showDialogueSelection]); // Removed isDialogueActive to prevent re-running when dialogue opens
+      loadingDialogue]); // Removed showDialogueSelection from deps to prevent re-triggering
   
   // Handle dialogue activation with proper error handling
   const handleDialogueActivation = async (characterId: number, dialogueId: number) => {
@@ -1761,7 +1761,6 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady, renderCharacters = true 
             position={[character.position_x, character.position_y, character.position_z]}
             scale={[character.scale_x, character.scale_y, character.scale_z]}
             rotation={[0, character.rotation_y ?? 0, 0]}
-            onInteract={() => { setActiveCharacterId(1); setShowDialogueSelection(true); }}
             isSpeaking={isNpcSpeaking && activeCharacterId === 1}
             isDialogueActive={(isDialogueActive || showDialogueSelection) && activeCharacterId === 1}
             characterId={1}
@@ -1772,7 +1771,6 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady, renderCharacters = true 
             position={[character2.position_x, character2.position_y, character2.position_z]}
             scale={[character2.scale_x, character2.scale_y, character2.scale_z]}
             rotation={[0, character2.rotation_y ?? 0, 0]}
-            onInteract={() => { setActiveCharacterId(2); setShowDialogueSelection(true); }}
             isSpeaking={isNpcSpeaking && activeCharacterId === 2}
             isDialogueActive={(isDialogueActive || showDialogueSelection) && activeCharacterId === 2}
             characterId={2}
@@ -1783,7 +1781,6 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady, renderCharacters = true 
             position={[character3.position_x, character3.position_y, character3.position_z]}
             scale={[character3.scale_x, character3.scale_y, character3.scale_z]}
             rotation={[0, character3.rotation_y ?? 0, 0]}
-            onInteract={() => { setActiveCharacterId(3); setShowDialogueSelection(true); }}
             isSpeaking={isNpcSpeaking && activeCharacterId === 3}
             isDialogueActive={(isDialogueActive || showDialogueSelection) && activeCharacterId === 3}
             characterId={3}
@@ -1794,7 +1791,6 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady, renderCharacters = true 
             position={[character4.position_x, character4.position_y, character4.position_z]}
             scale={[character4.scale_x, character4.scale_y, character4.scale_z]}
             rotation={[0, character4.rotation_y ?? 0, 0]}
-            onInteract={() => { setActiveCharacterId(4); setShowDialogueSelection(true); }}
             isSpeaking={isNpcSpeaking && activeCharacterId === 4}
             isDialogueActive={(isDialogueActive || showDialogueSelection) && activeCharacterId === 4}
             characterId={4}
@@ -1805,7 +1801,6 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady, renderCharacters = true 
             position={[character5.position_x, character5.position_y, character5.position_z]}
             scale={[character5.scale_x, character5.scale_y, character5.scale_z]}
             rotation={[0, character5.rotation_y ?? 0, 0]}
-            onInteract={() => { setActiveCharacterId(5); setShowDialogueSelection(true); }}
             isSpeaking={isNpcSpeaking && activeCharacterId === 5}
             isDialogueActive={(isDialogueActive || showDialogueSelection) && activeCharacterId === 5}
             characterId={5}
@@ -1816,7 +1811,6 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady, renderCharacters = true 
             position={[character6.position_x, character6.position_y, character6.position_z]}
             scale={[character6.scale_x, character6.scale_y, character6.scale_z]}
             rotation={[0, character6.rotation_y ?? 0, 0]}
-            onInteract={() => { setActiveCharacterId(6); setShowDialogueSelection(true); }}
             isSpeaking={isNpcSpeaking && activeCharacterId === 6}
             isDialogueActive={(isDialogueActive || showDialogueSelection) && activeCharacterId === 6}
             characterId={6}
@@ -1827,7 +1821,6 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady, renderCharacters = true 
             position={[character7.position_x, character7.position_y, character7.position_z]}
             scale={[character7.scale_x, character7.scale_y, character7.scale_z]}
             rotation={[0, character7.rotation_y ?? 0, 0]}
-            onInteract={() => { setActiveCharacterId(7); setShowDialogueSelection(true); }}
             isSpeaking={isNpcSpeaking && activeCharacterId === 7}
             isDialogueActive={(isDialogueActive || showDialogueSelection) && activeCharacterId === 7}
             characterId={7}
@@ -1838,7 +1831,6 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady, renderCharacters = true 
             position={[character8.position_x, character8.position_y, character8.position_z]}
             scale={[character8.scale_x, character8.scale_y, character8.scale_z]}
             rotation={[0, character8.rotation_y ?? 0, 0]}
-            onInteract={() => { setActiveCharacterId(8); setShowDialogueSelection(true); }}
             isSpeaking={isNpcSpeaking && activeCharacterId === 8}
             isDialogueActive={(isDialogueActive || showDialogueSelection) && activeCharacterId === 8}
             characterId={8}
@@ -1849,7 +1841,6 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady, renderCharacters = true 
             position={[character9.position_x, character9.position_y, character9.position_z]}
             scale={[character9.scale_x, character9.scale_y, character9.scale_z]}
             rotation={[0, character9.rotation_y ?? 0, 0]}
-            onInteract={() => { setActiveCharacterId(9); setShowDialogueSelection(true); }}
             isSpeaking={isNpcSpeaking && activeCharacterId === 9}
             isDialogueActive={(isDialogueActive || showDialogueSelection) && activeCharacterId === 9}
             characterId={9}
@@ -1860,7 +1851,6 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady, renderCharacters = true 
             position={[character10.position_x, character10.position_y, character10.position_z]}
             scale={[character10.scale_x, character10.scale_y, character10.scale_z]}
             rotation={[0, character10.rotation_y ?? 0, 0]}
-            onInteract={() => { setActiveCharacterId(10); setShowDialogueSelection(true); }}
             isSpeaking={isNpcSpeaking && activeCharacterId === 10}
             isDialogueActive={(isDialogueActive || showDialogueSelection) && activeCharacterId === 10}
             characterId={10}
@@ -1871,7 +1861,6 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady, renderCharacters = true 
             position={[character11.position_x, character11.position_y, character11.position_z]}
             scale={[character11.scale_x, character11.scale_y, character11.scale_z]}
             rotation={[0, character11.rotation_y ?? 0, 0]}
-            onInteract={() => { setActiveCharacterId(11); setShowDialogueSelection(true); }}
             isSpeaking={isNpcSpeaking && activeCharacterId === 11}
             isDialogueActive={(isDialogueActive || showDialogueSelection) && activeCharacterId === 11}
             characterId={11}
@@ -1882,7 +1871,6 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady, renderCharacters = true 
             position={[character12.position_x, character12.position_y, character12.position_z]}
             scale={[character12.scale_x, character12.scale_y, character12.scale_z]}
             rotation={[0, character12.rotation_y ?? 0, 0]}
-            onInteract={() => { setActiveCharacterId(12); setShowDialogueSelection(true); }}
             isSpeaking={isNpcSpeaking && activeCharacterId === 12}
             isDialogueActive={(isDialogueActive || showDialogueSelection) && activeCharacterId === 12}
             characterId={12}
@@ -1893,7 +1881,6 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady, renderCharacters = true 
             position={[character13.position_x, character13.position_y, character13.position_z]}
             scale={[character13.scale_x, character13.scale_y, character13.scale_z]}
             rotation={[0, character13.rotation_y ?? 0, 0]}
-            onInteract={() => { setActiveCharacterId(13); setShowDialogueSelection(true); }}
             isSpeaking={isNpcSpeaking && activeCharacterId === 13}
             isDialogueActive={(isDialogueActive || showDialogueSelection) && activeCharacterId === 13}
             characterId={13}
@@ -1904,7 +1891,6 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady, renderCharacters = true 
             position={[character14.position_x, character14.position_y, character14.position_z]}
             scale={[character14.scale_x, character14.scale_y, character14.scale_z]}
             rotation={[0, character14.rotation_y ?? 0, 0]}
-            onInteract={() => { setActiveCharacterId(14); setShowDialogueSelection(true); }}
             isSpeaking={isNpcSpeaking && activeCharacterId === 14}
             isDialogueActive={(isDialogueActive || showDialogueSelection) && activeCharacterId === 14}
             characterId={14}
@@ -1915,7 +1901,6 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady, renderCharacters = true 
             position={[character15.position_x, character15.position_y, character15.position_z]}
             scale={[character15.scale_x, character15.scale_y, character15.scale_z]}
             rotation={[0, character15.rotation_y ?? 0, 0]}
-            onInteract={() => { setActiveCharacterId(15); setShowDialogueSelection(true); }}
             isSpeaking={isNpcSpeaking && activeCharacterId === 15}
             isDialogueActive={(isDialogueActive || showDialogueSelection) && activeCharacterId === 15}
             characterId={15}
@@ -1926,7 +1911,6 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady, renderCharacters = true 
             position={[character16.position_x, character16.position_y, character16.position_z]}
             scale={[character16.scale_x, character16.scale_y, character16.scale_z]}
             rotation={[0, character16.rotation_y ?? 0, 0]}
-            onInteract={() => { setActiveCharacterId(16); setShowDialogueSelection(true); }}
             isSpeaking={isNpcSpeaking && activeCharacterId === 16}
             isDialogueActive={(isDialogueActive || showDialogueSelection) && activeCharacterId === 16}
             characterId={16}
@@ -1937,7 +1921,6 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady, renderCharacters = true 
             position={[character17.position_x, character17.position_y, character17.position_z]}
             scale={[character17.scale_x, character17.scale_y, character17.scale_z]}
             rotation={[0, character17.rotation_y ?? 0, 0]}
-            onInteract={() => { setActiveCharacterId(17); setShowDialogueSelection(true); }}
             isSpeaking={isNpcSpeaking && activeCharacterId === 17}
             isDialogueActive={(isDialogueActive || showDialogueSelection) && activeCharacterId === 17}
             characterId={17}
@@ -1948,7 +1931,6 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady, renderCharacters = true 
             position={[character18.position_x, character18.position_y, character18.position_z]}
             scale={[character18.scale_x, character18.scale_y, character18.scale_z]}
             rotation={[0, character18.rotation_y ?? 0, 0]}
-            onInteract={() => { setActiveCharacterId(18); setShowDialogueSelection(true); }}
             isSpeaking={isNpcSpeaking && activeCharacterId === 18}
             isDialogueActive={(isDialogueActive || showDialogueSelection) && activeCharacterId === 18}
             characterId={18}
@@ -1959,7 +1941,6 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady, renderCharacters = true 
             position={[character19.position_x, character19.position_y, character19.position_z]}
             scale={[character19.scale_x, character19.scale_y, character19.scale_z]}
             rotation={[0, character19.rotation_y ?? 0, 0]}
-            onInteract={() => { setActiveCharacterId(19); setShowDialogueSelection(true); }}
             isSpeaking={isNpcSpeaking && activeCharacterId === 19}
             isDialogueActive={(isDialogueActive || showDialogueSelection) && activeCharacterId === 19}
             characterId={19}
@@ -1970,7 +1951,6 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady, renderCharacters = true 
             position={[character20.position_x, character20.position_y, character20.position_z]}
             scale={[character20.scale_x, character20.scale_y, character20.scale_z]}
             rotation={[0, character20.rotation_y ?? 0, 0]}
-            onInteract={() => { setActiveCharacterId(20); setShowDialogueSelection(true); }}
             isSpeaking={isNpcSpeaking && activeCharacterId === 20}
             isDialogueActive={(isDialogueActive || showDialogueSelection) && activeCharacterId === 20}
             characterId={20}
@@ -1981,7 +1961,6 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady, renderCharacters = true 
             position={[character21.position_x, character21.position_y, character21.position_z]}
             scale={[character21.scale_x, character21.scale_y, character21.scale_z]}
             rotation={[0, character21.rotation_y ?? 0, 0]}
-            onInteract={() => { setActiveCharacterId(21); setShowDialogueSelection(true); }}
             isSpeaking={isNpcSpeaking && activeCharacterId === 21}
             isDialogueActive={(isDialogueActive || showDialogueSelection) && activeCharacterId === 21}
             characterId={21}
@@ -1992,7 +1971,6 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady, renderCharacters = true 
             position={[character22.position_x, character22.position_y, character22.position_z]}
             scale={[character22.scale_x, character22.scale_y, character22.scale_z]}
             rotation={[0, character22.rotation_y ?? 0, 0]}
-            onInteract={() => { setActiveCharacterId(22); setShowDialogueSelection(true); }}
             isSpeaking={isNpcSpeaking && activeCharacterId === 22}
             isDialogueActive={(isDialogueActive || showDialogueSelection) && activeCharacterId === 22}
             characterId={22}
@@ -2003,7 +1981,6 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady, renderCharacters = true 
             position={[character23.position_x, character23.position_y, character23.position_z]}
             scale={[character23.scale_x, character23.scale_y, character23.scale_z]}
             rotation={[0, character23.rotation_y ?? 0, 0]}
-            onInteract={() => { setActiveCharacterId(23); setShowDialogueSelection(true); }}
             isSpeaking={isNpcSpeaking && activeCharacterId === 23}
             isDialogueActive={(isDialogueActive || showDialogueSelection) && activeCharacterId === 23}
             characterId={23}
@@ -2014,7 +1991,6 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady, renderCharacters = true 
             position={[character24.position_x, character24.position_y, character24.position_z]}
             scale={[character24.scale_x, character24.scale_y, character24.scale_z]}
             rotation={[0, character24.rotation_y ?? 0, 0]}
-            onInteract={() => { setActiveCharacterId(24); setShowDialogueSelection(true); }}
             isSpeaking={isNpcSpeaking && activeCharacterId === 24}
             isDialogueActive={(isDialogueActive || showDialogueSelection) && activeCharacterId === 24}
             characterId={24}
@@ -2025,7 +2001,6 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady, renderCharacters = true 
             position={[character25.position_x, character25.position_y, character25.position_z]}
             scale={[character25.scale_x, character25.scale_y, character25.scale_z]}
             rotation={[0, character25.rotation_y ?? 0, 0]}
-            onInteract={() => { setActiveCharacterId(25); setShowDialogueSelection(true); }}
             isSpeaking={isNpcSpeaking && activeCharacterId === 25}
             isDialogueActive={(isDialogueActive || showDialogueSelection) && activeCharacterId === 25}
             characterId={25}
@@ -2036,7 +2011,6 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady, renderCharacters = true 
             position={[character26.position_x, character26.position_y, character26.position_z]}
             scale={[character26.scale_x, character26.scale_y, character26.scale_z]}
             rotation={[0, character26.rotation_y ?? 0, 0]}
-            onInteract={() => { setActiveCharacterId(26); setShowDialogueSelection(true); }}
             isSpeaking={isNpcSpeaking && activeCharacterId === 26}
             isDialogueActive={(isDialogueActive || showDialogueSelection) && activeCharacterId === 26}
             characterId={26}
@@ -2047,7 +2021,6 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady, renderCharacters = true 
             position={[character27.position_x, character27.position_y, character27.position_z]}
             scale={[character27.scale_x, character27.scale_y, character27.scale_z]}
             rotation={[0, character27.rotation_y ?? 0, 0]}
-            onInteract={() => { setActiveCharacterId(27); setShowDialogueSelection(true); }}
             isSpeaking={isNpcSpeaking && activeCharacterId === 27}
             isDialogueActive={(isDialogueActive || showDialogueSelection) && activeCharacterId === 27}
             characterId={27}
@@ -2058,7 +2031,6 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady, renderCharacters = true 
             position={[character28.position_x, character28.position_y, character28.position_z]}
             scale={[character28.scale_x, character28.scale_y, character28.scale_z]}
             rotation={[0, character28.rotation_y ?? 0, 0]}
-            onInteract={() => { setActiveCharacterId(28); setShowDialogueSelection(true); }}
             isSpeaking={isNpcSpeaking && activeCharacterId === 28}
             isDialogueActive={(isDialogueActive || showDialogueSelection) && activeCharacterId === 28}
             characterId={28}
@@ -2069,7 +2041,6 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady, renderCharacters = true 
             position={[character29.position_x, character29.position_y, character29.position_z]}
             scale={[character29.scale_x, character29.scale_y, character29.scale_z]}
             rotation={[0, character29.rotation_y ?? 0, 0]}
-            onInteract={() => { setActiveCharacterId(29); setShowDialogueSelection(true); }}
             isSpeaking={isNpcSpeaking && activeCharacterId === 29}
             isDialogueActive={(isDialogueActive || showDialogueSelection) && activeCharacterId === 29}
             characterId={29}
@@ -2080,7 +2051,6 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady, renderCharacters = true 
             position={[character30.position_x, character30.position_y, character30.position_z]}
             scale={[character30.scale_x, character30.scale_y, character30.scale_z]}
             rotation={[0, character30.rotation_y ?? 0, 0]}
-            onInteract={() => { setActiveCharacterId(30); setShowDialogueSelection(true); }}
             isSpeaking={isNpcSpeaking && activeCharacterId === 30}
             isDialogueActive={(isDialogueActive || showDialogueSelection) && activeCharacterId === 30}
             characterId={30}
