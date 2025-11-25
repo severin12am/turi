@@ -6,44 +6,39 @@ import { logger } from '../services/logger';
 
 // ============================================================================
 // PRELOADING STRATEGY:
-// - Character 1 loads at module time (needed for loading screen to complete)
-// - Characters 2-30 load AFTER loading screen hides (via startRemainingCharacterPreloads)
-// This prevents character preloading from blocking React state updates
+// - NO preloading at module load time (to avoid blocking React state updates)
+// - ALL character preloads start AFTER loading screen hides
+// - Characters load from cache when rendered, or on-demand if not yet cached
 // ============================================================================
 const CHARACTER_COUNT = 30;
 let preloadStartTime = 0;
 
-// Only preload character 1 at startup - this is needed before loading screen can hide
-// The city.glb and helper_robot.glb also load during this time
-console.log(`🎭 [PRELOAD] Preloading character 1 at startup (required for loading screen)`);
-useGLTF.preload(`/models/character1.glb`);
-
-// Export function to preload remaining characters (called from App.tsx after loading screen hides)
+// Export function to preload ALL characters (called from App.tsx after loading screen hides)
 export function startRemainingCharacterPreloads() {
   if (typeof window === 'undefined') return;
   
   // Prevent duplicate calls
-  if ((window as any).__remainingPreloadsStarted) {
-    console.log(`🎭 [PRELOAD] Remaining preloads already started, skipping`);
+  if ((window as any).__characterPreloadsStarted) {
+    console.log(`🎭 [PRELOAD] Character preloads already started, skipping`);
     return;
   }
-  (window as any).__remainingPreloadsStarted = true;
+  (window as any).__characterPreloadsStarted = true;
   
   preloadStartTime = performance.now();
-  console.log(`🎭 [PRELOAD] Starting background preload of characters 2-${CHARACTER_COUNT}...`);
+  console.log(`🎭 [PRELOAD] Starting background preload of ALL ${CHARACTER_COUNT} characters...`);
   
-  // Stagger preloads to avoid blocking main thread
-  const STAGGER_DELAY_MS = 150; // 150ms between each preload
+  // Stagger preloads to avoid blocking main thread when parsing completes
+  const STAGGER_DELAY_MS = 100; // 100ms between each preload
   
-  for (let i = 2; i <= CHARACTER_COUNT; i++) {
-    const delay = (i - 2) * STAGGER_DELAY_MS;
+  for (let i = 1; i <= CHARACTER_COUNT; i++) {
+    const delay = (i - 1) * STAGGER_DELAY_MS;
     setTimeout(() => {
       const modelPath = `/models/character${i}.glb`;
       useGLTF.preload(modelPath);
       console.log(`🎭 [PRELOAD] Queued character ${i} @ ${Math.round(performance.now() - preloadStartTime)}ms`);
       
       if (i === CHARACTER_COUNT) {
-        console.log(`🎭 [PRELOAD] ✅ All remaining characters queued @ ${Math.round(performance.now() - preloadStartTime)}ms`);
+        console.log(`🎭 [PRELOAD] ✅ All ${CHARACTER_COUNT} characters queued @ ${Math.round(performance.now() - preloadStartTime)}ms`);
       }
     }, delay);
   }

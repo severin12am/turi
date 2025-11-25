@@ -661,9 +661,9 @@ function App() {
     console.log(`[LOAD] ⚡ helperRobotReady useEffect fired: ${helperRobotReady} @ ${delta}ms`);
     if (helperRobotReady) {
       console.log(`[LOAD] 🎉 HelperRobot state updated after ${delta}ms - loading screen hiding`);
-      // Start preloading remaining characters (2-30) now that loading screen is hidden
-      // User can select languages while these load in background
-      console.log(`[LOAD] 🎭 Starting background preload of characters 2-30...`);
+      // Start preloading ALL characters now that loading screen is hidden
+      // User can select languages while characters load in background
+      console.log(`[LOAD] 🎭 Starting background preload of all characters...`);
       startRemainingCharacterPreloads();
     }
   }, [helperRobotReady]);
