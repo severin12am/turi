@@ -343,9 +343,9 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady, renderCharacters = true 
       position_x: 64,
       position_y: -0.25,
       position_z: -47,
-      scale_x: 0.05,
-      scale_y: 0.05,
-      scale_z: 0.05,
+      scale_x: 0.007,
+      scale_y: 0.007,
+      scale_z: 0.007,
       rotation_y: Math.PI * 1.5,
       is_active: true
     } as CharacterType);
