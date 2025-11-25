@@ -20,6 +20,8 @@ const HelperRobotModel: React.FC<HelperRobotModelProps> = ({ path, onClick, onMo
   const [hovered, setHovered] = useState(false);
   
   useEffect(() => {
+    console.log('[DEBUG] HelperRobotModel useEffect fired');
+    
     if (robotRef.current) {
       // Rotate the robot 180 degrees to face the user
       robotRef.current.rotation.y = Math.PI * 1.55;
@@ -36,7 +38,10 @@ const HelperRobotModel: React.FC<HelperRobotModelProps> = ({ path, onClick, onMo
     
     // Signal that model is truly ready
     if (onModelReady) {
+      console.log('[DEBUG] Calling onModelReady');
       onModelReady();
+    } else {
+      console.warn('[DEBUG] onModelReady callback is missing!');
     }
   }, [path, onModelReady]);
   

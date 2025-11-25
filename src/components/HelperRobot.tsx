@@ -194,11 +194,19 @@ const HelperRobot: React.FC<HelperRobotProps> = ({
   
   // Called when the 3D model is actually loaded
   const handleModelReady = React.useCallback(() => {
-    if (hasCalledOnReady.current) return;
+    console.log('[DEBUG] handleModelReady called, hasCalledOnReady:', hasCalledOnReady.current);
+    
+    if (hasCalledOnReady.current) {
+      console.log('[DEBUG] onReady already called, skipping');
+      return;
+    }
     hasCalledOnReady.current = true;
     
     if (onReady) {
+      console.log('[DEBUG] Calling onReady prop');
       onReady();
+    } else {
+      console.warn('[DEBUG] onReady prop is missing!');
     }
   }, [onReady]);
   

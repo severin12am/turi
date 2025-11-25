@@ -640,9 +640,23 @@ function App() {
   const showLanguageSelection = needsLanguageSelection && !isLoading && helperRobotReady;
   const showLoadingScreen = isLoading || !helperRobotReady;
 
+  // Debug: Track loading states
+  useEffect(() => {
+    console.log('[DEBUG] citySceneReady:', citySceneReady);
+  }, [citySceneReady]);
+  
+  useEffect(() => {
+    console.log('[DEBUG] helperRobotReady:', helperRobotReady);
+  }, [helperRobotReady]);
+  
+  useEffect(() => {
+    console.log('[DEBUG] showLoadingScreen:', showLoadingScreen);
+  }, [showLoadingScreen]);
+  
   // Start preloading characters after loading screen hides
   useEffect(() => {
     if (helperRobotReady) {
+      console.log('[DEBUG] Starting character preloads');
       startRemainingCharacterPreloads();
     }
   }, [helperRobotReady]);
@@ -698,6 +712,7 @@ function App() {
                 onLanguageSelect={handleLanguageSelectRobot}
                 onLogin={handleLoginClickRobot}
                 onClick={handleRobotClick}
+                onReady={() => setHelperRobotReady(true)}
               />
             </div>
 

@@ -35,6 +35,7 @@ const CityModel: React.FC = () => {
   const { scene } = useGLTF('/models/city.glb');
   
   useEffect(() => {
+    console.log('[DEBUG] CityModel loaded');
     logger.info('City model loaded', { path: '/models/city.glb' });
   }, []);
   
