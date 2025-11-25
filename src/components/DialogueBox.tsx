@@ -243,6 +243,17 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
   scenarioNumber = 1, // Default to scenario 1
   mission, // Mission mode
 }) => {
+  // IMPORTANT: Get language settings from global store FIRST, before any other hooks
+  // This must be at the top to comply with Rules of Hooks
+  const storeState = useStore();
+  const storeMotherLanguage = storeState?.motherLanguage;
+  const storeTargetLanguage = storeState?.targetLanguage;
+  const user = storeState?.user;
+  
+  // Provide fallback values to prevent errors during unmounting
+  const motherLanguage = storeMotherLanguage || 'en';
+  const targetLanguage = storeTargetLanguage || 'en';
+  
   const isMissionMode = !!mission; // True if mission prop is provided
   
   // Get character info for TTS voice
@@ -474,17 +485,6 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
   
   // Debug log to verify component rendering with quiz state
   console.log(`DEBUG: RENDERING DIALOGUE BOX, showQuiz = ${showQuiz} currentDialogueId = ${currentDialogueId}`);
-
-  // Get language settings from global store
-  const { 
-    motherLanguage: storeMotherLanguage, // Language user already knows
-    targetLanguage: storeTargetLanguage, // Language user is learning
-    user            // Current user data
-  } = useStore();
-  
-  // Provide fallback values to prevent errors during unmounting
-  const motherLanguage = storeMotherLanguage || 'en';
-  const targetLanguage = storeTargetLanguage || 'en';
 
   // Helper function to get text in the specified language from a phrase
   const getTextInLanguage = (phrase: DialoguePhrase, language: SupportedLanguage): string => {
