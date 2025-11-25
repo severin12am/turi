@@ -13,6 +13,7 @@ import type { SupportedLanguage } from './constants/translations';
 import type { AuthChangeEvent, Session } from '@supabase/supabase-js';
 import { useMobile, isMobileApp } from './hooks/useMobile';
 import { preloadTranslations } from './services/translationLoader';
+import { startRemainingCharacterPreloads } from './scenes/Character';
 
 function App() {
   useMobile();
@@ -659,7 +660,11 @@ function App() {
     const delta = Math.round(performance.now() - loadStartRef.current);
     console.log(`[LOAD] ⚡ helperRobotReady useEffect fired: ${helperRobotReady} @ ${delta}ms`);
     if (helperRobotReady) {
-      console.log(`[LOAD] 🎉 HelperRobot state FINALLY updated after ${delta}ms`);
+      console.log(`[LOAD] 🎉 HelperRobot state updated after ${delta}ms - loading screen hiding`);
+      // Start preloading remaining characters (2-30) now that loading screen is hidden
+      // User can select languages while these load in background
+      console.log(`[LOAD] 🎭 Starting background preload of characters 2-30...`);
+      startRemainingCharacterPreloads();
     }
   }, [helperRobotReady]);
 
