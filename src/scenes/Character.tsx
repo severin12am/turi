@@ -4,35 +4,7 @@ import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { logger } from '../services/logger';
 
-// ============================================================================
-// PRELOADING STRATEGY:
-// - NO preloading at module load time (to avoid blocking React state updates)
-// - ALL character preloads start AFTER loading screen hides
-// - Characters load from cache when rendered, or on-demand if not yet cached
-// ============================================================================
-const CHARACTER_COUNT = 30;
-let preloadStartTime = 0;
-
-// Export function to preload ALL characters (called from App.tsx after loading screen hides)
-export function startRemainingCharacterPreloads() {
-  if (typeof window === 'undefined') return;
-  
-  // Prevent duplicate calls
-  if ((window as any).__characterPreloadsStarted) return;
-  (window as any).__characterPreloadsStarted = true;
-  
-  preloadStartTime = performance.now();
-  
-  // Stagger preloads to avoid blocking main thread when parsing completes
-  const STAGGER_DELAY_MS = 100; // 100ms between each preload
-  
-  for (let i = 1; i <= CHARACTER_COUNT; i++) {
-    const delay = (i - 1) * STAGGER_DELAY_MS;
-    setTimeout(() => {
-      useGLTF.preload(`/models/character${i}.glb`);
-    }, delay);
-  }
-}
+// Models are loaded on-demand for better initial load performance
 
 /**
  * Props for the Character component
@@ -83,7 +55,7 @@ const Character: React.FC<CharacterProps> = ({
   // Determine which model to load based on characterId
   const modelPath = `/models/character${characterId}.glb`;
   
-  // Load the 3D model using useGLTF (instant if preloaded, otherwise downloads)
+  // Load the 3D model using useGLTF
   const { scene, animations } = useGLTF(modelPath);
   
   // Set up animation mixer and log available animations

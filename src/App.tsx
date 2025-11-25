@@ -13,7 +13,6 @@ import type { SupportedLanguage } from './constants/translations';
 import type { AuthChangeEvent, Session } from '@supabase/supabase-js';
 import { useMobile, isMobileApp } from './hooks/useMobile';
 import { preloadTranslations } from './services/translationLoader';
-import { startRemainingCharacterPreloads } from './scenes/Character';
 
 function App() {
   useMobile();
@@ -22,6 +21,16 @@ function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [citySceneReady, setCitySceneReady] = useState(false);
   const [helperRobotReady, setHelperRobotReady] = useState(false);
+  const loadStartRef = useRef<number>(typeof performance !== 'undefined' ? performance.now() : 0);
+
+  const logLoadEvent = useCallback((event: string, data?: Record<string, unknown>) => {
+    const delta = typeof performance !== 'undefined' ? Math.round(performance.now() - (loadStartRef.current || 0)) : 0;
+    const payload = { at: `${delta}ms`, ...(data || {}) };
+    logger.info(`[LOAD] ${event}`, payload);
+    if (typeof window !== 'undefined' && ((window as any).__TURI_DEBUG_LOAD || process.env.NODE_ENV !== 'production')) {
+      console.log(`[LOAD] ${event} @ ${payload.at}`, data || {});
+    }
+  }, []);
 
   const [showLogin, setShowLogin] = useState(false);
   const [panelInstructions, setPanelInstructions] = useState<Record<string, string>>({ mode: "language_selection" });
@@ -640,26 +649,39 @@ function App() {
   const showLanguageSelection = needsLanguageSelection && !isLoading && helperRobotReady;
   const showLoadingScreen = isLoading || !helperRobotReady;
 
-  // Debug: Track loading states
+  // Detailed timing logs
   useEffect(() => {
-    console.log('[DEBUG] citySceneReady:', citySceneReady);
-  }, [citySceneReady]);
-  
+    const delta = Math.round(performance.now() - loadStartRef.current);
+    console.log(`[LOAD] App mounted @ ${delta}ms`, { isLoading, needsLanguageSelection });
+  }, []);
+
   useEffect(() => {
-    console.log('[DEBUG] helperRobotReady:', helperRobotReady);
-  }, [helperRobotReady]);
-  
-  useEffect(() => {
-    console.log('[DEBUG] showLoadingScreen:', showLoadingScreen);
-  }, [showLoadingScreen]);
-  
-  // Start preloading characters after loading screen hides
-  useEffect(() => {
+    const delta = Math.round(performance.now() - loadStartRef.current);
+    console.log(`[LOAD] ⚡ helperRobotReady useEffect fired: ${helperRobotReady} @ ${delta}ms`);
     if (helperRobotReady) {
-      console.log('[DEBUG] Starting character preloads');
-      startRemainingCharacterPreloads();
+      console.log(`[LOAD] 🎉 HelperRobot state FINALLY updated after ${delta}ms`);
     }
   }, [helperRobotReady]);
+
+  useEffect(() => {
+    const delta = Math.round(performance.now() - loadStartRef.current);
+    console.log(`[LOAD] citySceneReady = ${citySceneReady} @ ${delta}ms`);
+  }, [citySceneReady]);
+
+  useEffect(() => {
+    const delta = Math.round(performance.now() - loadStartRef.current);
+    console.log(`[LOAD] showLoadingScreen = ${showLoadingScreen} @ ${delta}ms`);
+  }, [showLoadingScreen]);
+
+  useEffect(() => {
+    const delta = Math.round(performance.now() - loadStartRef.current);
+    console.log(`[LOAD] showLanguageSelection = ${showLanguageSelection} @ ${delta}ms`);
+  }, [showLanguageSelection]);
+
+  useEffect(() => {
+    const delta = Math.round(performance.now() - loadStartRef.current);
+    console.log(`[LOAD] needsLanguageSelection = ${needsLanguageSelection} @ ${delta}ms`);
+  }, [needsLanguageSelection]);
 
   // SINGLE return - CityScene stays mounted, only overlays change
   return (
@@ -677,7 +699,11 @@ function App() {
         <div className="absolute inset-0 z-0 pointer-events-none">
           <CityScene 
             renderCharacters={!needsLanguageSelection}
-            onReady={() => setCitySceneReady(true)} 
+            onReady={() => {
+              const delta = Math.round(performance.now() - loadStartRef.current);
+              console.log(`✅ CityScene preloaded @ ${delta}ms`);
+              setCitySceneReady(true);
+            }} 
           />
         </div>
         
@@ -698,7 +724,25 @@ function App() {
                 onLogin={handleLoginClickRobot}
                 onClick={handleRobotClick}
                 shouldAnimate={helperRobotReady}
-              onReady={() => setHelperRobotReady(true)}
+              onReady={() => {
+                const delta = Math.round(performance.now() - loadStartRef.current);
+                console.log(`✅ HelperRobot ready @ ${delta}ms - calling setHelperRobotReady(true) NOW`);
+                const beforeSetState = performance.now();
+                setHelperRobotReady(true);
+                const afterSetState = performance.now();
+                console.log(`⏱️ setHelperRobotReady() call took ${Math.round(afterSetState - beforeSetState)}ms (synchronous part)`);
+                
+                // Check if it updates in the next frame
+                requestAnimationFrame(() => {
+                  const raf1 = Math.round(performance.now() - loadStartRef.current);
+                  console.log(`⏱️ First RAF after setHelperRobotReady @ ${raf1}ms`);
+                });
+                
+                setTimeout(() => {
+                  const timeout = Math.round(performance.now() - loadStartRef.current);
+                  console.log(`⏱️ 100ms timeout after setHelperRobotReady @ ${timeout}ms`);
+                }, 100);
+              }}
               />
             </div>
           </div>
@@ -712,7 +756,6 @@ function App() {
                 onLanguageSelect={handleLanguageSelectRobot}
                 onLogin={handleLoginClickRobot}
                 onClick={handleRobotClick}
-                onReady={() => setHelperRobotReady(true)}
               />
             </div>
 
