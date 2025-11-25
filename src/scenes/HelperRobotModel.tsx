@@ -12,27 +12,14 @@ interface HelperRobotModelProps {
   onModelReady?: () => void; // Called when 3D model is actually loaded
 }
 
-// Track app start time for absolute timestamps
-const appStartTime = typeof performance !== 'undefined' ? performance.now() : 0;
-
 const HelperRobotModel: React.FC<HelperRobotModelProps> = ({ path, onClick, onModelReady }) => {
-  const renderTime = performance.now();
-  console.log(`🤖 [${Math.round(renderTime)}ms] HelperRobotModel RENDER started`);
-  
-  const loadStart = performance.now();
   const { scene } = useGLTF(path);
-  const loadTime = performance.now() - loadStart;
-  
-  console.log(`🤖 [${Math.round(performance.now())}ms] useGLTF returned in ${loadTime.toFixed(1)}ms (cached: ${loadTime < 10})`);
   
   const robotRef = useRef<THREE.Group>(null);
   const { isHelperRobotOpen } = useStore();
   const [hovered, setHovered] = useState(false);
   
   useEffect(() => {
-    const effectTime = performance.now();
-    console.log(`🤖 [${Math.round(effectTime)}ms] HelperRobotModel useEffect RUNNING (${Math.round(effectTime - renderTime)}ms after render)`);
-    
     if (robotRef.current) {
       // Rotate the robot 180 degrees to face the user
       robotRef.current.rotation.y = Math.PI * 1.55;
@@ -45,11 +32,10 @@ const HelperRobotModel: React.FC<HelperRobotModelProps> = ({ path, onClick, onMo
       });
     }
     
-    logger.info('Helper robot model loaded', { path, loadTime });
+    logger.info('Helper robot model loaded', { path });
     
     // Signal that model is truly ready
     if (onModelReady) {
-      console.log(`🤖 [${Math.round(performance.now())}ms] Calling onModelReady callback`);
       onModelReady();
     }
   }, [path, onModelReady]);

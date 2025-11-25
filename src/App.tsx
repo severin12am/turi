@@ -22,46 +22,6 @@ function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [citySceneReady, setCitySceneReady] = useState(false);
   const [helperRobotReady, setHelperRobotReady] = useState(false);
-  const loadStartRef = useRef<number>(typeof performance !== 'undefined' ? performance.now() : 0);
-  
-  // DEBUG: Heartbeat to detect main thread blocking
-  useEffect(() => {
-    let lastHeartbeat = performance.now();
-    let heartbeatCount = 0;
-    const HEARTBEAT_INTERVAL = 500; // Check every 500ms
-    const BLOCK_THRESHOLD = 1000; // Log if blocked for >1 second
-    
-    const heartbeat = setInterval(() => {
-      const now = performance.now();
-      const elapsed = now - lastHeartbeat;
-      heartbeatCount++;
-      
-      if (elapsed > BLOCK_THRESHOLD) {
-        console.warn(`⚠️ [HEARTBEAT] Main thread was BLOCKED for ${Math.round(elapsed)}ms (heartbeat #${heartbeatCount} @ ${Math.round(now - loadStartRef.current)}ms)`);
-      }
-      
-      lastHeartbeat = now;
-      
-      // Stop after 30 seconds of monitoring
-      if (heartbeatCount > 60) {
-        clearInterval(heartbeat);
-        console.log(`[HEARTBEAT] Monitoring stopped after 30 seconds`);
-      }
-    }, HEARTBEAT_INTERVAL);
-    
-    console.log(`[HEARTBEAT] Started main thread monitoring (interval: ${HEARTBEAT_INTERVAL}ms, threshold: ${BLOCK_THRESHOLD}ms)`);
-    
-    return () => clearInterval(heartbeat);
-  }, []);
-
-  const logLoadEvent = useCallback((event: string, data?: Record<string, unknown>) => {
-    const delta = typeof performance !== 'undefined' ? Math.round(performance.now() - (loadStartRef.current || 0)) : 0;
-    const payload = { at: `${delta}ms`, ...(data || {}) };
-    logger.info(`[LOAD] ${event}`, payload);
-    if (typeof window !== 'undefined' && ((window as any).__TURI_DEBUG_LOAD || process.env.NODE_ENV !== 'production')) {
-      console.log(`[LOAD] ${event} @ ${payload.at}`, data || {});
-    }
-  }, []);
 
   const [showLogin, setShowLogin] = useState(false);
   const [panelInstructions, setPanelInstructions] = useState<Record<string, string>>({ mode: "language_selection" });
@@ -680,49 +640,12 @@ function App() {
   const showLanguageSelection = needsLanguageSelection && !isLoading && helperRobotReady;
   const showLoadingScreen = isLoading || !helperRobotReady;
 
-  // Detailed timing logs
+  // Start preloading characters after loading screen hides
   useEffect(() => {
-    const delta = Math.round(performance.now() - loadStartRef.current);
-    console.log(`[LOAD] App mounted @ ${delta}ms`, { isLoading, needsLanguageSelection });
-  }, []);
-
-  useEffect(() => {
-    // DEBUG: Log at the VERY START of useEffect to see when React actually runs it
-    const effectStartTime = performance.now();
-    const delta = Math.round(effectStartTime - loadStartRef.current);
-    console.log(`[LOAD] ⚡ helperRobotReady useEffect STARTED: ${helperRobotReady} @ ${delta}ms`);
-    
     if (helperRobotReady) {
-      console.log(`[LOAD] 🎉 HelperRobot state updated after ${delta}ms - loading screen hiding`);
-      // Start preloading ALL characters now that loading screen is hidden
-      // User can select languages while characters load in background
-      console.log(`[LOAD] 🎭 Starting background preload of all characters...`);
       startRemainingCharacterPreloads();
-      
-      const effectEndTime = performance.now();
-      console.log(`[LOAD] ⚡ helperRobotReady useEffect COMPLETED in ${Math.round(effectEndTime - effectStartTime)}ms`);
     }
   }, [helperRobotReady]);
-
-  useEffect(() => {
-    const delta = Math.round(performance.now() - loadStartRef.current);
-    console.log(`[LOAD] citySceneReady = ${citySceneReady} @ ${delta}ms`);
-  }, [citySceneReady]);
-
-  useEffect(() => {
-    const delta = Math.round(performance.now() - loadStartRef.current);
-    console.log(`[LOAD] showLoadingScreen = ${showLoadingScreen} @ ${delta}ms`);
-  }, [showLoadingScreen]);
-
-  useEffect(() => {
-    const delta = Math.round(performance.now() - loadStartRef.current);
-    console.log(`[LOAD] showLanguageSelection = ${showLanguageSelection} @ ${delta}ms`);
-  }, [showLanguageSelection]);
-
-  useEffect(() => {
-    const delta = Math.round(performance.now() - loadStartRef.current);
-    console.log(`[LOAD] needsLanguageSelection = ${needsLanguageSelection} @ ${delta}ms`);
-  }, [needsLanguageSelection]);
 
   // SINGLE return - CityScene stays mounted, only overlays change
   return (
@@ -740,11 +663,7 @@ function App() {
         <div className="absolute inset-0 z-0 pointer-events-none">
           <CityScene 
             renderCharacters={!needsLanguageSelection}
-            onReady={() => {
-              const delta = Math.round(performance.now() - loadStartRef.current);
-              console.log(`✅ CityScene preloaded @ ${delta}ms`);
-              setCitySceneReady(true);
-            }} 
+            onReady={() => setCitySceneReady(true)} 
           />
         </div>
         
@@ -765,25 +684,7 @@ function App() {
                 onLogin={handleLoginClickRobot}
                 onClick={handleRobotClick}
                 shouldAnimate={helperRobotReady}
-              onReady={() => {
-                const delta = Math.round(performance.now() - loadStartRef.current);
-                console.log(`✅ HelperRobot ready @ ${delta}ms - calling setHelperRobotReady(true) NOW`);
-                const beforeSetState = performance.now();
-                setHelperRobotReady(true);
-                const afterSetState = performance.now();
-                console.log(`⏱️ setHelperRobotReady() call took ${Math.round(afterSetState - beforeSetState)}ms (synchronous part)`);
-                
-                // Check if it updates in the next frame
-                requestAnimationFrame(() => {
-                  const raf1 = Math.round(performance.now() - loadStartRef.current);
-                  console.log(`⏱️ First RAF after setHelperRobotReady @ ${raf1}ms`);
-                });
-                
-                setTimeout(() => {
-                  const timeout = Math.round(performance.now() - loadStartRef.current);
-                  console.log(`⏱️ 100ms timeout after setHelperRobotReady @ ${timeout}ms`);
-                }, 100);
-              }}
+              onReady={() => setHelperRobotReady(true)}
               />
             </div>
           </div>

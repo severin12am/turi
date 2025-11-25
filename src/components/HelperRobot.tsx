@@ -194,19 +194,11 @@ const HelperRobot: React.FC<HelperRobotProps> = ({
   
   // Called when the 3D model is actually loaded
   const handleModelReady = React.useCallback(() => {
-    const callbackTime = performance.now();
-    console.log(`🤖 [${Math.round(callbackTime)}ms] handleModelReady CALLED`);
-    
-    if (hasCalledOnReady.current) {
-      console.log(`🤖 [${Math.round(callbackTime)}ms] Already called onReady, skipping`);
-      return;
-    }
+    if (hasCalledOnReady.current) return;
     hasCalledOnReady.current = true;
     
-    console.log(`🤖 [${Math.round(callbackTime)}ms] First call - signaling parent via onReady`);
     if (onReady) {
       onReady();
-      console.log(`🤖 [${Math.round(performance.now())}ms] onReady callback returned`);
     }
   }, [onReady]);
   

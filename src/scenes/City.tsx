@@ -32,19 +32,10 @@ const CoordinateTracker: React.FC<{ position: THREE.Vector3 }> = ({ position }) 
 };
 
 const CityModel: React.FC = () => {
-  const renderTime = performance.now();
-  console.log(`🏙️ [${Math.round(renderTime)}ms] CityModel RENDER started`);
-  
-  const loadStart = performance.now();
   const { scene } = useGLTF('/models/city.glb');
-  const loadTime = performance.now() - loadStart;
-  
-  console.log(`🏙️ [${Math.round(performance.now())}ms] useGLTF returned in ${loadTime.toFixed(1)}ms (cached: ${loadTime < 10})`);
   
   useEffect(() => {
-    const effectTime = performance.now();
-    console.log(`🏙️ [${Math.round(effectTime)}ms] CityModel useEffect RUNNING (${Math.round(effectTime - renderTime)}ms after render)`);
-    logger.info('City model loaded', { path: '/models/city.glb', loadTime });
+    logger.info('City model loaded', { path: '/models/city.glb' });
   }, []);
   
   return <primitive object={scene} position={[0, 0, 0]} />;
