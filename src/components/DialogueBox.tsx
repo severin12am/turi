@@ -5318,11 +5318,13 @@ Return ONLY the transliteration, nothing else.`;
   } catch (error) {
     console.error("Critical error rendering DialogueBox:", error);
     // Return a simplified error state UI
+    // Safely access motherLanguage from store in case of early errors
+    const safeMotherLanguage = useStore.getState().motherLanguage || 'en';
     return (
       <div className="dialogue-box-container">
         <div className="dialogue-error">
-          <p>{getTranslation(motherLanguage, 'error')}</p>
-          <button onClick={onClose} className="close-button">{getTranslation(motherLanguage, 'close')}</button>
+          <p>{getTranslation(safeMotherLanguage, 'error')}</p>
+          <button onClick={onClose} className="close-button">{getTranslation(safeMotherLanguage, 'close')}</button>
         </div>
       </div>
     );
