@@ -261,13 +261,15 @@ export const generateTextExplanation = async (
   const targetLangName = getLanguageName(targetLanguage);
   const motherLangName = getLanguageName(motherLanguage);
 
-  const prompt = `Explain this sentence structure in ${motherLangName} (2-3 sentences MAX):
+  const prompt = `Explain this sentence in ${motherLangName}:
 
 ${targetLangName}: "${phrase}"
 ${motherLangName}: "${translation}"
 
-Cover: 1) sentence structure, 2) word order, 3) key grammar point.
-BE BRIEF.`;
+Explain clearly and briefly:
+- Why natives say it exactly this way (not word-for-word from English)
+- The one reusable pattern or trick hidden in this sentence
+- How the learner can instantly use it with their own name or details`;
 
   const request: AIRequest = {
     task: 'text-explanation',
