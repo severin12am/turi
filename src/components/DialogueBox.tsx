@@ -3587,7 +3587,7 @@ Return ONLY the transliteration, nothing else.`;
                         alignItems: 'center',
                         justifyContent: 'center',
                       }}
-                      title="Search in Google"
+                      title={getTranslation(motherLanguage, 'searchInGoogle')}
                     >
                       🔍
                     </button>
@@ -3610,7 +3610,7 @@ Return ONLY the transliteration, nothing else.`;
                         alignItems: 'center',
                         justifyContent: 'center',
                       }}
-                      title="Play pronunciation"
+                      title={getTranslation(motherLanguage, 'playPronunciationTooltip')}
                     >
                       🔊
                     </button>
@@ -3633,7 +3633,7 @@ Return ONLY the transliteration, nothing else.`;
                         alignItems: 'center',
                         justifyContent: 'center',
                       }}
-                      title="Show explanation"
+                      title={getTranslation(motherLanguage, 'showExplanationTooltip')}
                     >
                       ℹ️
                     </button>
@@ -3658,7 +3658,7 @@ Return ONLY the transliteration, nothing else.`;
                         justifyContent: 'center',
                         opacity: (!user || !user.id) ? 0.5 : 1,
                       }}
-                      title={(!user || !user.id) ? "Sign in to add words to dictionary" : "Add to dictionary"}
+                      title={(!user || !user.id) ? getTranslation(motherLanguage, 'signInToAddWords') : getTranslation(motherLanguage, 'addToDictionary')}
                     >
                       {addingWordToDictionary === cleanWord ? '⏳' : '📚'}
                     </button>
@@ -3937,7 +3937,7 @@ Return ONLY the transliteration, nothing else.`;
       } catch (error) {
         console.error('[Missions] Error checking sentence:', error);
         setAwaitingMissionApproval(false);
-        setMissionHelperMessage('Error checking sentence. Please try again.');
+        setMissionHelperMessage(getTranslation(motherLanguage, 'errorCheckingSentence'));
         setCurrentUserInput('');
       }
       
@@ -4638,7 +4638,7 @@ Return ONLY the transliteration, nothing else.`;
                       color: 'rgba(251, 191, 36, 1)',
                       fontWeight: '500'
                     }}>
-                      Checking...
+                      {getTranslation(motherLanguage, 'checkingSentence')}
                     </span>
                   )}
                 </div>
@@ -4800,7 +4800,7 @@ Return ONLY the transliteration, nothing else.`;
                     <button
                       className="return-button"
                       onClick={() => handleGoBack(entry)}
-                      title="Go back to previous step"
+                      title={getTranslation(motherLanguage, 'goBackToPreviousStep')}
                     >
                       ↩
                     </button>
@@ -4810,7 +4810,7 @@ Return ONLY the transliteration, nothing else.`;
                   <button
                     className="structure-button"
                     onClick={() => handleShowStructureExplanation(entry.phrase, entry.translation)}
-                    title="Explain sentence structure"
+                    title={getTranslation(motherLanguage, 'explainSentenceStructure')}
                     style={{
                       background: 'rgba(0, 0, 0, 0.2)',
                       border: '2px solid rgba(0, 0, 0, 0.1)',
@@ -4849,7 +4849,7 @@ Return ONLY the transliteration, nothing else.`;
                     <button 
                       className="replay-user-button"
                       onClick={() => playUserRecording(entry.step)}
-                      title="Replay your recording"
+                      title={getTranslation(motherLanguage, 'replayYourRecording')}
                     >
                       🎙️
                     </button>
@@ -4888,9 +4888,9 @@ Return ONLY the transliteration, nothing else.`;
                 opacity: dialogueComplete ? 1 : 0.5
               }}
               onClick={isPlayingFullDialogue ? stopFullDialogue : playFullDialogue}
-              title={!dialogueComplete ? 'Complete dialogue first' : (isPlayingFullDialogue ? 'Stop playback' : 'Replay full dialogue')}
+              title={!dialogueComplete ? getTranslation(motherLanguage, 'completeDialogueFirst') : (isPlayingFullDialogue ? getTranslation(motherLanguage, 'stopPlayback') : getTranslation(motherLanguage, 'replayFullDialogue'))}
             >
-              {isPlayingFullDialogue ? 'Stop Playback' : 'Replay Full Dialogue'}
+              {isPlayingFullDialogue ? getTranslation(motherLanguage, 'stopPlayback') : getTranslation(motherLanguage, 'replayFullDialogue')}
             </button>
             
             {/* Speed Control Button */}
@@ -5084,7 +5084,7 @@ Return ONLY the transliteration, nothing else.`;
                   e.currentTarget.style.boxShadow = 'none';
                 }}
               >
-                <span>{isPlayingFullDialogue ? '🛑 Stop Playback' : '▶️ Replay Full Dialogue'}</span>
+                <span>{isPlayingFullDialogue ? '🛑 ' + getTranslation(motherLanguage, 'stopPlayback') : '▶️ ' + getTranslation(motherLanguage, 'replayFullDialogue')}</span>
               </button>
               
               {/* Speed Control Button */}
@@ -5143,7 +5143,7 @@ Return ONLY the transliteration, nothing else.`;
                   e.currentTarget.style.boxShadow = 'none';
                 }}
               >
-                <span> Go to Quiz</span>
+                <span> {getTranslation(motherLanguage, 'goToQuiz')}</span>
               </button>
             </div>
           </div>
@@ -5285,7 +5285,7 @@ Return ONLY the transliteration, nothing else.`;
                 ×
               </button>
               
-              <h3 style={{ marginTop: 0, color: '#333' }}>Sentence Structure</h3>
+              <h3 style={{ marginTop: 0, color: '#333' }}>{getTranslation(motherLanguage, 'sentenceStructure')}</h3>
               
               <div style={{
                 padding: '15px',

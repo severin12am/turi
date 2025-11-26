@@ -101,6 +101,7 @@ const HelperRobot: React.FC<HelperRobotProps> = ({
   const [selectedTargetLang, setSelectedTargetLang] = useState<string>('');
   const [step, setStep] = useState<'mother' | 'target' | 'ready'>('mother');
   const [isAnimating, setIsAnimating] = useState(true);
+  const [isHovering, setIsHovering] = useState(false);
   const [hasAnimationStarted, setHasAnimationStarted] = useState(false);
   const [hasInitialAnimationRun, setHasInitialAnimationRun] = useState(false);
   const [texts, setTexts] = useState({
@@ -125,7 +126,8 @@ const HelperRobot: React.FC<HelperRobotProps> = ({
     chooseLanguageYouSpeak: getHelperTranslation(currentLang, 'chooseLanguageYouSpeak'),
     startJourney: getHelperTranslation(currentLang, 'startJourney'),
     haveAccount: getHelperTranslation(currentLang, 'alreadyHaveAccount'), // Use correct key
-    back: getHelperTranslation(currentLang, 'goBack') // Use correct key
+    back: getHelperTranslation(currentLang, 'goBack'), // Use correct key
+    clickMe: getHelperTranslation(currentLang, 'clickMe')
   };
   const placeholderText = placeholderTranslations[placeholderLang] || placeholderTranslations['en'];
 
@@ -308,6 +310,8 @@ const HelperRobot: React.FC<HelperRobotProps> = ({
         <div 
           className="w-96 h-96 mb-2 helper-robot-container cursor-pointer relative"
           onClick={handleRobotClick}
+          onMouseEnter={() => setIsHovering(true)}
+          onMouseLeave={() => setIsHovering(false)}
           style={{ pointerEvents: 'auto' }}
         >
 
@@ -328,6 +332,26 @@ const HelperRobot: React.FC<HelperRobotProps> = ({
               onClick={() => handleRobotClick(undefined as any)}
             />
           </Canvas>
+          
+          {/* Translatable tooltip */}
+          {isHovering && (
+            <div style={{
+              position: 'absolute',
+              bottom: '-25px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              backgroundColor: 'rgba(0, 0, 0, 0.7)',
+              color: 'white',
+              padding: '4px 8px',
+              borderRadius: '4px',
+              fontSize: '12px',
+              whiteSpace: 'nowrap',
+              pointerEvents: 'none',
+              zIndex: 1000
+            }}>
+              {t.clickMe || 'Click me!'}
+            </div>
+          )}
         </div>
         
         {/* LANGUAGE SELECTION PANEL - only show when this is being used for language selection */}

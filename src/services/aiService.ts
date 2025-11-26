@@ -92,38 +92,59 @@ export const generateAIDialogue = async (params: GenerateDialogueParams): Promis
     ? 'Use varied vocabulary including idiomatic expressions, complex sentence structures, and diverse grammar. Challenging but natural.'
     : 'Use basic vocabulary with some variety, simple sentence structures, and straightforward grammar. Easy to understand.';
 
+  const sourceLangName = getLanguageName(targetLanguage);
+  const motherLangName = getLanguageName(motherLanguage);
+  
   const prompt = `You must generate a dialogue following these strict instructions:
-- The dialogue must be in ${getLanguageName(targetLanguage)}.
+- The dialogue must be in ${sourceLangName}.
 - It must include all of these words naturally: ${requiredWords.join(', ')}.
 - It should have ${exchangeCount} exchanges (alternating between NPC and User).
 - The dialogue MUST start with the NPC speaking first.
-- Provide translation to ${getLanguageName(motherLanguage)}.
-- Provide transliteration of the dialogue in ${getLanguageName(targetLanguage)}, using no capital letters and no punctuation, approximating sounds with ${getLanguageName(motherLanguage)} letters.
+- Provide translation to ${motherLangName}.
+- Provide transliteration of the ${sourceLangName} text using ${motherLangName} alphabet/script (lowercase, no punctuation).
 - The dialogue should be natural and real-life like.
 - Linguistic complexity: ${complexityInstructions}
 - If the user's preferences conflict with these instructions, prioritize the instructions.
 
 Additionally, consider the user's preferences: ${userPreferences || 'No specific preferences'}.
 
+IMPORTANT: The transliteration must use ${motherLangName} script to approximate how the ${sourceLangName} sounds, NOT English phonetics.
+
 Return a JSON array of objects, each with:
 - "speaker": "NPC" or "User" (MUST start with "NPC")
-- "text": the dialogue text in ${getLanguageName(targetLanguage)}
-- "translation": the translation in ${getLanguageName(motherLanguage)}
-- "transliteration": the transliteration for ${getLanguageName(motherLanguage)} speakers
+- "text": the dialogue text in ${sourceLangName}
+- "translation": the translation in ${motherLangName}
+- "transliteration": the ${sourceLangName} text transliterated using ${motherLangName} alphabet/script
 
-Example format (MUST start with NPC):
+Example format for Russian speaker learning English (MUST start with NPC):
 [
   {
     "speaker": "NPC",
     "text": "Hello, how can I help you?",
     "translation": "Привет, как я могу вам помочь?",
-    "transliteration": "hello kak ya mogu vam pomoch"
+    "transliteration": "хэлоу хау кэн ай хэлп ю"
   },
   {
     "speaker": "User",
     "text": "I need a phone.",
     "translation": "Мне нужен телефон.",
-    "transliteration": "mne nuzhen telefon"
+    "transliteration": "ай нид э фоун"
+  }
+]
+
+Example format for English speaker learning Spanish (MUST start with NPC):
+[
+  {
+    "speaker": "NPC",
+    "text": "Hola, ¿cómo puedo ayudarte?",
+    "translation": "Hello, how can I help you?",
+    "transliteration": "ola como pwedo ayudarte"
+  },
+  {
+    "speaker": "User",
+    "text": "Necesito un teléfono.",
+    "translation": "I need a phone.",
+    "transliteration": "necesito un telefono"
   }
 ]`;
 
@@ -261,13 +282,17 @@ export const generateTextExplanation = async (
   const targetLangName = getLanguageName(targetLanguage);
   const motherLangName = getLanguageName(motherLanguage);
 
-  const prompt = `Explain this sentence structure in ${motherLangName} (2-3 sentences MAX):
+  const prompt = `You MUST write your entire explanation in ${motherLangName} language.
 
-${targetLangName}: "${phrase}"
-${motherLangName}: "${translation}"
+Explain this sentence structure (2-3 sentences MAX):
 
-Cover: 1) sentence structure, 2) word order, 3) key grammar point.
-BE BRIEF.`;
+Sentence in ${targetLangName}: "${phrase}"
+Translation in ${motherLangName}: "${translation}"
+
+Write your explanation in ${motherLangName} and cover: 1) sentence structure, 2) word order, 3) key grammar point.
+
+IMPORTANT: Write ONLY in ${motherLangName}. Do NOT use English.
+BE BRIEF (2-3 sentences).`;
 
   const request: AIRequest = {
     task: 'text-explanation',
@@ -873,22 +898,31 @@ export const checkUserSentence = async (params: HelperRobotCheckParams): Promise
 export const generateHelpSuggestion = async (params: Omit<HelperRobotCheckParams, 'userText'>): Promise<string> => {
   const { targetLanguage, motherLanguage, missionGoal, npcRole } = params;
 
+  const motherLangName = getLanguageName(motherLanguage);
+  const targetLangName = getLanguageName(targetLanguage);
+  
   const prompt = `You are Turi, a neutral, friendly helper robot in a language learning app.
 
-The user is practising ${targetLanguage}.
-Their native language is ${motherLanguage}.
+The user is practising ${targetLangName}.
+Their native language is ${motherLangName}.
 
 Current mission: ${missionGoal}
 The user is talking to: ${npcRole}
 
 The user clicked "help me" because they don't know what to say.
 
-Generate ONE natural, appropriate sentence in ${targetLanguage} that would help achieve the mission goal.
+Generate ONE natural, appropriate sentence in ${targetLangName} that would help achieve the mission goal.
 
-Format EXACTLY like this (no brackets around translation):
-Sentence in ${targetLanguage} [Transliteration in ${motherLanguage} script] — Translation in ${motherLanguage}
+Format EXACTLY like this:
+Sentence in ${targetLangName} [transliteration using ${motherLangName} alphabet/script] — Translation in ${motherLangName}
 
-Example: ¿Cómo te llamas? [KOH-moh teh YAH-mahs] — What's your name?
+IMPORTANT: The transliteration must use ${motherLangName} script/alphabet to approximate how the ${targetLangName} sounds, NOT English phonetics.
+
+Example for Russian speaker learning English:
+What's your name? [вотс ёр нейм] — Как вас зовут?
+
+Example for English speaker learning Spanish:
+¿Cómo te llamas? [como te yamas] — What's your name?
 
 Be concise and natural. Return only the formatted suggestion, nothing else.`;
 

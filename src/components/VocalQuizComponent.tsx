@@ -2177,7 +2177,7 @@ const VocalQuizComponent: React.FC<VocalQuizProps> = ({
             <div className="p-4 rounded-full bg-indigo-900/30 border border-indigo-800/40">
             <Loader2 className="w-12 h-12 text-indigo-400 animate-spin" />
             </div>
-            <p className="text-xl font-medium text-white">Turi is preparing your quiz...</p>
+            <p className="text-xl font-medium text-white">{getTranslation(motherLanguage, 'turiPreparingQuiz')}</p>
             <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden mt-4">
               <div className="h-full bg-gradient-to-r from-indigo-600 to-indigo-400 animate-pulse rounded-full" style={{ width: '70%' }}></div>
             </div>

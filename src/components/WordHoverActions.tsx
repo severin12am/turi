@@ -149,7 +149,7 @@ const WordHoverActions: React.FC<WordHoverActionsProps> = ({
           justifyContent: 'center',
           opacity: !isUserLoggedIn ? 0.5 : 1,
         }}
-        title={!isUserLoggedIn ? "Sign in to add words to dictionary" : "Add to dictionary"}
+        title={!isUserLoggedIn ? getTranslation(motherLanguage, 'signInToAddWords') : getTranslation(motherLanguage, 'addToDictionary')}
       >
         {isAddingToDictionary ? '⏳' : <BookMarked size={16} />}
       </button>

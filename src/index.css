@@ -230,19 +230,7 @@ select {
   position: relative;
 }
 
-.helper-robot-container:hover::after {
-  content: 'Click me!';
-  position: absolute;
-  bottom: -25px;
-  left: 50%;
-  transform: translateX(-50%);
-  background-color: rgba(0, 0, 0, 0.7);
-  color: white;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 12px;
-  white-space: nowrap;
-}
+/* Removed: Tooltip now handled in React component for translation support */
 
 /* Common app panel styling */
 @keyframes pulse-subtle {

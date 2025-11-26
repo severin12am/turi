@@ -433,7 +433,7 @@ function App() {
       // Clear language selection instructions and set to logged in mode
       setRobotInstructions({
         mode: "logged_in",
-        message: "Click me to see your progress!"
+        message: getTranslation(motherLanguage, 'clickMeToSeeProgress')
       });
       
       // Show the helper robot panel after login
@@ -468,7 +468,7 @@ function App() {
       // Clear language selection instructions and set to logged in mode
       setRobotInstructions({
         mode: "logged_in",
-        message: "Click me to see your progress!"
+        message: getTranslation(motherLanguage, 'clickMeToSeeProgress')
       });
       
       // Show the helper robot panel after creating an account
@@ -579,14 +579,14 @@ function App() {
     else if (isLoggedIn) {
       setRobotInstructions({
         mode: "logged_in",
-        message: "Click me to see your progress!"
+        message: getTranslation(motherLanguage, 'clickMeToSeeProgress')
       });
     }
     // If language is selected but not logged in
     else if (isLanguageSelected && !isLoggedIn) {
       setRobotInstructions({
         mode: "language_selected",
-        message: "Click me to create an account!"
+        message: getTranslation(motherLanguage, 'clickMeToCreateAccount')
       });
       setShowHelperRobotPanel(false);
     }
