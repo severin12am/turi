@@ -329,9 +329,9 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady, renderCharacters = true 
       position_x: 34,
       position_y: 0,
       position_z: 12.55,
-      scale_x: 1,
-      scale_y: 1,
-      scale_z: 1,
+      scale_x: 1.2,
+      scale_y: 1.2,
+      scale_z: 1.2,
       rotation_y: Math.PI * 0.5,
       is_active: true
     } as CharacterType);
@@ -343,9 +343,9 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady, renderCharacters = true 
       position_x: 64,
       position_y: -0.25,
       position_z: -47,
-      scale_x: 0.007,
-      scale_y: 0.007,
-      scale_z: 0.007,
+      scale_x: 0.011,
+      scale_y: 0.011,
+      scale_z: 0.011,
       rotation_y: Math.PI * 1.5,
       is_active: true
     } as CharacterType);
@@ -357,9 +357,9 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady, renderCharacters = true 
       position_x: -6.5,
       position_y: 0,
       position_z: -34,
-      scale_x: 0.4,
-      scale_y: 0.4,
-      scale_z: 0.4,
+      scale_x: 0.013,
+      scale_y: 0.013,
+      scale_z: 0.013,
       rotation_y: Math.PI * 0.25,
       is_active: true
     } as CharacterType);
@@ -369,11 +369,11 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady, renderCharacters = true 
       name: NPC_CHARACTERS[5].name,
       role: NPC_CHARACTERS[5].role,
       position_x: -7.25,
-      position_y: 0,
+      position_y: -0.3,
       position_z: -21,
-      scale_x: 0.7,
-      scale_y: 0.7,
-      scale_z: 0.7,
+      scale_x: 0.015,
+      scale_y: 0.015,
+      scale_z: 0.015,
       rotation_y: Math.PI * 0.8,
       is_active: true
     } as CharacterType);
@@ -399,9 +399,9 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady, renderCharacters = true 
       position_x: 2.5,
       position_y: 0,
       position_z: -6,
-      scale_x: 1.3,
-      scale_y: 1.3,
-      scale_z: 1.3,
+      scale_x: 1.5,
+      scale_y: 1.5,
+      scale_z: 1.5,
       rotation_y: Math.PI * 1,
       is_active: true
     } as CharacterType);
@@ -413,9 +413,9 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady, renderCharacters = true 
       position_x: -16,
       position_y: 0,
       position_z: -34,
-      scale_x: 0.7,
-      scale_y: 0.7,
-      scale_z: 0.7,
+      scale_x: 0.013,
+      scale_y: 0.013,
+      scale_z: 0.013,
       rotation_y: Math.PI * 1,
       is_active: true
     } as CharacterType);
@@ -441,9 +441,9 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady, renderCharacters = true 
       position_x: -14,
       position_y: 0,
       position_z: -52,
-      scale_x: 1.2,
-      scale_y: 1.2,
-      scale_z: 1.2,
+      scale_x: 0.5,
+      scale_y: 0.5,
+      scale_z: 0.5,
       rotation_y: Math.PI * 1.5,
       is_active: true
     } as CharacterType);
@@ -511,9 +511,9 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady, renderCharacters = true 
       position_x: -13,
       position_y: 0,
       position_z: -44,
-      scale_x: 0.05,
-      scale_y: 0.05,
-      scale_z: 0.05,
+      scale_x: 1.5,
+      scale_y: 1.5,
+      scale_z: 1.5,
       rotation_y: Math.PI * -0.5,
       is_active: true
     } as CharacterType);
@@ -523,12 +523,12 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady, renderCharacters = true 
       name: NPC_CHARACTERS[16].name,
       role: NPC_CHARACTERS[16].role,
       position_x: 8,
-      position_y: 0,
+      position_y: 1.05,
       position_z: 13,
-      scale_x: 0.15,
-      scale_y: 0.15,
-      scale_z: 0.15,
-      rotation_y: Math.PI * 0,
+      scale_x: 2.1,
+      scale_y: 2.1,
+      scale_z: 2.1,
+      rotation_y: Math.PI * -0.5,
       is_active: true
     } as CharacterType);
 
@@ -539,9 +539,9 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady, renderCharacters = true 
       position_x: 18.3,
       position_y: 0,
       position_z: 12,
-      scale_x: 0.006,
-      scale_y: 0.006,
-      scale_z: 0.006,
+      scale_x: 0.007,
+      scale_y: 0.007,
+      scale_z: 0.007,
       rotation_y: Math.PI * 0,
       is_active: true
     } as CharacterType);
@@ -550,12 +550,12 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady, renderCharacters = true 
       id: 18,
       name: NPC_CHARACTERS[18].name,
       role: NPC_CHARACTERS[18].role,
-      position_x: 50,
-      position_y: 1.1,
+      position_x: 51,
+      position_y: 1.2,
       position_z: -17,
-      scale_x: 0.15,
-      scale_y: 0.15,
-      scale_z: 0.15,
+      scale_x: 0.16,
+      scale_y: 0.16,
+      scale_z: 0.16,
       rotation_y: Math.PI * 0,
       is_active: true
     } as CharacterType);
@@ -581,9 +581,9 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady, renderCharacters = true 
       position_x: -4,
       position_y: 0,
       position_z: -40,
-      scale_x: 0.01,
-      scale_y: 0.01,
-      scale_z: 0.01,
+      scale_x: 1.01,
+      scale_y: 1.01,
+      scale_z: 1.01,
       rotation_y: Math.PI * -0.5,
       is_active: true
     } as CharacterType);
@@ -595,9 +595,9 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady, renderCharacters = true 
       position_x: 25,
       position_y: 0,
       position_z: -17,
-      scale_x: 1,
-      scale_y: 1,
-      scale_z: 1,
+      scale_x: 0.01,
+      scale_y: 0.01,
+      scale_z: 0.01,
       rotation_y: Math.PI * 0,
       is_active: true
     } as CharacterType);
@@ -609,9 +609,9 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady, renderCharacters = true 
       position_x: -9,
       position_y: 0,
       position_z: -91,
-      scale_x: 1.5,
-      scale_y: 1.5,
-      scale_z: 1.5,
+      scale_x: 0.5,
+      scale_y: 0.5,
+      scale_z: 0.5,
       rotation_y: Math.PI * 1,
       is_active: true
     } as CharacterType);
@@ -623,9 +623,9 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady, renderCharacters = true 
       position_x: 66,
       position_y: 0,
       position_z: -3,
-      scale_x: 0.8,
-      scale_y: 0.8,
-      scale_z: 0.8,
+      scale_x: 1.6,
+      scale_y: 1.6,
+      scale_z: 1.6,
       rotation_y: Math.PI * -0.5,
       is_active: true
     } as CharacterType);
@@ -663,12 +663,12 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady, renderCharacters = true 
       name: NPC_CHARACTERS[26].name,
       role: NPC_CHARACTERS[26].role,
       position_x: 73,
-      position_y: -0.1,
+      position_y: 0,
       position_z: -20,
-      scale_x: 0.1,
-      scale_y: 0.1,
-      scale_z: 0.1,
-      rotation_y: Math.PI * 0.5,
+      scale_x: 0.013,
+      scale_y: 0.013,
+      scale_z: 0.013,
+      rotation_y: Math.PI * -0.5,
       is_active: true
     } as CharacterType);
 
@@ -693,9 +693,9 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady, renderCharacters = true 
       position_x: -4,
       position_y: -0.2,
       position_z: -10,
-      scale_x: 1.3,
-      scale_y: 1.3,
-      scale_z: 1.3,
+      scale_x: 0.7,
+      scale_y: 0.7,
+      scale_z: 0.7,
       rotation_y: Math.PI * 1,
       is_active: true
     } as CharacterType);
@@ -719,11 +719,11 @@ const CityScene: React.FC<CitySceneProps> = ({ onReady, renderCharacters = true 
       name: NPC_CHARACTERS[30].name,
       role: NPC_CHARACTERS[30].role,
       position_x: 35,
-      position_y: 0,
+      position_y: 0.1,
       position_z: -25,
-      scale_x: 8,
-      scale_y: 8,
-      scale_z: 8,
+      scale_x: 1.4,
+      scale_y: 1.4,
+      scale_z: 1.4,
       rotation_y: Math.PI * 1,
       is_active: true
     } as CharacterType);
