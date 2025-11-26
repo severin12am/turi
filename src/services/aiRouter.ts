@@ -316,7 +316,7 @@ export async function routeTTSRequest(request: TTSRequest): Promise<string> {
   
   try {
     if (selectedConfig.provider === 'elevenlabs') {
-      const result = await callElevenLabsTTS(text, gender, selectedConfig, languageCode);
+      const result = await callElevenLabsTTS(text, gender, selectedConfig, languageCode, characterId);
       console.log(`✅ [TTS Router] Success with ELEVENLABS`);
       return result;
     } else {
@@ -414,19 +414,42 @@ async function useBrowserTTS(text: string, languageCode: string): Promise<string
 
 /**
  * Call ElevenLabs TTS
+ * Supports both single voice (legacy) and voice arrays for character-specific voices
  */
 async function callElevenLabsTTS(
   text: string,
   gender: 'male' | 'female',
   config: TTSConfig,
-  languageCode: string
+  languageCode: string,
+  characterId?: number | null
 ): Promise<string> {
-  const voiceId = gender === 'male' 
+  const voices = gender === 'male' 
     ? config.elevenLabsVoices?.male 
     : config.elevenLabsVoices?.female;
   
-  if (!voiceId) {
+  if (!voices) {
     throw new Error('ElevenLabs voice ID not configured');
+  }
+  
+  let voiceId: string;
+  
+  if (Array.isArray(voices)) {
+    // Multiple voices available - select based on character ID
+    if (characterId !== null && characterId !== undefined) {
+      // Import character voice indices from centralized voiceAssignments
+      const { CHARACTER_VOICE_INDICES } = await import('../constants/voiceAssignments');
+      const voiceIndex = CHARACTER_VOICE_INDICES[characterId] || 0;
+      voiceId = voices[voiceIndex % voices.length];
+      console.log(`🎭 [ElevenLabs] Character ${characterId} (${gender}) using voice index ${voiceIndex}: ${voiceId.substring(0, 8)}...`);
+    } else {
+      // No character ID - use first voice (for Turi/system voice)
+      voiceId = voices[0];
+      console.log(`🎭 [ElevenLabs] System voice (${gender}) using default: ${voiceId.substring(0, 8)}...`);
+    }
+  } else {
+    // Single voice (legacy support)
+    voiceId = voices;
+    console.log(`🎭 [ElevenLabs] Using legacy single voice (${gender}): ${voiceId.substring(0, 8)}...`);
   }
   
   const response = await fetch(PROVIDER_ENDPOINTS.elevenlabs_tts, {

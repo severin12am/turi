@@ -35,10 +35,10 @@ export interface ProviderConfig {
 export interface TTSConfig {
   provider: TTSProvider;
   percentage: number;
-  // ElevenLabs voice IDs (you'll need to set these from your ElevenLabs account)
+  // ElevenLabs voice IDs - supports both single voice (legacy) and voice arrays for character-specific voices
   elevenLabsVoices?: {
-    male: string;
-    female: string;
+    male: string | string[];
+    female: string | string[];
   };
 }
 
@@ -164,16 +164,31 @@ export const AI_CONFIG: Record<AITask, ProviderConfig[] | TTSConfig[]> = {
   /**
    * TTS - NPC VOICES (Character-specific voices)
    * ElevenLabs provides much better quality for mission dialogues
+   * Multiple voices per gender - each character gets their own unique voice
    */
   'tts-npc': [
     {
       provider: 'elevenlabs',
       percentage: 100,  // 100% ElevenLabs for mission dialogues - best quality
-      // Get these voice IDs from your ElevenLabs dashboard
-      // https://elevenlabs.io/app/voice-library
+      // Voice pools from ElevenLabs - each character uses CHARACTER_VOICE_INDICES to select their voice
       elevenLabsVoices: {
-        male: '21m00Tcm4TlvDq8ikWAM',      // Default male voice
-        female: 'EXAVITQu4vr4xnSDxMaL'     // Default female voice
+        male: [
+          '2EiwWnXFnvU5JabPnv8n',  // Male voice 1
+          'CwhRBWXzGAHq8TQ4Fs17',  // Male voice 2
+          'JBFqnCBsd6RMkjVDRZzb',  // Male voice 3
+          'SOYHLrjzK2X1ezoPC6cr',  // Male voice 4
+          'bIHbv24MWmeRgasZH58o',  // Male voice 5
+          'iP95p4xoKVk53GoZ742B',  // Male voice 6
+          'nPczCjzI2devNBz1zQrb',  // Male voice 7
+          'pqHfZKP75CvOlQylNhV4'   // Male voice 8
+        ],
+        female: [
+          'SAz9YHcvj6GT2YYXdXww',  // Female voice 1
+          'EXAVITQu4vr4xnSDxMaL',  // Female voice 2
+          'XrExE9yKIg1WjnnlVkGX',  // Female voice 3
+          'cgSgspJ2msm6clMCkdW9',  // Female voice 4
+          'pFZP5JQG7iQjIQuC4Bku'   // Female voice 5
+        ]
       }
     } as TTSConfig
   ] as TTSConfig[],
@@ -190,9 +205,10 @@ export const AI_CONFIG: Record<AITask, ProviderConfig[] | TTSConfig[]> = {
     {
       provider: 'elevenlabs',
       percentage: 20,
+      // For Turi system voice, use first voice from each pool
       elevenLabsVoices: {
-        male: '21m00Tcm4TlvDq8ikWAM',      // Turi voice (neutral)
-        female: 'EXAVITQu4vr4xnSDxMaL'
+        male: '2EiwWnXFnvU5JabPnv8n',      // Turi male voice
+        female: 'SAz9YHcvj6GT2YYXdXww'     // Turi female voice
       }
     } as TTSConfig
   ] as TTSConfig[]

@@ -2115,6 +2115,19 @@ Return ONLY the transliteration, nothing else.`;
         console.log('[Missions] 🔊 Playing pre-generated audio');
         npcAudio.playbackRate = playbackSpeed;
         currentAudioRef.current = npcAudio;
+        
+        // Cache the audio URL for future replays
+        if (npcAudio.src) {
+          console.log('💾 [Missions] Caching audio URL for step', npcEntry.step);
+          setConversationHistory(prev => 
+            prev.map(entry => 
+              entry.step === npcEntry.step && entry.speaker === 'NPC'
+                ? { ...entry, audioUrl: npcAudio.src }
+                : entry
+            )
+          );
+        }
+        
         await new Promise<void>((resolve, reject) => {
           npcAudio.onended = () => resolve();
           npcAudio.onerror = (e) => {
@@ -2127,7 +2140,7 @@ Return ONLY the transliteration, nothing else.`;
         });
       } else {
         console.log('[Missions] ⚠️ No audio available, falling back to standard playAudio');
-        await playAudio(npcResponse.response);
+        await playAudio(npcResponse.response, npcEntry.step);
       }
       
       // Check completion
