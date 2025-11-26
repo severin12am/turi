@@ -10,6 +10,7 @@ import HelperRobotPanel from './components/HelperRobotPanel';
 import HelperRobotInstructions from './components/HelperRobotInstructions';
 import TuriLoadingScreen from './components/TuriLoadingScreen';
 import type { SupportedLanguage } from './constants/translations';
+import { getTranslation } from './constants/translations';
 import type { AuthChangeEvent, Session } from '@supabase/supabase-js';
 import { useMobile, isMobileApp } from './hooks/useMobile';
 import { preloadTranslations } from './services/translationLoader';
