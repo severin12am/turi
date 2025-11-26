@@ -718,7 +718,7 @@ const DialogueSelectionPanel: React.FC<DialogueSelectionPanelProps> = ({
                                 </div>
                               )}
                             </div>
-                            <p className="text-white/70 text-sm">{mission.goal}</p>
+                            <p className="text-white/70 text-sm">{getTranslation(motherLanguage, `mission${mission.scenarioNumber}_${mission.missionNumber}` as any)}</p>
                           </button>
                         );
                       })}

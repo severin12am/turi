@@ -34,6 +34,7 @@ export interface TranslationStrings {
   close?: string;
   hint?: string;
   tipTitle?: string;
+  ifStuck?: string;
   
   // Login/Signup
   email?: string;
@@ -154,6 +155,8 @@ export interface TranslationStrings {
   debugAccept?: string;
   continueMyJourney?: string;
   continueButton?: string;
+  continueArrow?: string;
+  generatingSuggestion?: string;
   debugInfo?: string;
   expected?: string;
   heard?: string;
@@ -187,6 +190,9 @@ export interface TranslationStrings {
   missionDescription?: string;
   talkingTo?: string;
   start?: string;
+  speak?: string;
+  stop?: string;
+  missionInstructions?: string;
   back?: string;
   helperRobotChecking?: string;
   waitingForApproval?: string;
@@ -411,6 +417,7 @@ export const translations: Record<'en', TranslationStrings> = {
     close: 'Close',
     hint: 'Hint',
     tipTitle: 'Tip',
+    ifStuck: 'If stuck →',
     
     // Login/Signup
     email: 'Email',
@@ -533,6 +540,8 @@ export const translations: Record<'en', TranslationStrings> = {
     debugAccept: 'Debug Accept',
     continueMyJourney: 'Continue my journey',
     continueButton: 'Continue',
+    continueArrow: 'Continue →',
+    generatingSuggestion: 'Generating suggestion...',
     debugInfo: 'Debug Info',
     expected: 'Expected:',
     heard: 'Heard:',
@@ -566,6 +575,9 @@ export const translations: Record<'en', TranslationStrings> = {
     missionDescription: 'Complete specific goals through natural conversation. Turi will guide you!',
     talkingTo: 'Talking to',
     start: 'Start',
+    speak: 'Speak',
+    stop: 'Stop',
+    missionInstructions: 'Click "Help me" and I will make up a sentence for you! Or click "Speak" and start the conversation',
     back: 'Back',
     helperRobotChecking: 'Turi is checking...',
     waitingForApproval: 'Waiting for approval',

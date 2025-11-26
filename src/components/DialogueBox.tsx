@@ -1420,9 +1420,11 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
           console.log('[Missions] Initializing mission mode');
           
           // Show initial helper message with mission goal (no banner needed)
-          const initMsg = motherLanguage === 'ru' 
-            ? `Миссия: ${mission.goal}\n\nНажмите кнопку или начните говорить`
-            : `Mission: ${mission.goal}\n\nClick "Help me" and I will make up a sentence for you! Or click "Speak" and start the conversation`;
+          const missionLabel = getTranslation(motherLanguage, 'mission');
+          const missionGoalKey = `mission${mission.scenarioNumber}_${mission.missionNumber}` as any;
+          const missionGoal = getTranslation(motherLanguage, missionGoalKey) || mission.goal;
+          const instructions = getTranslation(motherLanguage, 'missionInstructions');
+          const initMsg = `${missionLabel}: ${missionGoal}\n\n${instructions}`;
           setMissionHelperMessage(initMsg);
           
           // Initialize empty conversation
@@ -1887,7 +1889,7 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
     try {
       console.log('[Missions] Help Me clicked');
       setUsedHelpInMission(true); // Track that help was used - mission won't count as completed
-      setMissionHelperMessage('Generating suggestion...');
+      setMissionHelperMessage(getTranslation(motherLanguage, 'generatingSuggestion'));
 
       const suggestion = await generateHelpSuggestion({
         targetLanguage,
@@ -4770,7 +4772,7 @@ Return ONLY the transliteration, nothing else.`;
                           marginTop: '5px'
                         }}
                       >
-                        Continue →
+                        {getTranslation(motherLanguage, 'continueArrow')}
                       </button>
                     </div>
                   )}
@@ -4789,7 +4791,7 @@ Return ONLY the transliteration, nothing else.`;
                       display: 'flex',
                       alignItems: 'center'
                     }}>
-                      If stuck →
+                      {getTranslation(motherLanguage, 'ifStuck')}
                     </span>
                   )}
                   
@@ -5016,7 +5018,7 @@ Return ONLY the transliteration, nothing else.`;
                 fontWeight: '600'
               }}
             >
-              {isListening ? 'Stop' : getTranslation(motherLanguage, 'speak')}
+              {isListening ? getTranslation(motherLanguage, 'stop') : getTranslation(motherLanguage, 'speak')}
             </button>
             
             {/* Speed Control Button */}

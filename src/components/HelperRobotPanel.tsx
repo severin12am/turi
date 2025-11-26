@@ -787,7 +787,7 @@ const HelperRobotPanel: React.FC<HelperRobotPanelProps> = ({ onClose }) => {
                                         )}
                                       </div>
                                       <p className={`text-xs ${isUnlocked ? 'text-white/80' : 'text-white/40'}`}>
-                                        {mission.goal}
+                                        {getTranslation(motherLanguage, `mission${mission.scenarioNumber}_${mission.missionNumber}` as any)}
                                       </p>
                                       <p className={`text-xs italic mt-1 ${isUnlocked ? 'text-white/60' : 'text-white/30'}`}>
                                         NPC: {mission.npcRole}
