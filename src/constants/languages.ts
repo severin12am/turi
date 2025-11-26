@@ -1,5 +1,6 @@
 import { LanguageOption } from '../types';
 
+// Limited to 12 most popular languages for mother language selection
 export const POPULAR_LANGUAGES: LanguageOption[] = [
   {
     code: 'en',
@@ -7,14 +8,14 @@ export const POPULAR_LANGUAGES: LanguageOption[] = [
     nativeName: 'English'
   },
   {
+    code: 'ru',
+    name: 'Russian',
+    nativeName: 'Русский'
+  },
+  {
     code: 'CH',
     name: 'Chinese',
     nativeName: '中文'
-  },
-  {
-    code: 'hi',
-    name: 'Hindi',
-    nativeName: 'हिंदी'
   },
   {
     code: 'es',
@@ -32,29 +33,9 @@ export const POPULAR_LANGUAGES: LanguageOption[] = [
     nativeName: 'العربية'
   },
   {
-    code: 'bn',
-    name: 'Bengali',
-    nativeName: 'বাংলা'
-  },
-  {
     code: 'pt',
     name: 'Portuguese',
     nativeName: 'Português'
-  },
-  {
-    code: 'ru',
-    name: 'Russian',
-    nativeName: 'Русский'
-  },
-  {
-    code: 'id',
-    name: 'Indonesian',
-    nativeName: 'Bahasa Indonesia'
-  },
-  {
-    code: 'ur',
-    name: 'Urdu',
-    nativeName: 'اردو'
   },
   {
     code: 'de',
@@ -67,26 +48,6 @@ export const POPULAR_LANGUAGES: LanguageOption[] = [
     nativeName: '日本語'
   },
   {
-    code: 'sw',
-    name: 'Swahili',
-    nativeName: 'Kiswahili'
-  },
-  {
-    code: 'te',
-    name: 'Telugu',
-    nativeName: 'తెలుగు'
-  },
-  {
-    code: 'mr',
-    name: 'Marathi',
-    nativeName: 'मराठी'
-  },
-  {
-    code: 'ta',
-    name: 'Tamil',
-    nativeName: 'தமிழ்'
-  },
-  {
     code: 'tr',
     name: 'Turkish',
     nativeName: 'Türkçe'
@@ -97,58 +58,8 @@ export const POPULAR_LANGUAGES: LanguageOption[] = [
     nativeName: '한국어'
   },
   {
-    code: 'vi',
-    name: 'Vietnamese',
-    nativeName: 'Tiếng Việt'
-  },
-  {
     code: 'it',
     name: 'Italian',
     nativeName: 'Italiano'
-  },
-  {
-    code: 'th',
-    name: 'Thai',
-    nativeName: 'ภาษาไทย'
-  },
-  {
-    code: 'pl',
-    name: 'Polish',
-    nativeName: 'Polski'
-  },
-  {
-    code: 'uk',
-    name: 'Ukrainian',
-    nativeName: 'Українська'
-  },
-  {
-    code: 'nl',
-    name: 'Dutch',
-    nativeName: 'Nederlands'
-  },
-  {
-    code: 'ro',
-    name: 'Romanian',
-    nativeName: 'Română'
-  },
-  {
-    code: 'el',
-    name: 'Greek',
-    nativeName: 'Ελληνικά'
-  },
-  {
-    code: 'cs',
-    name: 'Czech',
-    nativeName: 'Čeština'
-  },
-  {
-    code: 'sv',
-    name: 'Swedish',
-    nativeName: 'Svenska'
-  },
-  {
-    code: 'hu',
-    name: 'Hungarian',
-    nativeName: 'Magyar'
   }
 ]; 
