@@ -125,6 +125,7 @@ export interface TranslationStrings {
   completeDialogueFirst?: string;
   stopPlayback?: string;
   replayFullDialogue?: string;
+  playAudio?: string;
   
   // Level labels
   levelSimple?: string;
@@ -532,6 +533,7 @@ export const translations: Record<'en', TranslationStrings> = {
     completeDialogueFirst: 'Complete dialogue first',
     stopPlayback: 'Stop playback',
     replayFullDialogue: 'Replay full dialogue',
+    playAudio: 'Play audio',
     
     // Level labels
     levelSimple: 'Simple',

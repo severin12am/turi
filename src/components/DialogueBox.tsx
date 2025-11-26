@@ -4840,7 +4840,7 @@ Return ONLY the transliteration, nothing else.`;
                   <button 
                     className="sound-button"
                     onClick={() => handlePlayAudio(entry)}
-                    title="Play audio"
+                    title={getTranslation(motherLanguage, 'playAudio')}
                   >
                     🔊
                   </button>

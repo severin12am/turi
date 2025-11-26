@@ -226,28 +226,31 @@ const HelperRobot: React.FC<HelperRobotProps> = ({
   // The initial animation is handled by the mount effect above
   // The second animation is handled by handleMotherLanguageSelect
 
-  const handleMotherLanguageSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleMotherLanguageSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const lang = e.target.value;
     if (!lang) return;
     
     // Update selected language
     setSelectedMotherLang(lang);
     
-    // Start loading translations in the background (non-blocking)
+    // Load translations and wait for them (for non-English languages)
     if (lang !== 'en') {
-      loadTranslations(lang as SupportedLanguage).catch(error => {
+      try {
+        await loadTranslations(lang as SupportedLanguage);
+        console.log(`✅ Translations loaded for ${lang}`);
+      } catch (error) {
         console.error(`Failed to load translations for ${lang}:`, error);
-      });
+      }
     }
     
-    // Move to target selection immediately
+    // Move to target selection after translations are loaded
     setStep('target');
     
-    // Get text (will use cached if available, or fallback to English)
+    // Get text (now from cache with loaded translations)
     const whatToLearn = getHelperTranslation(lang, 'whatToLearn');
     const haveAccount = getHelperTranslation(lang, 'alreadyHaveAccount');
     
-    // Animate the second question immediately
+    // Animate the second question
     animateAllTexts(whatToLearn, haveAccount);
   };
 

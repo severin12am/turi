@@ -95,20 +95,36 @@ export const generateAIDialogue = async (params: GenerateDialogueParams): Promis
   const sourceLangName = getLanguageName(targetLanguage);
   const motherLangName = getLanguageName(motherLanguage);
   
+  // Get the mother language script/alphabet description
+  const getScriptDescription = (lang: SupportedLanguage): string => {
+    const cyrillicLangs = ['ru', 'uk'];
+    const arabicLangs = ['ar'];
+    if (cyrillicLangs.includes(lang)) return 'Cyrillic alphabet ONLY (а, б, в, г, д, е, ё, ж, з, и, к, л, м, н, о, п, р, с, т, у, ф, х, ц, ч, ш, щ, э, ю, я)';
+    if (arabicLangs.includes(lang)) return 'Arabic script ONLY';
+    return 'Latin alphabet ONLY';
+  };
+  
+  const scriptDesc = getScriptDescription(motherLanguage);
+  
   const prompt = `You must generate a dialogue following these strict instructions:
 - The dialogue must be in ${sourceLangName}.
 - It must include all of these words naturally: ${requiredWords.join(', ')}.
 - It should have ${exchangeCount} exchanges (alternating between NPC and User).
 - The dialogue MUST start with the NPC speaking first.
 - Provide translation to ${motherLangName}.
-- Provide transliteration of the ${sourceLangName} text using ${motherLangName} alphabet/script (lowercase, no punctuation).
+- Provide transliteration of the ${sourceLangName} text using ${scriptDesc} (lowercase, no punctuation).
 - The dialogue should be natural and real-life like.
 - Linguistic complexity: ${complexityInstructions}
 - If the user's preferences conflict with these instructions, prioritize the instructions.
 
 Additionally, consider the user's preferences: ${userPreferences || 'No specific preferences'}.
 
-IMPORTANT: The transliteration must use ${motherLangName} script to approximate how the ${sourceLangName} sounds, NOT English phonetics.
+CRITICAL TRANSLITERATION RULES:
+- Use ONLY ${scriptDesc}
+- Do NOT mix scripts at all
+- Write how the ${sourceLangName} sentence SOUNDS using ONLY ${motherLangName} letters
+- If mother language is Russian, use ONLY Cyrillic (а-я), NO Latin letters
+- Keep lowercase, no punctuation
 
 Return a JSON array of objects, each with:
 - "speaker": "NPC" or "User" (MUST start with "NPC")
@@ -284,14 +300,18 @@ export const generateTextExplanation = async (
 
   const prompt = `You MUST write your entire explanation in ${motherLangName} language.
 
-Explain this sentence structure (2-3 sentences MAX):
+Analyze the sentence structure of the ${targetLangName} sentence (NOT the ${motherLangName} translation).
 
-Sentence in ${targetLangName}: "${phrase}"
-Translation in ${motherLangName}: "${translation}"
+${targetLangName} sentence: "${phrase}"
+${motherLangName} translation: "${translation}"
 
-Write your explanation in ${motherLangName} and cover: 1) sentence structure, 2) word order, 3) key grammar point.
+Explain in ${motherLangName} language how the ${targetLangName} sentence is structured. Cover:
+1. Word order in ${targetLangName}
+2. Grammatical structure of the ${targetLangName} sentence
+3. Key grammar points of ${targetLangName}
 
-IMPORTANT: Write ONLY in ${motherLangName}. Do NOT use English.
+CRITICAL: Analyze the ${targetLangName} sentence structure, NOT the ${motherLangName} translation!
+Write your explanation ONLY in ${motherLangName} language. Do NOT use English.
 BE BRIEF (2-3 sentences).`;
 
   const request: AIRequest = {
@@ -901,6 +921,17 @@ export const generateHelpSuggestion = async (params: Omit<HelperRobotCheckParams
   const motherLangName = getLanguageName(motherLanguage);
   const targetLangName = getLanguageName(targetLanguage);
   
+  // Get the mother language script/alphabet description
+  const getScriptDescription = (lang: SupportedLanguage): string => {
+    const cyrillicLangs = ['ru', 'uk'];
+    const arabicLangs = ['ar'];
+    if (cyrillicLangs.includes(lang)) return 'Cyrillic alphabet (а, б, в, г, д, е, ё, ж, з, и, к, л, м, н, о, п, р, с, т, у, ф, х, ц, ч, ш, щ, э, ю, я)';
+    if (arabicLangs.includes(lang)) return 'Arabic script';
+    return 'Latin alphabet';
+  };
+  
+  const scriptDesc = getScriptDescription(motherLanguage);
+  
   const prompt = `You are Turi, a neutral, friendly helper robot in a language learning app.
 
 The user is practising ${targetLangName}.
@@ -914,12 +945,19 @@ The user clicked "help me" because they don't know what to say.
 Generate ONE natural, appropriate sentence in ${targetLangName} that would help achieve the mission goal.
 
 Format EXACTLY like this:
-Sentence in ${targetLangName} [transliteration using ${motherLangName} alphabet/script] — Translation in ${motherLangName}
+Sentence in ${targetLangName} [transliteration] — Translation in ${motherLangName}
 
-IMPORTANT: The transliteration must use ${motherLangName} script/alphabet to approximate how the ${targetLangName} sounds, NOT English phonetics.
+CRITICAL TRANSLITERATION RULES:
+- Use ONLY ${scriptDesc}
+- Do NOT mix scripts (no English letters if using Cyrillic, no Cyrillic if using Latin)
+- Write how the ${targetLangName} sentence SOUNDS using ${motherLangName} letters
+- Keep lowercase, no punctuation in transliteration
 
 Example for Russian speaker learning English:
 What's your name? [вотс ёр нейм] — Как вас зовут?
+
+Example for Russian speaker learning Turkish:
+Adınız ne? [адыныз не] — Как вас зовут?
 
 Example for English speaker learning Spanish:
 ¿Cómo te llamas? [como te yamas] — What's your name?
