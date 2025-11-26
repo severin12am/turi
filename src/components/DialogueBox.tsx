@@ -27,7 +27,8 @@ import {
   generateTransliteration,
   checkUserSentence,
   generateHelpSuggestion,
-  generateNPCResponse
+  generateNPCResponse,
+  getLanguageName
 } from '../services/aiService';
 
 // Helper function to remove accents/diacritics from text
@@ -1920,12 +1921,30 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
    */
   const generateTransliteration = async (text: string, fromLang: SupportedLanguage, toLangScript: SupportedLanguage): Promise<string> => {
     try {
-      const prompt = `Transliterate the following ${fromLang} text into phonetic ${toLangScript} script.
+      // Get language names
+      const fromLangName = getLanguageName(fromLang);
+      const toLangName = getLanguageName(toLangScript);
+      
+      // Get script description
+      const getScriptDescription = (lang: SupportedLanguage): string => {
+        const cyrillicLangs = ['ru', 'uk'];
+        const arabicLangs = ['ar'];
+        if (cyrillicLangs.includes(lang)) return 'Cyrillic alphabet ONLY (а-я)';
+        if (arabicLangs.includes(lang)) return 'Arabic script ONLY';
+        return 'Latin alphabet ONLY';
+      };
+      
+      const scriptDesc = getScriptDescription(toLangScript);
+      
+      const prompt = `Transliterate the following ${fromLangName} text into ${toLangName} script.
 
 Text: "${text}"
 
-Provide ONLY the phonetic transliteration using ${toLangScript} letters (lowercase, no punctuation).
-For example, Spanish "cómo te llamas" should become "koh-moh teh yah-mahs" in English phonetics.
+CRITICAL: Use ONLY ${scriptDesc}
+Write how the ${fromLangName} text SOUNDS using ONLY ${toLangName} letters (lowercase, no punctuation).
+
+Example for Russian: English "hello" becomes "хэлоу"
+Example for English: Spanish "hola" becomes "ola"
 
 Return ONLY the transliteration, nothing else.`;
 
@@ -1963,6 +1982,16 @@ Return ONLY the transliteration, nothing else.`;
    */
   const handleMissionNPCResponse = async (userText: string, recordingBlob?: Blob, speculativeNPCResponse?: any) => {
     try {
+      console.log('[Missions] 🔍 handleMissionNPCResponse called with userText:', userText, 'type:', typeof userText, 'length:', userText?.length);
+      
+      // Safety check - if userText is empty, log error and return
+      if (!userText || userText.trim() === '') {
+        console.error('[Missions] ❌ ERROR: userText is empty!');
+        console.error('[Missions] Stack trace:', new Error().stack);
+        setMissionHelperMessage('Error: No speech text received. Please try again.');
+        return;
+      }
+      
       console.log('[Missions] Sending approved text to NPC:', userText);
       setCurrentUserInput(''); // Clear unapproved input
       
@@ -2013,14 +2042,18 @@ Return ONLY the transliteration, nothing else.`;
       console.log('[Missions] NPC responded:', npcResponse.response);
       
       // 🚀 MAXIMUM PARALLELIZATION: Run ALL translations and TTS simultaneously
+      console.log('[Missions] 🌐 About to translate - userText:', userText, 'type:', typeof userText);
       const [userTranslation, npcTranslation, npcAudio] = await Promise.all([
         // User text translation (includes transliteration)
         translateWithAI({
-          sourceText: userText,
+          sourceText: userText || '',
           sourceLanguage: targetLanguage,
           targetLanguage: motherLanguage,
           motherLanguage: motherLanguage,
           includeTransliteration: true
+        }).then(result => {
+          console.log('[Missions] ✅ User translation result:', result);
+          return result;
         }),
         // NPC response translation (includes transliteration)
         translateWithAI({

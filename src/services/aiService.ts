@@ -645,7 +645,7 @@ Just output the translation.`;
 /**
  * Helper function to get full language name from code
  */
-function getLanguageName(code: SupportedLanguage): string {
+export function getLanguageName(code: SupportedLanguage): string {
   const languageNames: Record<SupportedLanguage, string> = {
     'en': 'English',
     'CH': 'Chinese',
