@@ -328,13 +328,16 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
   
   // State for enhanced word interaction features
   const [hoveredWord, setHoveredWord] = useState<string | null>(null);
-  const [selectedText, setSelectedText] = useState<string | null>(null);
-  const [selectionPosition, setSelectionPosition] = useState<{ x: number; y: number } | null>(null);
   const [showWordExplanation, setShowWordExplanation] = useState(false);
   const [currentExplanationWord, setCurrentExplanationWord] = useState<string>('');
   const [explanationData, setExplanationData] = useState<WordExplanationData | null>(null);
   const [isLoadingExplanation, setIsLoadingExplanation] = useState(false);
   const [explanationError, setExplanationError] = useState<string | null>(null);
+  
+  // State for click-to-select mode (new feature)
+  const [selectedWords, setSelectedWords] = useState<Set<string>>(new Set());
+  const [selectedWordsData, setSelectedWordsData] = useState<Map<string, string>>(new Map()); // wordKey -> actual word text
+  const persistentPanelRef = useRef<HTMLDivElement | null>(null);
   
   // State for sentence structure explanation
   const [showStructureExplanation, setShowStructureExplanation] = useState(false);
@@ -405,26 +408,46 @@ const DialogueBox: React.FC<DialogueBoxProps> = ({
       console.log('[Missions] Reset help tracking for mission:', mission.id);
     }
   }, [isMissionMode, mission?.id]);
-
-  // Handle clicks outside to clear text selection
+  
+  // Click-to-select mode: Handle clicks outside to clear selection
   useEffect(() => {
-    const handleClickOutside = () => {
-      // Clear selection when clicking anywhere (after a small delay to allow button clicks)
-      if (selectedText) {
-        setTimeout(() => {
-          const selection = window.getSelection();
-          if (!selection || selection.toString().trim() === '') {
-            clearTextSelection();
-          }
-        }, 100);
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      
+      // Don't clear if clicking inside the persistent panel or on a selectable word
+      if (
+        persistentPanelRef.current?.contains(target) ||
+        target.classList.contains('selectable-word') ||
+        target.classList.contains('selected-word')
+      ) {
+        return;
+      }
+      
+      // Clear selection
+      if (selectedWords.size > 0) {
+        console.log('🖱️ Click outside detected - clearing selection');
+        setSelectedWords(new Set());
+        setSelectedWordsData(new Map());
       }
     };
-
+    
     document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [selectedWords]);
+  
+  // Click-to-select mode: Handle Escape key to clear selection
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && selectedWords.size > 0) {
+        console.log('⌨️ Escape pressed - clearing selection');
+        setSelectedWords(new Set());
+        setSelectedWordsData(new Map());
+      }
     };
-  }, [selectedText]);
+    
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [selectedWords]);
   
   // Debug hook to track showQuiz more intensively
   useEffect(() => {
@@ -3316,6 +3339,66 @@ Return ONLY the transliteration, nothing else.`;
     // Hide the hover actions after clicking
     setHoveredWord(null);
   };
+  
+  /**
+   * Handle word click for click-to-select mode
+   * Toggle word selection - click to add, click again to remove
+   * @param wordKey Unique key for the word (cleanWord-index)
+   * @param word The actual word text
+   */
+  const handleWordClick = (wordKey: string, word: string) => {
+    console.log('🖱️ Word clicked:', word, 'key:', wordKey);
+    
+    setSelectedWords(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(wordKey)) {
+        // Word already selected - remove it
+        console.log('➖ Removing word from selection:', word);
+        newSet.delete(wordKey);
+      } else {
+        // Word not selected - add it
+        console.log('➕ Adding word to selection:', word);
+        newSet.add(wordKey);
+      }
+      return newSet;
+    });
+    
+    setSelectedWordsData(prev => {
+      const newMap = new Map(prev);
+      if (newMap.has(wordKey)) {
+        newMap.delete(wordKey);
+      } else {
+        newMap.set(wordKey, word);
+      }
+      return newMap;
+    });
+  };
+  
+  /**
+   * Clear all selected words
+   */
+  const clearWordSelection = () => {
+    console.log('🗑️ Clearing word selection');
+    setSelectedWords(new Set());
+    setSelectedWordsData(new Map());
+  };
+  
+  /**
+   * Get the combined text of all selected words
+   */
+  const getSelectedText = (): string => {
+    if (selectedWords.size === 0) return '';
+    
+    // Sort by the index (last part of wordKey after the dash) to maintain order
+    const sortedKeys = Array.from(selectedWords).sort((a, b) => {
+      const indexA = parseInt(a.split('-').pop() || '0');
+      const indexB = parseInt(b.split('-').pop() || '0');
+      return indexA - indexB;
+    });
+    
+    // Join the words
+    return sortedKeys.map(key => selectedWordsData.get(key) || '').join(' ');
+  };
 
   /**
    * Play word pronunciation using Web Speech API and spell it out
@@ -3482,155 +3565,6 @@ Return ONLY the transliteration, nothing else.`;
     setExplanationError(null);
     setIsLoadingExplanation(false);
   };
-
-  /**
-   * Handle text selection - show popup with 4 buttons when user manually selects text
-   */
-  const handleTextSelection = () => {
-    const selection = window.getSelection();
-    if (!selection || selection.rangeCount === 0) return;
-    
-    const selectedStr = selection.toString().trim();
-    
-    // Only show if there's actual text selected (not just whitespace)
-    if (selectedStr.length > 0) {
-      const range = selection.getRangeAt(0);
-      const rect = range.getBoundingClientRect();
-      
-      // Position at the end of the selection
-      setSelectedText(selectedStr);
-      setSelectionPosition({
-        x: rect.left + (rect.width / 2),
-        y: rect.top
-      });
-      
-      // Hide hover popup when selection is active
-      setHoveredWord(null);
-      
-      console.log('📝 Text selected:', selectedStr);
-    } else {
-      // Clear selection if empty
-      setSelectedText(null);
-      setSelectionPosition(null);
-    }
-  };
-
-  /**
-   * Clear text selection popup
-   */
-  const clearTextSelection = () => {
-    setSelectedText(null);
-    setSelectionPosition(null);
-  };
-
-  /**
-   * Render the 4 action buttons (reusable for both hover and selection)
-   */
-  const renderActionButtons = (word: string) => {
-    const cleanWord = word.trim().replace(/[.,?!;:¿¡]/g, '');
-    
-    return (
-      <>
-        {/* Google Search Button */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            console.log('🔍 Google search clicked for:', cleanWord);
-            searchWordInGoogle(cleanWord);
-            clearTextSelection(); // Clear selection after action
-          }}
-          style={{
-            padding: '8px',
-            border: 'none',
-            borderRadius: '6px',
-            backgroundColor: '#dbeafe',
-            color: '#1d4ed8',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-          title={getTranslation(motherLanguage, 'searchInGoogle')}
-        >
-          🔍
-        </button>
-
-        {/* Sound Button */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            console.log('🔊 Sound clicked for:', cleanWord);
-            playWordSound(cleanWord);
-            clearTextSelection(); // Clear selection after action
-          }}
-          style={{
-            padding: '8px',
-            border: 'none',
-            borderRadius: '6px',
-            backgroundColor: '#dcfce7',
-            color: '#15803d',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-          title={getTranslation(motherLanguage, 'playPronunciationTooltip')}
-        >
-          🔊
-        </button>
-
-        {/* Explanation Button */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            console.log('ℹ️ Explanation clicked for:', cleanWord);
-            handleShowWordExplanation(cleanWord);
-            clearTextSelection(); // Clear selection after action
-          }}
-          style={{
-            padding: '8px',
-            border: 'none',
-            borderRadius: '6px',
-            backgroundColor: '#fae8ff',
-            color: '#9333ea',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-          title={getTranslation(motherLanguage, 'showExplanationTooltip')}
-        >
-          ℹ️
-        </button>
-
-        {/* Add to Dictionary Button */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            console.log('📚 Add to dictionary clicked for:', cleanWord);
-            handleAddWordToDictionary(cleanWord);
-            clearTextSelection(); // Clear selection after action
-          }}
-          disabled={!user || !user.id || addingWordToDictionary === cleanWord}
-          style={{
-            padding: '8px',
-            border: 'none',
-            borderRadius: '6px',
-            backgroundColor: (!user || !user.id) ? '#f3f4f6' : '#fef3c7',
-            color: (!user || !user.id) ? '#9ca3af' : '#92400e',
-            cursor: (!user || !user.id) ? 'not-allowed' : 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            opacity: (!user || !user.id) ? 0.5 : 1,
-          }}
-          title={(!user || !user.id) ? getTranslation(motherLanguage, 'signInToAddWords') : getTranslation(motherLanguage, 'addToDictionary')}
-        >
-          {addingWordToDictionary === cleanWord ? '⏳' : '📚'}
-        </button>
-      </>
-    );
-  };
   
   /**
    * Helper function to get full language name from language code
@@ -3741,7 +3675,6 @@ Return ONLY the transliteration, nothing else.`;
         <span 
           className="selectable-phrase" 
           onMouseMove={handleMouseMove}
-          onMouseUp={handleTextSelection}
           dir={targetLanguage === 'ar' ? 'rtl' : 'ltr'}
           lang={targetLanguage}
         >
@@ -3758,22 +3691,41 @@ Return ONLY the transliteration, nothing else.`;
             // console.log('📝 Rendering word span:', word, 'with hover events'); // Debug log
             const cleanWord = word.trim().replace(/[.,?!;:¿¡]/g, '');
             const wordKey = `${cleanWord}-${index}`;
+            const isSelected = selectedWords.has(wordKey);
+            const hasAnySelection = selectedWords.size > 0;
+            
+            // Determine CSS classes based on state
+            let wordClassName = 'selectable-word';
+            if (isSelected) {
+              wordClassName += ' selected-word';
+            } else if (isHighlighted) {
+              wordClassName += ' highlighted-word';
+            }
+            
             return (
               <span 
                 key={index} 
-                className={isHighlighted ? 'highlighted-word selectable-word' : 'selectable-word'}
+                className={wordClassName}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleWordClick(wordKey, cleanWord);
+                }}
                 onMouseEnter={() => {
-                  // Only show hover if there's no active text selection
-                  if (!selectedText) {
+                  // Only enable hover if no words are selected (conflict prevention)
+                  if (!hasAnySelection) {
                     setHoveredWord(wordKey);
                   }
                 }}
-                onMouseLeave={() => setHoveredWord(null)}
+                onMouseLeave={() => {
+                  if (!hasAnySelection) {
+                    setHoveredWord(null);
+                  }
+                }}
                 style={{ position: 'relative' }}
               >
                 {word}
-                {/* Show buttons for this specific word when hovered (and no selection active) */}
-                {hoveredWord === wordKey && !selectedText && (
+                {/* Show buttons for this specific word when hovered - ONLY if no words are selected */}
+                {!hasAnySelection && hoveredWord === wordKey && (
                   <div
                     style={{
                       position: 'absolute',
@@ -3792,7 +3744,99 @@ Return ONLY the transliteration, nothing else.`;
                     onMouseEnter={() => console.log('🖱️ Entered hover actions')}
                     onMouseLeave={() => console.log('🖱️ Left hover actions')}
                   >
-                    {renderActionButtons(cleanWord)}
+                    {/* Google Search Button */}
+                                         <button
+                       onClick={(e) => {
+                         e.stopPropagation();
+                         console.log('🔍 Google search clicked for:', cleanWord);
+                         searchWordInGoogle(cleanWord);
+                       }}
+                      style={{
+                        padding: '8px',
+                        border: 'none',
+                        borderRadius: '6px',
+                        backgroundColor: '#dbeafe',
+                        color: '#1d4ed8',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                      title={getTranslation(motherLanguage, 'searchInGoogle')}
+                    >
+                      🔍
+                    </button>
+
+                    {/* Sound Button */}
+                                         <button
+                       onClick={(e) => {
+                         e.stopPropagation();
+                         console.log('🔊 Sound clicked for:', cleanWord);
+                         playWordSound(cleanWord);
+                       }}
+                      style={{
+                        padding: '8px',
+                        border: 'none',
+                        borderRadius: '6px',
+                        backgroundColor: '#dcfce7',
+                        color: '#15803d',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                      title={getTranslation(motherLanguage, 'playPronunciationTooltip')}
+                    >
+                      🔊
+                    </button>
+
+                    {/* Explanation Button */}
+                                         <button
+                       onClick={(e) => {
+                         e.stopPropagation();
+                         console.log('ℹ️ Explanation clicked for:', cleanWord);
+                         handleShowWordExplanation(cleanWord);
+                       }}
+                      style={{
+                        padding: '8px',
+                        border: 'none',
+                        borderRadius: '6px',
+                        backgroundColor: '#fae8ff',
+                        color: '#9333ea',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                      title={getTranslation(motherLanguage, 'showExplanationTooltip')}
+                    >
+                      ℹ️
+                    </button>
+
+                    {/* Add to Dictionary Button */}
+                                         <button
+                       onClick={(e) => {
+                         e.stopPropagation();
+                         console.log('📚 Add to dictionary clicked for:', cleanWord);
+                         handleAddWordToDictionary(cleanWord);
+                       }}
+                      disabled={!user || !user.id || addingWordToDictionary === cleanWord}
+                      style={{
+                        padding: '8px',
+                        border: 'none',
+                        borderRadius: '6px',
+                        backgroundColor: (!user || !user.id) ? '#f3f4f6' : '#fef3c7',
+                        color: (!user || !user.id) ? '#9ca3af' : '#92400e',
+                        cursor: (!user || !user.id) ? 'not-allowed' : 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        opacity: (!user || !user.id) ? 0.5 : 1,
+                      }}
+                      title={(!user || !user.id) ? getTranslation(motherLanguage, 'signInToAddWords') : getTranslation(motherLanguage, 'addToDictionary')}
+                    >
+                      {addingWordToDictionary === cleanWord ? '⏳' : '📚'}
+                    </button>
                   </div>
                 )}
               </span>
@@ -5358,6 +5402,121 @@ Return ONLY the transliteration, nothing else.`;
 
 
 
+        {/* Persistent Action Panel - shows when words are selected (click-to-select mode) */}
+        {selectedWords.size > 0 && (
+          <div 
+            ref={persistentPanelRef}
+            className="persistent-action-panel"
+          >
+            {/* Close button */}
+            <button
+              className="persistent-panel-close"
+              onClick={clearWordSelection}
+              title="Clear selection (Esc)"
+            >
+              ×
+            </button>
+            
+            {/* Google Search Button */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                const selectedText = getSelectedText();
+                console.log('🔍 Google search clicked for selected:', selectedText);
+                searchWordInGoogle(selectedText);
+              }}
+              style={{
+                padding: '8px',
+                border: 'none',
+                borderRadius: '6px',
+                backgroundColor: '#dbeafe',
+                color: '#1d4ed8',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+              title={getTranslation(motherLanguage, 'searchInGoogle')}
+            >
+              🔍
+            </button>
+
+            {/* Sound Button */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                const selectedText = getSelectedText();
+                console.log('🔊 Sound clicked for selected:', selectedText);
+                playWordSound(selectedText);
+              }}
+              style={{
+                padding: '8px',
+                border: 'none',
+                borderRadius: '6px',
+                backgroundColor: '#dcfce7',
+                color: '#15803d',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+              title={getTranslation(motherLanguage, 'playPronunciationTooltip')}
+            >
+              🔊
+            </button>
+
+            {/* Explanation Button */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                const selectedText = getSelectedText();
+                console.log('ℹ️ Explanation clicked for selected:', selectedText);
+                handleShowWordExplanation(selectedText);
+              }}
+              style={{
+                padding: '8px',
+                border: 'none',
+                borderRadius: '6px',
+                backgroundColor: '#fae8ff',
+                color: '#9333ea',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+              title={getTranslation(motherLanguage, 'showExplanationTooltip')}
+            >
+              ℹ️
+            </button>
+
+            {/* Add to Dictionary Button */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                const selectedText = getSelectedText();
+                console.log('📚 Add to dictionary clicked for selected:', selectedText);
+                handleAddWordToDictionary(selectedText);
+              }}
+              disabled={!user || !user.id || addingWordToDictionary === getSelectedText()}
+              style={{
+                padding: '8px',
+                border: 'none',
+                borderRadius: '6px',
+                backgroundColor: (!user || !user.id) ? '#f3f4f6' : '#fef3c7',
+                color: (!user || !user.id) ? '#9ca3af' : '#92400e',
+                cursor: (!user || !user.id) ? 'not-allowed' : 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                opacity: (!user || !user.id) ? 0.5 : 1,
+              }}
+              title={(!user || !user.id) ? getTranslation(motherLanguage, 'signInToAddWords') : getTranslation(motherLanguage, 'addToDictionary')}
+            >
+              {addingWordToDictionary === getSelectedText() ? '⏳' : '📚'}
+            </button>
+          </div>
+        )}
+
         {/* Word Explanation Modal - shows detailed word information */}
         {showWordExplanation && (
           <WordExplanationModal
@@ -5370,29 +5529,6 @@ Return ONLY the transliteration, nothing else.`;
             onClose={closeWordExplanation}
             onPlaySound={playWordSound}
           />
-        )}
-
-        {/* Text Selection Popup - shows 4 buttons when user manually selects text */}
-        {selectedText && selectionPosition && (
-          <div
-            style={{
-              position: 'fixed',
-              left: `${Math.max(80, Math.min(selectionPosition.x, window.innerWidth - 80))}px`,
-              top: `${Math.max(10, selectionPosition.y - 60)}px`,
-              transform: 'translateX(-50%)',
-              zIndex: 999999,
-              backgroundColor: 'white',
-              border: '2px solid #e5e7eb',
-              borderRadius: '8px',
-              padding: '8px',
-              display: 'flex',
-              gap: '4px',
-              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-            }}
-            onMouseLeave={clearTextSelection}
-          >
-            {renderActionButtons(selectedText)}
-          </div>
         )}
         
         {/* Sentence Structure Explanation Modal */}

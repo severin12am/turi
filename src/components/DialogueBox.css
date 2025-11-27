@@ -523,6 +523,92 @@
   box-shadow: 0 2px 4px rgba(46, 204, 113, 0.3);
 }
 
+/* Click-to-select mode: Selected word styling (stronger, persistent highlight) */
+.selected-word {
+  background-color: rgba(59, 130, 246, 0.3) !important;
+  border-radius: 3px;
+  padding: 2px 4px;
+  margin: -2px -4px;
+  font-weight: 600;
+  border: 2px solid rgba(59, 130, 246, 0.5);
+  box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.selected-word:hover {
+  background-color: rgba(59, 130, 246, 0.4) !important;
+  border-color: rgba(59, 130, 246, 0.7);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+}
+
+/* Persistent action panel for selected words */
+.persistent-action-panel {
+  position: fixed;
+  left: 50%;
+  bottom: 120px;
+  transform: translateX(-50%);
+  z-index: 1000000;
+  background-color: white;
+  border: 2px solid #3b82f6;
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  gap: 6px;
+  box-shadow: 0 8px 24px rgba(59, 130, 246, 0.25);
+  animation: slideUpFadeIn 0.25s ease-out;
+}
+
+@keyframes slideUpFadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.persistent-action-panel::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-bottom: 8px solid #3b82f6;
+}
+
+/* Close button for persistent panel */
+.persistent-panel-close {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: #ef4444;
+  color: white;
+  border: 2px solid white;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.persistent-panel-close:hover {
+  background: #dc2626;
+  transform: scale(1.1);
+}
+
 /* Word hover actions styling */
 .word-hover-actions {
   animation: fadeInScale 0.15s ease-out;
