@@ -1,579 +1,425 @@
-# Turi Language Learning
+# Turi Language Learning Platform
 
-An immersive 3D language learning platform that combines AI-powered conversations, interactive scenarios, and gamified missions to teach 30 languages through natural dialogue and contextual practice.
+**An immersive 3D language learning application combining AI-powered conversations, interactive scenarios, and gamified missions to teach 30 languages through natural dialogue and contextual practice.**
 
-## Core Concept
+---
 
-Users navigate a 3D city environment to interact with 30 unique AI-powered NPCs, each representing different real-world scenarios (greetings, shopping, travel, business, etc.). The app uses voice recognition, natural speech synthesis, and adaptive AI conversations to simulate authentic language immersion without leaving home.
+## 📋 Table of Contents
+- [Overview](#overview)
+- [Tech Stack](#tech-stack)
+- [Core Features](#core-features)
+- [Dialogue System - Complete Guide](#dialogue-system---complete-guide)
+- [Mission System](#mission-system)
+- [Quiz System](#quiz-system)
+- [Word Interaction System](#word-interaction-system)
+- [Architecture](#architecture)
+- [Setup & Development](#setup--development)
+- [Deployment](#deployment)
 
-## Technical Stack
+---
 
-**Frontend:**
-- React 18 + TypeScript
-- Three.js via React Three Fiber for 3D rendering
-- Zustand for state management
-- Tailwind CSS for styling
-- Vite for build tooling
+## Overview
 
-**3D Assets:**
-- Custom GLB models (city environment + 30 character models)
-- GSAP for animations
-- React Three Drei for 3D utilities
+Turi is a language learning platform where users navigate a 3D city environment to interact with 30 AI-powered NPCs. Each NPC represents a real-world scenario (greetings, shopping, travel, business, etc.) and provides two complementary learning experiences:
 
-**Backend Services:**
-- Supabase for PostgreSQL database, authentication, and real-time data
-- Netlify Functions for serverless API endpoints
-- Multiple AI providers via configurable router system
+1. **Scenario Dialogues** (Pre-scripted): 300 professionally-written conversations for vocabulary and pattern recognition
+2. **Mission Dialogues** (AI-powered): 150 goal-oriented conversations for active production and real-world communication
 
-**Mobile:**
-- Capacitor 5 for native Android deployment
-- Touch controls and orientation locking
-- Native haptics and splash screen
+The app uses voice recognition, neural speech synthesis, and adaptive AI to simulate authentic language immersion.
 
-## Core Dialogue Systems
+---
 
-The app features two complementary learning modes, each with distinct pedagogical approaches:
+## Tech Stack
 
-### 1. Mission Dialogues (AI-Powered, Dynamic)
+### Frontend
+- **React 18.3.1** with TypeScript 5.3.3
+- **Vite 4.4.8** for build tooling
+- **Three.js** via React Three Fiber for 3D rendering
+- **Zustand 4.5.6** for state management
+- **Tailwind CSS 3.4.1** for styling
+- **GSAP 3.12.2** for animations
 
-**Overview:** 150 goal-oriented conversations (30 scenarios × 5 missions each) where users interact with AI NPCs to achieve specific objectives.
+### Backend & Services
+- **Supabase 2.49.8** (PostgreSQL + Auth + Real-time)
+- **Netlify Functions** for serverless API endpoints
+- **AI Providers**: Google Gemini, Groq (configurable router with automatic fallbacks)
+- **TTS**: Google Cloud TTS (primary) + ElevenLabs (premium voices)
 
-**How It Works:**
-1. **Mission Assignment**: User selects a scenario (e.g., "Shopping") and a mission (e.g., "Negotiate a discount")
-2. **AI-Generated Conversation**: 
-   - User speaks/types in target language
-   - AI NPC (via Gemini/DeepSeek/Groq) responds naturally in real-time
-   - Conversation history maintained for context-aware responses
-   - NPC personality stays consistent (name, role, gender)
-3. **Goal Tracking**: AI automatically detects when user completes the mission goal
-4. **Live Assistance**: "Help Me" button provides grammar corrections and suggestions mid-conversation
-5. **Voice Recognition**: Speech-to-text converts spoken input to text
-6. **Real-Time Translation**: Each message shows original + translation + transliteration
-7. **Quiz Validation**: After conversation, user takes vocabulary quiz (≥70% required to mark mission complete)
-8. **Progressive Unlocking**: Next mission unlocks only after successful completion
+### Mobile
+- **Capacitor 5** for Android deployment
+- Touch controls with virtual joystick
+- Native haptics and splash screens
 
-**Example Mission Flow:**
-```
-Scenario 9: Shopping → Mission 3: "Get a small discount"
+---
 
-User: "Hola, ¿cuánto cuesta esta camisa?"
-NPC (Noah): "Cuesta 45 euros. ¿Te gusta?"
-User: "Sí, pero es un poco cara. ¿Hay descuento?"
-NPC (Noah): "Para ti, puedo hacer 40 euros. ¿Está bien?"
-User: "¡Perfecto! Gracias."
+## Core Features
 
-→ MISSION COMPLETE (Goal achieved: got discount)
-→ Quiz: 5 words from conversation
-→ Score ≥70% → Unlock Mission 4
-```
-
-**Technical Implementation:**
-- User input → DialogueBox component → missionNPC.ts service
-- AI prompt includes: mission goal (hidden from user), NPC role, conversation history, target language
-- Response parsing: Extract NPC message + MISSION_COMPLETE status
-- Character-specific voice synthesis (30 unique voices)
-- Translation and transliteration run in parallel for speed
-- Progress saved to `mission_completions` table
-
-### 2. Scenario Dialogues (Pre-Scripted, Structured)
-
-**Overview:** 300 professionally-written dialogues (30 scenarios × 10 dialogues each) for foundational vocabulary and sentence pattern learning.
-
-**How It Works:**
-1. **Dialogue Selection**: User chooses from 10 unlocked dialogues per scenario
-2. **Multi-Step Playback**:
-   - Each dialogue has 5-15 sequential phrases (stored in CSV files)
-   - User sees phrase in target language with translation and transliteration
-   - Audio plays automatically with character-specific voice
-   - Can replay phrase, adjust speed (0.5x-2.0x), or hide/show text
-3. **Interactive Elements**:
-   - **Word Hover**: Click any word for AI-generated definition
-   - **Full Dialogue Replay**: Repeat entire conversation
-   - **Mode Switching**: Hide target text to test comprehension
-4. **Quiz After Completion**:
-   - Automatic word extraction from dialogue text
-   - Match words against 1000-word common vocabulary database
-   - Present 5 most relevant words for testing
-   - ≥60% score required to unlock next dialogue
-5. **Progressive Unlocking**: Dialogue 2 unlocks after completing Dialogue 1, etc.
-
-**Example Scenario Dialogue:**
-```
-Scenario 1, Dialogue 3: "Meeting a Friend"
-
-Step 1 (Character speaks): "¡Hola María! ¿Cómo estás?"
-        Translation: "Hi Maria! How are you?"
-        Transliteration: "OH-lah mah-REE-ah KOH-moh ehs-TAHS"
-
-Step 2 (Character speaks): "Estoy muy bien, gracias. ¿Y tú?"
-        Translation: "I'm very well, thanks. And you?"
-        [User can click "bien" → AI explains: "good/well, adjective"]
-
-Step 3-8: [Conversation continues...]
-
-→ Dialogue ends
-→ Quiz: "estás", "gracias", "bien", "amigo", "también"
-→ Score ≥60% → Unlock Dialogue 4
-```
-
-**Technical Implementation:**
-- Content stored in `scenario_1` through `scenario_30` tables (CSV-imported)
-- Each row: `dialogue_id, dialogue_step, en_text, es_text, ru_text, ... [30 languages]`
-- DialogueBox component handles playback sequencing
-- TTS generated on-demand via Google Cloud (cached for reuse)
-- Quiz words extracted by scenarioQuiz.ts service (matches against `quiz` table)
-- Progress tracked in `language_levels.scenario_dialogue_progress`
-
-### Comparison: Mission vs Scenario Dialogues
-
-| Feature | Mission Dialogues | Scenario Dialogues |
-|---------|------------------|-------------------|
-| **Content Type** | AI-generated, dynamic | Pre-scripted, static |
-| **User Role** | Active participant | Listener/learner |
-| **Goal** | Complete specific task | Learn vocabulary/patterns |
-| **Flexibility** | Infinite conversation paths | Fixed dialogue sequence |
-| **Difficulty** | Higher (requires production) | Lower (comprehension focus) |
-| **Interactivity** | User speaks/types freely | User listens and reads |
-| **Quiz Source** | Words from conversation | Words from scripted dialogue |
-| **Unlocking** | ≥70% quiz + no help used | ≥60% quiz |
-| **Progress Tracking** | `mission_completions` | `language_levels.scenario_dialogue_progress` |
-
-### Why Both Systems?
-
-**Scenario Dialogues**: Build foundation (vocabulary recognition, sentence patterns, pronunciation)  
-**Mission Dialogues**: Apply knowledge (active production, conversation skills, goal-oriented communication)
-
-Together they create a **comprehension → production pipeline** that mirrors natural language acquisition.
-
-## Key Features
-
-### 3. Multi-Language Support (30 Languages)
-- Target languages: English, Spanish, French, German, Italian, Portuguese, Russian, Arabic, Chinese (Mandarin), Japanese, Korean, Hindi, Turkish, Polish, Ukrainian, Dutch, Romanian, Greek, Czech, Swedish, Hungarian, Bengali, Urdu, Indonesian, Vietnamese, Thai, Tamil, Telugu, Marathi, Swahili
+### 30 Language Support
+- **Languages**: English, Spanish, French, German, Italian, Portuguese, Russian, Arabic, Chinese, Japanese, Korean, Hindi, Turkish, Polish, Ukrainian, Dutch, Romanian, Greek, Czech, Swedish, Hungarian, Bengali, Urdu, Indonesian, Vietnamese, Thai, Tamil, Telugu, Marathi, Swahili
 - Dynamic UI translation based on mother language
-- Transliteration support for non-Latin scripts (Cyrillic, Arabic, Devanagari, etc.)
-- AI-powered translation fallbacks with caching
+- Transliteration for non-Latin scripts (Cyrillic, Arabic, Devanagari, etc.)
+- AI-powered translation fallbacks with client-side caching
 
-### 4. Intelligent Quiz System
-
-**Quiz Structure & Flow:**
-
-After completing any dialogue (mission or scenario), users must pass a vocabulary quiz to unlock the next content.
-
-**Word Extraction Algorithm:**
-1. System fetches all dialogue text in target language
-2. Text processing:
-   - Remove punctuation (., !, ?, etc.)
-   - Convert to lowercase
-   - Split into individual words
-   - Filter out very short words (<3 characters)
-   - Remove duplicates
-3. Match extracted words against `quiz` table (1000 most common words database)
-4. Select up to 5 matched words for testing
-
-**Quiz Question Format:**
-```javascript
-// Each quiz word becomes a multiple-choice question
-{
-  word: "gracias",           // Target language word
-  correctAnswer: "thank you", // Mother language translation
-  options: [
-    "thank you",             // Correct answer
-    "please",                // Distractor 1
-    "hello",                 // Distractor 2
-    "goodbye"                // Distractor 3
-  ]
-}
-```
-
-**Quiz Modes:**
-- **Text Mode**: User reads word and selects translation
-- **Audio Mode**: User hears word pronounced (Turi voice) and selects translation
-- **Voice Recognition** (optional): User speaks the word for pronunciation practice
-
-**Scoring & Progression:**
-- **Scenario Dialogues**: ≥60% required (3/5 correct)
-- **Mission Dialogues**: ≥70% required (4/5 correct) + must not have used "Help Me" button
-- Score saved to database (`mission_completions.score` or progress tracking)
-- Auto-complete available if no quiz words found (dialogue uses only uncommon vocabulary)
-
-**Technical Implementation:**
-```typescript
-// 1. Word Extraction (src/services/scenarioQuiz.ts)
-export const fetchScenarioQuizWords = async (
-  characterId: number,
-  dialogueId: number,
-  scenarioNumber: number,
-  targetLanguage: string,
-  motherLanguage: string
-) => {
-  // Fetch dialogue from scenario_X table
-  const dialogue = await supabase
-    .from(`scenario_${characterId}`)
-    .select('*')
-    .eq('dialogue_id', dialogueId);
-  
-  // Extract words from target language text
-  const words = extractWordsFromDialogue(dialogue.map(p => p[`${targetLanguage}_text`]));
-  
-  // Match against quiz table (1000 common words)
-  const quizWords = await supabase
-    .from('quiz')
-    .select('*')
-    .in(getLanguageColumn(targetLanguage), words)
-    .limit(5);
-  
-  return quizWords;
-};
-
-// 2. Quiz Component (src/components/VocalQuizComponent.tsx)
-const VocalQuizComponent = ({ words, onComplete }) => {
-  const [currentWordIndex, setCurrentWordIndex] = useState(0);
-  const [userAnswers, setUserAnswers] = useState([]);
-  
-  // Generate 4 answer options (1 correct + 3 distractors)
-  const options = generateOptions(words[currentWordIndex]);
-  
-  // Handle answer selection
-  const handleAnswer = (selectedOption) => {
-    const isCorrect = selectedOption === words[currentWordIndex].translation;
-    setUserAnswers([...userAnswers, isCorrect]);
-    
-    if (currentWordIndex < words.length - 1) {
-      setCurrentWordIndex(currentWordIndex + 1);
-    } else {
-      // Quiz complete - calculate score
-      const score = (userAnswers.filter(a => a).length / words.length) * 100;
-      onComplete(score);
-    }
-  };
-  
-  return (
-    <div className="quiz-container">
-      <div className="word">{words[currentWordIndex].word}</div>
-      <button onClick={() => playAudio(words[currentWordIndex].word)}>🔊</button>
-      {options.map(option => (
-        <button onClick={() => handleAnswer(option)}>{option}</button>
-      ))}
-    </div>
-  );
-};
-
-// 3. Progress Update (src/services/progress.ts)
-export const updateProgressAfterQuiz = async (score: number, quizType: 'scenario' | 'mission') => {
-  if (quizType === 'scenario' && score >= 60) {
-    // Unlock next scenario dialogue
-    await supabase
-      .from('language_levels')
-      .update({ scenario_dialogue_progress: currentProgress + 1 })
-      .eq('user_id', userId);
-  } else if (quizType === 'mission' && score >= 70 && !usedHelp) {
-    // Record mission completion
-    await supabase
-      .from('mission_completions')
-      .upsert({
-        user_id: userId,
-        scenario_number: scenarioNumber,
-        mission_number: missionNumber,
-        score: score,
-        used_help: false
-      });
-    
-    // Unlock next mission
-    await supabase
-      .from('language_levels')
-      .update({ mission_progress: currentProgress + 1 })
-      .eq('user_id', userId);
-  }
-};
-```
-
-**Distractor Generation Algorithm:**
-```typescript
-// Generate 3 incorrect options + 1 correct answer
-function generateOptions(quizWord) {
-  const correctAnswer = quizWord.translation;
-  
-  // Get 3 random words from quiz table (same language pair)
-  const distractors = getRandomWords(3, excludeWord: quizWord.id);
-  
-  // Shuffle options so correct answer isn't always first
-  const options = shuffle([correctAnswer, ...distractors.map(d => d.translation)]);
-  
-  return options;
-}
-```
-
-### 5. Voice Variety System
-- **31 unique voices**: 30 character-specific + 1 dedicated system voice (Turi)
-- Google Cloud Text-to-Speech with Neural2, WaveNet, and Chirp3-HD voices
-- Optional ElevenLabs integration for premium voices
-- Character voice consistency across all interactions (same NPC always sounds the same)
-- Gender-appropriate voice assignment per character
-
-### 6. 3D Interactive Environment
+### 3D Interactive Environment
 - Walkable city scene with 30 positioned NPCs
 - First-person camera controls (WASD + mouse)
 - Mobile touch controls with virtual joystick
 - Distance-based interaction prompts
 - Real-time coordinate tracking
 
-### 7. Progress Tracking
+### Voice Variety System
+- **31 unique voices**: 30 character-specific + 1 Turi system voice
+- Google Cloud Text-to-Speech with Neural2 and Chirp3-HD voices
+- Optional ElevenLabs integration for premium voices
+- Character voice consistency (same NPC always sounds the same)
+- Gender-appropriate voice assignment per character
+
+### Progress Tracking
 - Per-language progress persistence
 - Scenario and dialogue completion tracking
 - Mission completion history with performance metrics
 - Word count tracking (vocabulary growth)
 - Time spent learning analytics
+- Sequential unlocking system (must complete previous content to unlock next)
 
-## Architecture
+---
 
-### State Management
+## Dialogue System - Complete Guide
+
+The dialogue system is the heart of Turi, featuring two complementary modes with distinct pedagogical approaches.
+
+---
+
+### 1. Scenario Dialogues (Pre-Scripted Learning)
+
+**Purpose**: Build foundational vocabulary and sentence patterns through structured, professionally-written conversations.
+
+#### Structure
+- **300 total dialogues** (30 scenarios × 10 dialogues each)
+- Each dialogue contains 5-15 sequential phrases
+- All content stored in database tables (`scenario_1` through `scenario_30`)
+- Translations available in all 30 supported languages
+
+#### Flow Diagram
 ```
-Zustand Store (src/store/index.ts)
-├── User authentication state
-├── Language selection (mother + target)
-├── UI state (dialogs, panels, modals)
-├── Mission mode tracking
-└── Movement controls
+User selects scenario → Dialogue selection panel opens
+    ↓
+User clicks "Dialogue 1" → DialogueBox component loads
+    ↓
+Fetch dialogue from database (scenario_X table)
+    ↓
+Display phrase in 3 formats:
+├── Target language text (top): "¡Hola! Me llamo Alex."
+├── Translation (middle): "Hello! My name is Alex."
+└── Transliteration (bottom): "OH-lah may YAH-moh Alex"
+    ↓
+Generate TTS audio → Character-specific voice plays
+    ↓
+User can:
+├── 🔊 Replay phrase
+├── ⚙️ Adjust speed (0.5x, 1x, 2x)
+├── 👁️ Hide/show target text
+├── 🔍 Click any word for AI explanation
+└── ⏭️ Move to next phrase
+    ↓
+All phrases completed → Quiz triggered
+    ↓
+Quiz passed (≥60%) → Unlock next dialogue
 ```
 
-### AI Router System
+#### Key Features
+
+**1. Three-Format Display**
+- **Target Language**: The phrase user is learning (e.g., Spanish)
+- **Translation**: User's mother language for comprehension
+- **Transliteration**: Pronunciation guide for non-Latin scripts
+
+Example for Russian learner:
+```
+Привет! Как дела?
+Hello! How are you?
+pree-VYET kak dee-LAH
+```
+
+**2. Playback Controls**
 ```typescript
-// src/config/aiConfig.ts + src/services/aiRouter.ts
-Task-based AI provider selection with automatic fallbacks:
-- NPC conversations → Gemini 1.5 Flash/Pro (primary) → DeepSeek/Groq (fallback)
-- Translation → Gemini Flash (fast, cost-effective)
-- Word explanations → Gemini 1.5 Pro (high quality)
-- TTS → Google Cloud TTS (primary) → ElevenLabs (premium option)
-
-Configurable percentage distribution for load balancing
-Automatic retry with alternative models on failure
+// Available controls in DialogueBox
+{
+  replay: true,              // Replay current phrase
+  speedControl: [0.5, 1, 2], // Playback speed options
+  hideText: true,            // Test comprehension mode
+  fullReplay: true,          // Replay entire dialogue
+  stepBack: true             // Return to previous phrase
+}
 ```
 
-### Service Layer
-```
-src/services/
-├── aiRouter.ts          # AI provider selection and fallback logic
-├── aiService.ts         # High-level AI task wrappers
-├── missionNPC.ts        # Mission conversation AI
-├── gemini.ts            # Google AI integration (TTS, translation)
-├── auth.ts              # Supabase authentication
-├── progress.ts          # User progress tracking
-├── scenarioQuiz.ts      # Quiz word extraction and validation
-├── expressionExtraction.ts  # Common phrase detection
-├── translationCache.ts  # Client-side translation caching
-└── dictionary.ts        # Word definition lookup
-```
+**3. Interactive Word Exploration**
 
-### Netlify Functions (Serverless Backend)
+Users can interact with words in two modes:
 
-All AI provider API keys are secured server-side in Netlify Functions to prevent exposure in client code.
-
-**Function Architecture:**
+**Hover Mode** (Quick lookup):
 ```
-netlify/functions/
-├── AI Model Proxies (Hide API keys, add request validation)
-│   ├── gemini-proxy.js          # Gemini 1.5 Flash/Pro
-│   ├── deepseek-proxy.js        # DeepSeek alternative
-│   └── groq-proxy.js            # Groq alternative
-│
-├── Text-to-Speech
-│   ├── gemini-tts.js            # Google Cloud TTS (primary)
-│   └── elevenlabs-tts.js        # ElevenLabs premium voices
-│
-└── Specialized AI Tasks
-    ├── gemini-dialogue.js           # NPC conversation generation
-    ├── gemini-word-explanation.js   # Contextual word definitions
-    └── gemini-extract-expressions.js # Common phrase extraction
-```
-
-**Function Request/Response Flow:**
-```
-Client Request
+Hover over word → Light highlight + 4 buttons appear above
     ↓
-Netlify Function (validates request, adds auth headers)
+Available actions:
+├── 🔊 Play pronunciation (TTS)
+├── ℹ️ Show AI explanation (meaning + examples)
+├── 🔍 Search in Google
+└── 📚 Add to dictionary (requires login)
     ↓
-External AI Provider API (Gemini/DeepSeek/Groq/Google TTS)
+Mouse leaves → Highlight disappears
+```
+
+**Click-to-Select Mode** (Phrase building):
+```
+Click word → Persistent blue highlight + panel at bottom
     ↓
-Netlify Function (normalizes response format)
+Click more words → All stay highlighted
     ↓
-Client receives standardized response
+Panel shows 4 buttons for combined selection
+    ↓
+Actions work on entire phrase:
+├── 🔊 Pronounce "thank you very much"
+├── ℹ️ Explain phrase meaning
+├── 🔍 Google search phrase
+└── 📚 Save phrase to dictionary
+    ↓
+Clear: Click outside, press Escape, or click X
 ```
 
-**Security Features:**
-- API keys stored as Netlify environment variables (never in client code)
-- Request validation and sanitization
-- Rate limiting (configurable per function)
-- CORS headers properly configured
-- Error responses sanitized (no API key leakage)
+**Conflict Prevention**: Only one mode active at a time. If words are selected (click mode), hover mode is disabled.
 
-**Example Function Structure:**
-```javascript
-// netlify/functions/gemini-proxy.js
-exports.handler = async (event) => {
-  // 1. Validate request
-  if (event.httpMethod !== 'POST') return { statusCode: 405 };
-  
-  // 2. Parse request body
-  const { modelName, requestBody } = JSON.parse(event.body);
-  
-  // 3. Call external API with server-side key
-  const response = await fetch(GEMINI_API_URL, {
-    headers: { 'x-goog-api-key': process.env.GEMINI_API_KEY },
-    body: JSON.stringify(requestBody)
-  });
-  
-  // 4. Return normalized response
-  return { statusCode: 200, body: JSON.stringify(data) };
-};
+**4. Sentence Structure Explanation**
+
+Users can click a button to get AI-powered grammar analysis:
+```typescript
+Input: "¿Cómo estás hoy?"
+    ↓
+AI analyzes structure → Returns breakdown:
+{
+  structure: "Question word + verb + adverb",
+  breakdown: [
+    "¿Cómo = How (question word)",
+    "estás = you are (informal, 2nd person singular)",
+    "hoy = today (time adverb)"
+  ],
+  notes: "Inverted question marks used in Spanish"
+}
 ```
 
-## Backend Architecture
+**5. Progress Requirements**
 
-### Overview
+To unlock next dialogue:
+- Complete all phrases in current dialogue
+- Pass vocabulary quiz with ≥60% score
+- (Optional) Complete in "Hide Text" mode for mastery
 
-The backend follows a **hybrid architecture** combining:
-- **Supabase** (PostgreSQL + Auth + Real-time): User data, dialogue content, progress tracking
-- **Netlify Functions** (Serverless): AI provider proxies, API key security, business logic
-- **External AI Providers**: Gemini, DeepSeek, Groq (via router with fallbacks)
-- **Google Cloud Services**: Text-to-Speech API
-
-### Backend Components
-
-**1. Database Layer (Supabase)**
-- **Purpose**: Persistent storage for users, content, and progress
-- **Features**:
-  - Row Level Security (RLS) policies ensure users only access their data
-  - Real-time subscriptions (currently unused, available for future features)
-  - Built-in authentication with JWT tokens
-  - Automatic connection pooling and scaling
-
-**2. Serverless API Layer (Netlify Functions)**
-- **Purpose**: Secure API key management and request routing
-- **Benefits**:
-  - Zero server maintenance
-  - Automatic scaling based on demand
-  - Cold start optimization via esbuild bundling
-  - Geographic distribution (CDN edge network)
-- **Cost**: Pay-per-invocation (very cost-effective for bursty AI workloads)
-
-**3. AI Router & Fallback System**
-- **Purpose**: Intelligent provider selection and automatic failover
-- **Logic**:
-  ```
-  1. Select provider based on task + percentage configuration
-  2. Try primary model (e.g., Gemini 1.5 Flash)
-  3. If fails → Try fallback models for same provider
-  4. If all fail → Try alternative providers (DeepSeek → Groq)
-  5. If all providers fail → Return error to user
-  ```
-- **Configuration**: `src/config/aiConfig.ts` allows adjusting provider percentages per task
-
-**4. Caching Strategy**
-- **Translation Cache**: IndexedDB stores AI translations client-side (reduces API calls by ~60%)
-- **TTS Audio Cache**: MP3 files cached in browser for frequently used phrases
-- **Quiz Word Cache**: Common words stored locally to speed up quiz generation
-- **Supabase Cache**: Dialogue content cached after first fetch (30-day TTL)
-
-**5. Authentication & Authorization**
-- **Supabase Auth**: Email/password authentication with secure password hashing
-- **JWT Tokens**: Session tokens stored in localStorage with automatic refresh
-- **Anonymous Mode**: Users can try app without account (local storage fallback)
-- **RLS Policies**: Database-level security prevents cross-user data access
-
-**6. Error Handling & Resilience**
-- **Exponential Backoff**: Failed AI requests retry with increasing delays
-- **Graceful Degradation**: If TTS fails, user sees text-only dialogue
-- **Offline Support**: Cached content remains accessible without internet
-- **Error Logging**: Client-side logger service tracks errors for debugging
-
-### Request Flow Examples
-
-**Scenario Dialogue Playback:**
-```
-1. User clicks "Dialogue 3" button
-2. React component → progress.ts service checks if unlocked
-3. If unlocked → Supabase query: SELECT * FROM scenario_X WHERE dialogue_id = 3
-4. Dialogue phrases loaded → Display first phrase
-5. TTS request → aiRouter.ts selects Google TTS
-6. Netlify Function (gemini-tts.js) → Google Cloud TTS API
-7. Audio returned as base64 → Decoded → Audio element plays
-8. User clicks "Next" → Repeat for each phrase
-9. Dialogue ends → Quiz triggered (scenarioQuiz.ts)
-10. Quiz completed → progress.ts updates language_levels table
-```
-
-**Mission Conversation:**
-```
-1. User starts Mission 2 for Scenario 5
-2. DialogueBox loads mission details from constants/missions.ts
-3. User speaks into microphone → Web Speech API transcribes
-4. Transcribed text → missionNPC.ts builds AI prompt
-5. aiRouter.ts → selects Gemini 1.5 Flash (70% of time)
-6. Netlify Function (gemini-proxy.js) → Gemini API with mission context
-7. AI generates NPC response + MISSION_COMPLETE flag
-8. Response parsed → NPC text extracted
-9. TTS generated for NPC speech → Audio plays
-10. AI translation service translates both user + NPC messages
-11. Transliteration generated for non-Latin scripts
-12. All data displayed in DialogueBox with formatting
-13. User responds → Loop continues until mission complete
-14. Mission complete → Quiz → Score ≥70% + no help → Update mission_completions table
-```
-
-**AI Fallback in Action:**
-```
-User request → Gemini 1.5 Flash (fails, 500 error)
-            → Gemini 1.5 Pro (fails, rate limit)
-            → DeepSeek Chat (succeeds!) ✓
-            → Response returned to user
-            
-(Total fallback time: ~3-5 seconds)
-```
-
-## Database Schema
-
-### Supabase PostgreSQL Tables
-
-**1. Users & Authentication**
+#### Database Schema (Scenario Dialogues)
 ```sql
-CREATE TABLE users (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  email TEXT UNIQUE NOT NULL,
-  password TEXT,  -- Hashed via Supabase Auth
-  mother_language TEXT DEFAULT 'en',
-  target_language TEXT DEFAULT 'ru',
-  total_minutes INTEGER DEFAULT 0,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+-- Example: scenario_1 (Social Greetings)
+CREATE TABLE scenario_1 (
+  id BIGSERIAL PRIMARY KEY,
+  dialogue_id INTEGER,      -- Which dialogue (1-10)
+  dialogue_step INTEGER,    -- Step within dialogue (1-15)
+  
+  -- Text in all 30 languages
+  en_text TEXT,
+  es_text TEXT,
+  ru_text TEXT,
+  -- ... 27 more language columns
+  
+  UNIQUE(dialogue_id, dialogue_step)
 );
 ```
-- Stores user accounts and language preferences
-- `total_minutes` tracks cumulative learning time
-- RLS enabled: Users can only read/update their own row
 
-**2. Progress Tracking**
-```sql
-CREATE TABLE language_levels (
-  id UUID PRIMARY KEY,
-  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-  mother_language TEXT NOT NULL,
-  target_language TEXT NOT NULL,
-  scenario_progress INTEGER DEFAULT 1,           -- Current scenario (1-30)
-  scenario_dialogue_progress INTEGER DEFAULT 0,  -- Completed dialogues in current scenario
-  word_progress INTEGER DEFAULT 0,               -- Total words learned
-  mission_progress INTEGER DEFAULT 1,            -- Highest unlocked mission (1-150)
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  UNIQUE(user_id, target_language)
-);
+---
+
+### 2. Mission Dialogues (AI-Powered Conversations)
+
+**Purpose**: Apply learned vocabulary through goal-oriented, free-form conversations that simulate real-world interactions.
+
+#### Structure
+- **150 total missions** (30 scenarios × 5 missions each)
+- Each mission has a specific goal (e.g., "Get a discount", "Find out their name")
+- AI generates responses dynamically based on user input
+- No pre-scripted content - infinite conversation possibilities
+
+#### Flow Diagram
 ```
-- One row per user per target language (supports learning multiple languages)
-- `scenario_dialogue_progress`: 0-10 (reset to 0 when moving to next scenario)
-- `mission_progress`: Tracks highest unlocked mission globally
+User selects mission → Mission goal displayed
+    ↓
+Mission briefing shown (hidden from NPC):
+"Goal: Find out the person's full name"
+"NPC: Alex (Friendly Local, Male)"
+    ↓
+User has 2 input options:
+├── 1. Click "Speak" → Voice recognition (primary method)
+└── 2. Click "Help Me" → AI suggests sentence to speak
+    ↓
+User submits message → Sent to AI router
+    ↓
+AI generates NPC response:
+├── Considers: Mission goal, NPC role, conversation history
+├── Response in target language only
+└── Detects if goal achieved → Returns MISSION_COMPLETE flag
+    ↓
+Display conversation with 3 formats:
+├── User message: Target + translation + transliteration
+├── NPC response: Target + translation + transliteration
+└── TTS audio for NPC (character-specific voice)
+    ↓
+Conversation continues until:
+├── User achieves mission goal → "Task completed!" message
+└── User gives up → Can retry mission
+    ↓
+Mission complete → Quiz triggered
+    ↓
+Quiz requirements:
+├── Score ≥70% (higher than scenario dialogues)
+└── "Help Me" button NOT used during conversation
+    ↓
+Both requirements met → Next mission unlocked
+```
 
-**3. Mission Completions (Detailed History)**
+#### Key Features
+
+**1. Voice Input (Speech Recognition)**
+```typescript
+// Web Speech API integration
+const recognition = new webkitSpeechRecognition();
+recognition.lang = getRecognitionLanguage(targetLanguage); // e.g., 'es-ES'
+recognition.continuous = false;
+recognition.interimResults = false;
+
+// User clicks "Speak" button
+recognition.start();
+    ↓
+User speaks: "Hola, ¿cómo te llamas?"
+    ↓
+Recognition returns text → Auto-fills input field
+    ↓
+User reviews and clicks "Send"
+```
+
+**2. AI Help System**
+
+When user clicks "Help Me" button:
+```
+User's situation: Stuck in conversation, needs suggestion
+    ↓
+System sends to AI:
+{
+  task: 'helper-robot',
+  context: {
+    missionGoal: "Find out their name",
+    conversationHistory: ["Hola", "¡Hola! ¿Cómo estás?"],
+    targetLanguage: 'es',
+    motherLanguage: 'en'
+  }
+}
+    ↓
+AI generates contextual suggestion:
+"You could ask: ¿Cómo te llamas?"
+With translation: "What's your name?"
+    ↓
+User can:
+├── Use suggestion (mark mission as help-used)
+└── Ignore and speak their own message
+    ↓
+Note: Using help prevents mission from counting toward progress
+```
+
+**3. Mission Completion Detection**
+
+AI analyzes conversation context to detect goal achievement:
+```typescript
+// AI prompt includes hidden goal
+const prompt = `
+You are ${npcName} (${npcRole}, ${npcGender}).
+Reply in ${targetLanguage} ONLY.
+
+SECRET GOAL (user is trying to): ${missionGoal}
+DO NOT mention this goal explicitly.
+
+Conversation so far:
+${conversationHistory}
+
+User just said: "${userMessage}"
+
+Respond naturally. Then on new line write:
+MISSION_COMPLETE: true/false
+`;
+
+// AI response parsing
+const response = "Me llamo Alex Rodríguez.\nMISSION_COMPLETE: true";
+const [npcText, statusLine] = response.split('\n');
+const missionComplete = statusLine.includes('true');
+```
+
+**4. Conversation History Tracking**
+
+Full conversation preserved for context-aware responses:
+```typescript
+interface ConversationMessage {
+  role: 'user' | 'npc';
+  text: string;
+  translation?: string;
+  transliteration?: string;
+  timestamp: number;
+}
+
+// Example conversation state
+[
+  { role: 'user', text: 'Hola', translation: 'Hello' },
+  { role: 'npc', text: '¡Hola! ¿Cómo estás?', translation: 'Hello! How are you?' },
+  { role: 'user', text: '¿Cómo te llamas?', translation: "What's your name?" },
+  { role: 'npc', text: 'Me llamo Alex.', translation: 'My name is Alex.' }
+]
+```
+
+**5. Character Consistency**
+
+Each mission uses the same NPC for all 5 missions in a scenario:
+```typescript
+// Character data (from constants/characters.ts)
+{
+  id: 9,
+  name: 'Noah',
+  role: 'Shop Assistant',
+  gender: 'male',
+  scenarioNumber: 9 // Shopping scenario
+}
+
+// All 5 missions in Scenario 9 use Noah
+// Voice: Consistent male voice for Noah across all conversations
+// Personality: Same friendly shop assistant demeanor
+```
+
+**6. Progressive Unlocking**
+
+Strict sequential unlocking prevents skipping ahead:
+```typescript
+// Unlock rules
+Mission 1 of Scenario 1: Always unlocked (starting point)
+Mission 2-5 of Scenario 1: Requires previous mission completed
+Mission 1 of Scenario 2: Requires ALL 5 missions of Scenario 1 completed
+Mission 1 of Scenario 3: Requires ALL 5 missions of Scenario 2 completed
+// ... and so on
+
+// Global mission IDs (1-150)
+Scenario 1: Missions 1-5   (IDs: 1-5)
+Scenario 2: Missions 1-5   (IDs: 6-10)
+Scenario 3: Missions 1-5   (IDs: 11-15)
+// ...
+Scenario 30: Missions 1-5  (IDs: 146-150)
+```
+
+#### Mission Database Schema
 ```sql
+-- Mission completions tracking
 CREATE TABLE mission_completions (
   id BIGSERIAL PRIMARY KEY,
-  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES users(id),
   scenario_number INTEGER CHECK (scenario_number BETWEEN 1 AND 30),
   mission_number INTEGER CHECK (mission_number BETWEEN 1 AND 5),
   score INTEGER CHECK (score BETWEEN 0 AND 100),
@@ -581,720 +427,533 @@ CREATE TABLE mission_completions (
   completed_at TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE(user_id, scenario_number, mission_number)
 );
-```
-- Records every mission completion attempt
-- `used_help`: If true, mission doesn't count toward unlocking next mission
-- `UNIQUE` constraint: Only one completion record per mission (updates on retry)
 
-**4. Dialogue Content (30 Tables)**
-```sql
--- Example: scenario_1 (Social Greetings)
-CREATE TABLE scenario_1 (
-  id BIGSERIAL PRIMARY KEY,
-  dialogue_id INTEGER NOT NULL,      -- Which dialogue (1-10)
-  dialogue_step INTEGER NOT NULL,    -- Step within dialogue (1-15)
-  
-  -- Text in all 30 languages
-  en_text TEXT,
-  es_text TEXT,
-  ru_text TEXT,
-  fr_text TEXT,
-  de_text TEXT,
-  it_text TEXT,
-  pt_text TEXT,
-  ar_text TEXT,
-  ch_text TEXT,
-  ja_text TEXT,
-  ko_text TEXT,
-  hi_text TEXT,
-  tr_text TEXT,
-  pl_text TEXT,
-  uk_text TEXT,
-  nl_text TEXT,
-  ro_text TEXT,
-  el_text TEXT,
-  cs_text TEXT,
-  sv_text TEXT,
-  hu_text TEXT,
-  bn_text TEXT,
-  ur_text TEXT,
-  id_text TEXT,
-  vi_text TEXT,
-  th_text TEXT,
-  ta_text TEXT,
-  te_text TEXT,
-  mr_text TEXT,
-  sw_text TEXT
-);
-
--- Repeated for scenario_2 through scenario_30
-```
-- 30 tables total (one per scenario)
-- Each table: ~80 rows (10 dialogues × ~8 phrases each)
-- No audio URLs stored (TTS generated on-demand)
-- **Mission dialogues NOT stored** (AI-generated dynamically)
-
-**5. Quiz Vocabulary Database**
-```sql
-CREATE TABLE quiz (
-  id SERIAL PRIMARY KEY,
-  english TEXT,
-  spanish TEXT,
-  russian TEXT,
-  french TEXT,
-  german TEXT,
-  italian TEXT,
-  portuguese TEXT,
-  arabic TEXT,
-  chinese TEXT,
-  japanese TEXT,
-  -- ... 20 more language columns
+-- Progress tracking
+CREATE TABLE language_levels (
+  id UUID PRIMARY KEY,
+  user_id UUID REFERENCES users(id),
+  target_language TEXT,
+  scenario_progress INTEGER DEFAULT 1,
+  scenario_dialogue_progress INTEGER DEFAULT 0,
+  mission_progress INTEGER DEFAULT 1, -- Global mission ID (1-150)
+  word_progress INTEGER DEFAULT 0,
+  UNIQUE(user_id, target_language)
 );
 ```
-- Contains 1000 most common words in each language
-- Used to match dialogue words against known vocabulary
-- Query: `SELECT * FROM quiz WHERE spanish IN ('hola', 'gracias', 'por favor')`
-- Returns words for quiz generation
 
-**Database Size Estimates:**
-- Users: ~100 bytes per user
-- Language levels: ~200 bytes per user per language
-- Mission completions: ~50 bytes per completion
-- Scenario tables: ~80 rows × 30 languages × 100 bytes = ~240KB per scenario (7.2MB total)
-- Quiz table: 1000 rows × 30 languages × 20 bytes = ~600KB
+---
 
-**Total estimated DB size for 10,000 users:** ~50MB (very lightweight)
+### 3. Dialogue Comparison: Scenario vs Mission
 
-### Data Flow
+| Feature | Scenario Dialogues | Mission Dialogues |
+|---------|-------------------|-------------------|
+| **Content Type** | Pre-scripted, static | AI-generated, dynamic |
+| **User Role** | Listener/learner (passive) | Active participant (speaker) |
+| **Primary Goal** | Learn vocabulary patterns | Apply knowledge in conversation |
+| **Flexibility** | Fixed dialogue sequence | Infinite conversation paths |
+| **Difficulty** | Lower (comprehension) | Higher (production) |
+| **Interactivity** | Click through phrases | User speaks via voice input |
+| **Quiz Threshold** | ≥60% to unlock next | ≥70% to unlock next |
+| **Help System** | Word explanations | AI sentence suggestions |
+| **Voice Input** | Not used | Primary input method |
+| **Progress Tracking** | `scenario_dialogue_progress` | `mission_progress` + `mission_completions` |
+| **Unlocking** | Complete previous dialogue | Complete previous mission + no help used |
 
-**Scenario Dialogue Playback (Pre-Scripted):**
+---
+
+### 4. Dialogue Technical Implementation
+
+#### Component Structure
 ```
-User clicks dialogue → DialogueBox component → Supabase query
-                                                    ↓
-                                        Fetch from scenario_X table
-                                                    ↓
-Display phrase → TTS generation (Google Cloud) → Audio playback
-     ↓                                                   ↓
-Translation shown ← Cache check ← Gemini translation (if needed)
-     ↓
-Quiz triggered → Extract words → Match against quiz table → Present questions
-     ↓
-Score ≥60% → Update language_levels.scenario_dialogue_progress → Unlock next
-```
-
-**Mission Dialogue Flow (AI-Generated):**
-```
-User speaks/types → Speech recognition (if voice) → DialogueBox component
-                                                            ↓
-                                          missionNPC.ts service
-                                                            ↓
-                    Build prompt: goal + history + NPC role + target language
-                                                            ↓
-                            Netlify Function (gemini-dialogue.js)
-                                                            ↓
-                        AI Provider (Gemini/DeepSeek/Groq) with fallbacks
-                                                            ↓
-                Parse response: NPC text + MISSION_COMPLETE status
-                                    ↓                       ↓
-                Generate TTS audio                  If complete → Quiz
-                                    ↓                       ↓
-            Display with translation         Score ≥70% + no help used
-                                    ↓                       ↓
-                Add to conversation history    Update mission_completions
-                                    ↓                       ↓
-                User responds again...         Unlock next mission
+DialogueBox.tsx (5,700+ lines)
+├── Props handling (mission vs scenario mode)
+├── State management (20+ useState hooks)
+├── Database queries (Supabase)
+├── AI integration (via aiService.ts)
+├── TTS generation (character-specific voices)
+├── Speech recognition (Web Speech API)
+├── Word interaction (hover + click-to-select)
+├── Quiz integration (VocalQuizComponent)
+└── Translation/transliteration display
 ```
 
-## Application Flow (Frontend & Backend)
+#### Key State Variables
+```typescript
+// Dialogue content
+const [phrases, setPhrases] = useState<Phrase[]>([]);
+const [currentPhraseIndex, setCurrentPhraseIndex] = useState(0);
 
-### Complete User Journey: First-Time User
+// Mission mode
+const [conversationHistory, setConversationHistory] = useState<Message[]>([]);
+const [missionCompleted, setMissionCompleted] = useState(false);
+const [usedHelpInMission, setUsedHelpInMission] = useState(false);
 
-**1. App Launch & Initialization**
-```
-Browser loads index.html → Vite loads React app → main.tsx renders <App />
-                                                              ↓
-App.tsx mounts → useEffect hooks trigger:
-  - initializeModels() → Preload 30 character GLB models
-  - Supabase auth check → getSession() (5 second timeout)
-  - Mobile detection → useMobile() hook activates touch controls
-                                                              ↓
-TuriLoadingScreen component displays
-  - Animated Turi logo with pulsing circles
-  - "Loading Turi..." text with animated dots
-  - Minimum 2 second display time
-                                                              ↓
-Auth check completes:
-  - No session found → isLoading = false
-  - Check localStorage for saved user → None found
-  - needsLanguageSelection = true
-                                                              ↓
-TuriLoadingScreen fades out → Language selection screen appears
-```
+// Audio
+const [isPlaying, setIsPlaying] = useState(false);
+const [playbackSpeed, setPlaybackSpeed] = useState(1.0);
 
-**2. Language Selection Flow**
-```
-HelperRobot (3D animated character) appears top-left
-    ↓
-LanguagePanel modal opens automatically (z-index: 100)
-    ↓
-User sees two-step selection:
-  Step 1: "Select language you already know" (Mother Language)
-    - 30 flag buttons (react-flag-kit components)
-    - User clicks "English" → motherLanguage state updates
-    ↓
-  Step 2: "Select language you want to learn" (Target Language)
-    - Same 30 flags, except mother language is disabled
-    - User clicks "Spanish" → targetLanguage state updates
-    ↓
-Both selected → "Start Learning" button appears
-    ↓
-User clicks button:
-  - setLanguages('en', 'es') → Zustand store updated
-  - setIsLanguageSelected(true)
-  - preloadTranslations() → Fetch UI translations for Spanish
-  - LanguagePanel closes
-    ↓
-3D City Scene loads (CityScene component mounts)
+// Voice input
+const [isListening, setIsListening] = useState(false);
+const [transcript, setTranscript] = useState('');
+
+// Word interaction
+const [hoveredWord, setHoveredWord] = useState<string | null>(null);
+const [selectedWords, setSelectedWords] = useState<Set<string>>(new Set());
+
+// UI state
+const [showQuiz, setShowQuiz] = useState(false);
+const [hideTargetText, setHideTargetText] = useState(false);
 ```
 
-**3. 3D City Scene Initialization**
-```
-CityScene.tsx renders:
-    ↓
-React Three Fiber <Canvas> initializes WebGL context
-    ↓
-Parallel loading:
-  - CityModel.glb loads (city environment)
-  - 30 Character models preload (character1.glb → character30.glb)
-  - Supabase query: Fetch character positions from constants/characters.ts
-    ↓
-Player spawns at position (53, 1.7, 11)
-  - First-person camera attached
-  - Movement controls initialized (WASD + mouse look)
-  - Mobile: Virtual joystick appears
-    ↓
-30 NPCs render at their positions:
-  Character 1 (Alex) at (45, 0, 15) - "Social Greetings" scenario
-  Character 2 (Maya) at (52, 0, 8) - "Casual Conversations"
-  ... [28 more characters]
-    ↓
-HelperRobotInstructions appear (bottom-right):
-  "Use WASD to walk around. Click on characters to talk!"
-    ↓
-User can now move and explore
+#### AI Service Integration
+```typescript
+// All AI calls go through centralized router
+import { 
+  generateNPCResponse,      // Mission conversations
+  generateWordExplanation,  // Word definitions
+  generateTextExplanation,  // Sentence structure
+  generateHelpSuggestion,   // Mission help
+  checkUserSentence,        // Grammar checking
+  translateWithAI,          // Translation fallback
+  generateSpeech            // TTS generation
+} from '../services/aiService';
+
+// Example: Mission NPC response
+const response = await generateNPCResponse({
+  missionGoal: mission.goal,
+  npcName: character.name,
+  npcRole: mission.npcRole,
+  npcGender: character.gender,
+  targetLanguage: targetLanguage,
+  motherLanguage: motherLanguage,
+  conversationHistory: conversationHistory,
+  userMessage: userInput
+});
+
+// Router automatically:
+// 1. Selects provider (Groq 75%, Gemini 25%)
+// 2. Tries fallbacks if primary fails
+// 3. Returns structured response
 ```
 
-**4. First NPC Interaction (Scenario Dialogue)**
-```
-User walks toward Character 1 (Alex)
-    ↓
-useFrame() hook calculates distance every frame:
-  distance = √((playerX - npcX)² + (playerY - npcY)² + (playerZ - npcZ)²)
-    ↓
-When distance < 3.5 units:
-  - Interaction prompt appears above NPC: "Press E to talk with Alex"
-  - DirectionArrow component renders (green arrow pointing to NPC)
-    ↓
-User presses E or clicks NPC:
-  - DialogueSelectionPanel opens (z-index: 50)
-  - Movement disabled (setIsMovementDisabled(true))
-  - Background blurred via CSS backdrop-filter
-    ↓
-Panel shows:
-  - Character info: "Alex - Social Greetings"
-  - "Scenario Dialogues" section (10 dialogues)
-  - "Missions" section (5 missions, only Mission 1 unlocked)
-    ↓
-User clicks "Dialogue 1: First Meeting"
+#### Translation & Transliteration Flow
+```typescript
+// Parallel processing for speed
+const [translationResult, transliterationResult] = await Promise.all([
+  translateWithAI(text, targetLanguage, motherLanguage),
+  generateTransliteration(text, targetLanguage)
+]);
+
+// Display all three formats
+<div className="phrase-display">
+  <div className="target-text">{targetText}</div>
+  <div className="translation">{translationResult}</div>
+  <div className="transliteration">{transliterationResult}</div>
+</div>
 ```
 
-**5. Scenario Dialogue Playback Flow**
-```
-Frontend:
-DialogueBox component opens (replaces selection panel)
-  ↓
-Fetch dialogue data:
-  const { data } = await supabase
-    .from('scenario_1')
-    .select('*')
-    .eq('dialogue_id', 1)
-    .order('dialogue_step', 'asc');
-  
-  Returns ~8 phrases for this dialogue
-    ↓
-Display first phrase:
-  - Target language text (top): "¡Hola! Me llamo Alex."
-  - Translation (middle): "Hello! My name is Alex."
-  - Transliteration (bottom): "OH-lah may YAH-moh Alex"
-    ↓
-Backend (TTS Generation):
-  1. aiRouter.ts → routeTTSRequest({ text, language: 'es', characterId: 1 })
-  2. Selects Google Cloud TTS (90% of time) or ElevenLabs (10%)
-  3. Netlify Function (gemini-tts.js):
-      - Looks up character voice: getCharacterVoice(1, 'male', 'es-ES')
-      - Returns: "es-ES-Neural2-C"
-      - Calls Google TTS API with server-side key
-      - Returns base64 MP3 audio
-  4. Audio decoded and cached in browser
-  5. Audio plays through <audio> element
-    ↓
-User interactions available:
-  - 🔊 Replay phrase
-  - ⚙️ Adjust speed (0.5x, 1x, 2x)
-  - 👁️ Hide/show target text (test comprehension)
-  - Click any word → AI explains it
-  - ⏭️ Next phrase
-    ↓
-User clicks through all 8 phrases
-    ↓
-Dialogue ends → Quiz triggered
+#### TTS Generation
+```typescript
+// Character-specific voice selection
+const audioUrl = await generateSpeech({
+  text: phraseText,
+  language: targetLanguage,
+  characterId: characterId,
+  voiceType: 'npc', // vs 'turi' for quiz
+  gender: character.gender
+});
+
+// Audio caching
+const audio = new Audio(audioUrl);
+audio.playbackRate = playbackSpeed; // 0.5x, 1x, or 2x
+audio.play();
 ```
 
-**6. Quiz Flow**
-```
-VocalQuizComponent opens (overlays DialogueBox)
-    ↓
-Backend word extraction:
-  scenarioQuiz.ts → fetchScenarioQuizWords(1, 1, 1, 'es', 'en')
-    ↓
-  1. Fetch all dialogue text in Spanish
-  2. Extract words: ["hola", "llamo", "nombre", "gusto", "conocerte"]
-  3. Query quiz table:
-      SELECT * FROM quiz WHERE spanish IN ('hola', 'llamo', 'nombre', 'gusto', 'conocerte')
-  4. Return 5 matched words with English translations
-    ↓
-Frontend displays quiz:
-  Question 1/5: "hola"
-  [🔊 Play audio]
-  
-  Options (shuffled):
-  A) hello ✓
-  B) goodbye
-  C) thank you  
-  D) please
-    ↓
-User selects A → isCorrect = true, score = 1/5
-    ↓
-Repeat for all 5 words
-    ↓
-Final score: 4/5 (80%) → PASS (≥60% required)
-    ↓
-Backend progress update:
-  await supabase
-    .from('language_levels')
-    .update({ 
-      scenario_dialogue_progress: 1,  // Unlocks Dialogue 2
-      word_progress: currentWords + 5  // Add learned words
-    })
-    .eq('user_id', userId)
-    .eq('target_language', 'es');
-    ↓
-Success message: "¡Bien hecho! Dialogue 2 unlocked!"
-    ↓
-DialogueBox closes → Back to DialogueSelectionPanel
-  (Dialogue 2 now shows unlocked icon)
+---
+
+## Quiz System
+
+After completing any dialogue (scenario or mission), users must pass a vocabulary quiz to unlock the next content.
+
+### Word Extraction Algorithm
+```typescript
+// 1. Fetch all dialogue text in target language
+const dialogueText = phrases.map(p => p[`${targetLanguage}_text`]).join(' ');
+
+// 2. Process text
+const words = dialogueText
+  .toLowerCase()
+  .replace(/[.,!?;:()"""''']/g, '') // Remove punctuation
+  .split(/\s+/) // Split by whitespace
+  .filter(word => word.length >= 3) // Filter short words
+  .filter((word, index, self) => self.indexOf(word) === index); // Remove duplicates
+
+// 3. Match against quiz database (1000 common words)
+const { data: quizWords } = await supabase
+  .from('quiz')
+  .select('*')
+  .in(getLanguageColumn(targetLanguage), words)
+  .limit(5);
+
+// 4. If < 5 words found, auto-complete dialogue
+if (quizWords.length < 5) {
+  markDialogueComplete();
+  unlockNext();
+}
 ```
 
-**7. First Mission Interaction (AI-Powered)**
-```
-User clicks "Mission 1: Find out the person's full name"
-    ↓
-DialogueBox opens in MISSION MODE
-  - Shows mission goal at top
-  - "Help Me" button visible (grammar assistance)
-  - Text input + microphone button
-  - Empty conversation history
-    ↓
-User clicks microphone icon 🎤
-  - Web Speech API starts: recognition.start()
-  - "Listening..." indicator pulses
-  - User says: "Hola, ¿cómo te llamas?"
-  - Speech recognition returns text
-    ↓
-Text appears in input field
-  - Auto-translation shown below: "Hello, what's your name?"
-  - "Send" button enabled
-    ↓
-User clicks Send
+### Quiz Question Format
+```typescript
+interface QuizQuestion {
+  word: string;           // "gracias"
+  correctAnswer: string;  // "thank you"
+  options: string[];      // ["thank you", "please", "hello", "goodbye"]
+}
+
+// Generate distractors from random quiz words
+function generateOptions(correctWord: QuizWord): string[] {
+  const distractors = getRandomWords(3, { exclude: correctWord.id });
+  const options = [
+    correctWord[motherLanguage], // Correct answer
+    ...distractors.map(d => d[motherLanguage])
+  ];
+  return shuffle(options);
+}
 ```
 
-**8. Mission AI Conversation Flow**
-```
-Frontend → Backend:
-  handleMissionNPCResponse(userText: "Hola, ¿cómo te llamas?")
-    ↓
-  missionNPC.ts → generateNPCResponse({
-    targetLanguage: 'es',
-    motherLanguage: 'en',
-    missionGoal: "Find out the person's full name",
-    npcRole: "a friendly person you just met",
-    npcName: "Alex",
-    npcGender: "male",
-    conversationHistory: [],
-    userLatestMessage: "Hola, ¿cómo te llamas?"
-  });
-    ↓
-  aiRouter.ts → routeAIRequest({
-    task: 'npc-response',
-    prompt: `You are Alex (a friendly person, male). Reply in Spanish ONLY.
-    
-    Learner's goal (secret): "Find out the person's full name"
-    
-    Learner: "Hola, ¿cómo te llamas?"
-    
-    Reply with 1-2 SHORT sentences in Spanish.
-    Then on new line: MISSION_COMPLETE: true or false.`
-  });
-    ↓
-  Provider selection: Gemini 1.5 Flash (selected)
-    ↓
-  Netlify Function (gemini-proxy.js):
-    POST to https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent
-    Headers: { 'x-goog-api-key': process.env.GEMINI_API_KEY }
-    ↓
-  Gemini responds:
-    "Me llamo Alex Rodríguez. ¿Y tú?
-    MISSION_COMPLETE: true"
-    ↓
-  Response parsed:
-    - npcResponse = "Me llamo Alex Rodríguez. ¿Y tú?"
-    - missionCompleted = true (user got full name!)
-    ↓
-Backend → Frontend:
-  Return { response, missionCompleted }
-    ↓
-Frontend parallel processing:
-  Promise.all([
-    translateWithAI(npcResponse, 'es', 'en'),  // "My name is Alex Rodriguez. And you?"
-    generateTransliteration(npcResponse, 'es') // "may YAH-moh Alex ro-DREE-gess ee too"
-  ]);
-    ↓
-  routeTTSRequest({ text: npcResponse, characterId: 1, gender: 'male' })
-  → Google TTS generates audio → Plays
-    ↓
-Display NPC message in conversation:
-  [NPC Avatar] Alex:
-  "Me llamo Alex Rodríguez. ¿Y tú?"
-  Translation: "My name is Alex Rodriguez. And you?"
-  Transliteration: "may YAH-moh..."
-    ↓
-Mission complete detected!
-  - Success animation plays
-  - "Mission Complete! Now take the quiz." message
-  - Quiz button appears
-```
+### Quiz Modes
+1. **Text Mode**: User reads word and selects translation
+2. **Audio Mode**: User hears word (Turi voice) and selects translation
+3. **Voice Recognition** (optional): User speaks the word for pronunciation practice
 
-**9. Mission Quiz & Unlocking**
-```
-User clicks "Take Quiz"
-    ↓
-Extract words from conversation:
-  - User said: "Hola, ¿cómo te llamas?"
-  - NPC said: "Me llamo Alex Rodríguez. ¿Y tú?"
-  - Combined words: ["hola", "cómo", "llamas", "llamo", "rodríguez"]
-  - Match against quiz table → 4 words found
-    ↓
-Quiz displays 4 questions (70% threshold = 3/4 correct required)
-    ↓
-User completes quiz: 4/4 (100%) → PASS
-    ↓
-Backend checks mission completion criteria:
-  if (score >= 70 && !usedHelpButton) {
-    // Record completion
-    await supabase.from('mission_completions').upsert({
-      user_id: userId,
-      scenario_number: 1,
-      mission_number: 1,
-      score: 100,
-      used_help: false,
-      completed_at: new Date()
-    });
-    
-    // Unlock next mission
-    await supabase.from('language_levels').update({
-      mission_progress: 2  // Unlock Mission 2
-    });
-  }
-    ↓
-Success screen:
-  "🎉 Mission 1 Complete! Mission 2 Unlocked"
-  - Stats: 100% quiz, No help used
-  - +50 XP, +4 words learned
-    ↓
-Return to MissionSelectionPanel
-  - Mission 1: ✓ Complete (green checkmark)
-  - Mission 2: 🔓 Unlocked (clickable)
-  - Mission 3-5: 🔒 Locked (grayed out)
-```
+### Scoring Rules
 
-**10. Helper Robot Panel Flow (Progress Tracking)**
-```
-User clicks HelperRobot (Turi) in top-left corner
-    ↓
-HelperRobotPanel opens (center screen, z-index: 40)
-    ↓
-Fetch user progress:
-  const { data } = await supabase
-    .from('language_levels')
-    .select('*')
-    .eq('user_id', userId)
-    .eq('target_language', 'es')
-    .single();
-    ↓
-Display progress visualization:
-  - Scenario Progress: 1/30 (3%)
-  - Dialogues Completed: 1/10 in current scenario
-  - Missions Completed: 1/150 (0.7%)
-  - Words Learned: 9 words
-  - Time Spent: 12 minutes
-  - Learning Streak: 1 day
-    ↓
-Tabs available:
-  - Progress: Current stats
-  - Achievements: Badges earned
-  - Settings: Change languages, audio settings
-  - Logout: End session
-```
+**Scenario Dialogues**:
+- ≥60% required (3/5 correct)
+- Can retry incorrectly answered questions
+- Passing score: Eventually answer all questions correctly
 
-### Component Interaction Diagram
-
-```
-App.tsx (Root)
-├── TuriLoadingScreen (initial load)
-├── LoginForm (authentication)
-├── HelperRobot (always visible)
-│   └── Opens: HelperRobotPanel
-│       └── Shows: ProgressVisualization
-├── CityScene (Three.js)
-│   ├── CityModel.glb
-│   ├── Player (camera + controls)
-│   │   ├── WASD movement (desktop)
-│   │   └── MobileControls (touch devices)
-│   ├── Character × 30 (NPCs)
-│   │   └── DirectionArrow (when near)
-│   └── Triggers: DialogueSelectionPanel
-├── DialogueSelectionPanel
-│   ├── Shows: Available dialogues & missions
-│   └── Opens: DialogueBox
-├── DialogueBox (Scenario Mode)
-│   ├── Displays: Phrase text + translation
-│   ├── Plays: TTS audio
-│   ├── WordHoverActions (click words for definitions)
-│   └── Triggers: VocalQuizComponent
-├── DialogueBox (Mission Mode)
-│   ├── Voice input (Web Speech API)
-│   ├── Text input
-│   ├── Conversation history
-│   ├── "Help Me" button → Shows corrections
-│   └── Triggers: VocalQuizComponent
-└── VocalQuizComponent
-    ├── Displays: Multiple choice questions
-    ├── Plays: Word audio (Turi voice)
-    └── Completes: Updates progress → Unlocks content
-```
-
-### State Management Flow (Zustand)
+**Mission Dialogues**:
+- ≥70% required (4/5 correct)
+- Can retry incorrectly answered questions
+- Additional requirement: "Help Me" button NOT used during conversation
+- Passing score: Eventually answer all questions correctly + no help used
 
 ```typescript
-// Global state updates trigger component re-renders
-
-User action → Component → Store action → State updates → Components re-render
-
-Examples:
-1. Language selection:
-   LanguageSelector → setLanguages('en', 'es') → motherLanguage/targetLanguage update
-                   → App re-renders with city scene
-
-2. Dialogue opens:
-   Character click → setIsDialogueOpen(true) → isDialogueOpen = true
-                  → DialogueBox renders, Player movement disabled
-
-3. Mission mode:
-   Mission click → setMissionMode(true) → isMissionMode = true
-                → DialogueBox switches to mission UI
-
-4. Quiz active:
-   Quiz starts → setIsQuizActive(true) → isQuizActive = true
-              → HelperRobotInstructions show quiz tips
+// Mission completion logic
+if (score >= 70 && !usedHelpInMission) {
+    await supabase.from('mission_completions').upsert({
+      user_id: userId,
+    scenario_number: scenarioNumber,
+    mission_number: missionNumber,
+    score: Math.round(score),
+    used_help: false
+  });
+  
+    await supabase.from('language_levels').update({
+    mission_progress: currentProgress + 1
+  });
+  
+  showSuccessMessage();
+  unlockNextMission();
+} else if (usedHelpInMission) {
+  showMessage("Mission not counted - you used help. Try again!");
+}
 ```
 
-### Error Handling Flow
+---
 
+## Word Interaction System
+
+Two non-conflicting modes for word exploration during dialogues.
+
+### Mode 1: Hover (Quick Lookup)
 ```
-API Call Fails
+User action: Hover mouse over word
     ↓
-try/catch in service layer
+Light highlight appears
+4 buttons show above word:
+├── 🔊 Play pronunciation
+├── ℹ️ AI explanation
+├── 🔍 Google search
+└── 📚 Save to dictionary
     ↓
-Log error: logger.error('AI request failed', { error, context })
-    ↓
-Check if fallback available:
-  - AI providers → Try next provider
-  - TTS → Show text-only mode
-  - Translation → Use cached translation
-  - Database → Use localStorage backup
-    ↓
-If all fallbacks fail:
-  - Show user-friendly error message
-  - Offer retry button
-  - Don't crash app
-    ↓
-User clicks retry → Attempt request again
+User clicks button → Action executes
+Mouse leaves → Everything disappears
 ```
 
-## Content Structure
-
-### 30 Scenarios with Dual Learning Paths
-Each of the 30 scenarios provides two complementary learning experiences:
-
-**Path 1: Scenario Dialogues (Pre-Scripted)**
-- 10 dialogues per scenario = **300 total dialogues**
-- Professionally written, translated to 30 languages
-- Stored in CSV format → imported to database tables `scenario_1` through `scenario_30`
-- Each dialogue: 5-15 sequential phrases with translations and audio
-- Focus: Vocabulary acquisition and pattern recognition
-
-**Path 2: Mission Dialogues (AI-Generated)**
-- 5 missions per scenario = **150 total missions**
-- Dynamic, goal-oriented conversations
-- AI generates responses on-demand based on user input
-- No pre-written content (infinite conversational possibilities)
-- Focus: Active production and real-world communication
-
-**Thematic Progression:**
+### Mode 2: Click-to-Select (Phrase Building)
 ```
-Scenario 1: Social Greetings
-  ├── 10 scripted dialogues (listening practice)
-  └── 5 missions (speaking practice)
-      - Mission 1: Get person's name
-      - Mission 2: Find out where they're from
-      - Mission 3: Learn their occupation
-      - Mission 4: Discover their hobby
-      - Mission 5: Exchange phone numbers
-
-Scenario 9: Shopping
-  ├── 10 scripted dialogues
-  └── 5 missions
-      - Mission 3: Negotiate a discount ← AI dynamically responds
-
-Scenario 30: Farewells
-  ├── 10 scripted dialogues
-  └── 5 missions
-      - Mission 5: Say proper goodbye
+User action: Click on "thank"
+    ↓
+Blue persistent highlight with border
+Panel appears at bottom with 4 buttons
+    ↓
+User clicks "you" → Both words highlighted
+User clicks "very" → Three words highlighted
+    ↓
+Panel actions work on combined text "thank you very"
+    ↓
+User presses Escape → Selection clears
 ```
 
-## AI Integration
+### Conflict Prevention
+```typescript
+const hasAnySelection = selectedWords.size > 0;
 
-### Multi-Provider Strategy
-**Primary:** Google Gemini (1.5 Flash/Pro) - fast, reliable, multilingual  
-**Secondary:** DeepSeek (cost-effective alternative)  
-**Tertiary:** Groq (high-speed inference fallback)  
+// In word rendering
+onMouseEnter={() => {
+  if (!hasAnySelection) { // Hover disabled when selection exists
+    setHoveredWord(wordKey);
+  }
+}}
 
-### AI Tasks
-1. **NPC Conversation Generation** - Context-aware responses that track mission completion
-2. **Translation** - Source ↔ Target with transliteration for non-Latin scripts
-3. **Word Explanations** - Contextual definitions in user's mother language
-4. **Expression Extraction** - Identify common phrases from dialogue text
-5. **Grammar Checking** - "Help Me" feature for sentence correction
+// Only one panel renders at a time
+{!hasAnySelection && hoveredWord && <HoverPanel />}
+{hasAnySelection && <PersistentPanel />}
+```
 
-### Safety & Rate Limiting
-- Client-side rate limiting (1 req/sec for translation, 1 req/2sec for AI dialogue)
-- API key protection via Netlify Functions
-- Configurable safety thresholds for content filtering
-- Exponential backoff on provider failures
+---
 
-## Development & Deployment
+## Architecture
 
-### Local Development
+### State Management (Zustand)
+```typescript
+interface UserState {
+  // Auth
+  user: User | null;
+  isLoggedIn: boolean;
+  isAuthenticated: boolean;
+  
+  // Languages
+  motherLanguage: SupportedLanguage;
+  targetLanguage: SupportedLanguage;
+  isLanguageSelected: boolean;
+  
+  // UI
+  isHelperRobotOpen: boolean;
+  isDialogueOpen: boolean;
+  isQuizActive: boolean;
+  isMovementDisabled: boolean;
+  
+  // Progress
+  languageLevel: LanguageLevel | null;
+  
+  // Instructions
+  instructionType: InstructionType;
+  showInstructions: boolean;
+  
+  // Mission mode
+  isMissionMode: boolean;
+}
+```
+
+### AI Router System
+```typescript
+// Task-based provider selection with automatic fallbacks
+const AI_CONFIG = {
+  'npc-response': [
+    { provider: 'groq', percentage: 100, model: 'llama-3.3-70b-versatile' }
+  ],
+  'word-explanation': [
+    { provider: 'gemini', percentage: 60, model: 'gemini-2.5-flash-lite' },
+    { provider: 'groq', percentage: 40, model: 'llama-3.3-70b-versatile' }
+  ],
+  'translation': [
+    { provider: 'gemini', percentage: 70, model: 'gemini-2.5-flash-lite' },
+    { provider: 'groq', percentage: 30, model: 'llama-3.3-70b-versatile' }
+  ],
+  'tts-npc': [
+    { provider: 'elevenlabs', percentage: 100 }
+  ],
+  'tts-turi': [
+    { provider: 'google', percentage: 80 },
+    { provider: 'elevenlabs', percentage: 20 }
+  ]
+};
+
+// Automatic fallback chain
+Groq → Gemini → Browser TTS (for TTS failures)
+```
+
+### Service Layer Architecture
+```
+src/services/
+├── aiRouter.ts          # Provider selection & fallback logic
+├── aiService.ts         # High-level AI task wrappers
+├── auth.ts              # Supabase authentication
+├── progress.ts          # User progress tracking
+├── scenarioQuiz.ts      # Quiz word extraction
+├── translationCache.ts  # Client-side caching
+├── translationFallback.ts # Database fallback
+├── translationLoader.ts # UI translation loading
+├── dictionary.ts        # User dictionary management
+├── security.ts          # Input validation & rate limiting
+├── supabase.ts          # Database client
+├── logger.ts            # Event logging
+└── version.ts           # App version tracking
+```
+
+### Database Schema
+```sql
+-- Core tables
+users (id, email, mother_language, target_language, total_minutes)
+language_levels (user_id, target_language, scenario_progress, mission_progress, word_progress)
+mission_completions (user_id, scenario_number, mission_number, score, used_help)
+
+-- Content tables (30 tables)
+scenario_1 to scenario_30 (dialogue_id, dialogue_step, en_text, es_text, ru_text, ...)
+
+-- Quiz database
+quiz (id, english, spanish, russian, french, ...)
+```
+
+---
+
+## Setup & Development
+
+### Prerequisites
+- Node.js 18+
+- npm or yarn
+- Supabase account
+- Netlify account (for deployment)
+
+### Environment Variables
+```bash
+# .env
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_ANON_KEY=your_anon_key
+
+# Netlify environment variables (server-side)
+GOOGLE_CLOUD_API_KEY=your_google_key
+GEMINI_API_KEY=your_gemini_key
+GROQ_API_KEY=your_groq_key
+ELEVENLABS_API_KEY=your_elevenlabs_key (optional)
+```
+
+### Installation
 ```bash
 npm install
-npm run dev          # Start Vite dev server (localhost:5173)
+npm run dev  # Start development server on localhost:5173
 ```
 
-### Production Build
+### Build
 ```bash
-npm run build        # Builds to /dist
+npm run build  # Builds to /dist
+npm run preview  # Preview production build
 ```
 
-### Mobile Build
+### Mobile Build (Android)
 ```bash
-npm run build:mobile      # Production build for Capacitor
-npm run mobile:sync       # Sync web assets to Android
-npm run mobile:run        # Run on Android device/emulator
+npm run build
+npx cap sync android
+npx cap run android
 ```
 
-### Deployment (Netlify)
-- Automatic deploys from `main` branch
-- Environment variables configured in Netlify dashboard
-- Serverless functions deployed automatically
-- SPA routing via `netlify.toml` redirects
+---
 
-### Environment Variables Required
+## Deployment
+
+### Netlify Deployment
+```bash
+# netlify.toml
+[build]
+  command = "npm run build"
+  publish = "dist"
+  functions = "netlify/functions"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
 ```
-VITE_SUPABASE_URL=
-VITE_SUPABASE_ANON_KEY=
-GOOGLE_CLOUD_API_KEY=           # For TTS
-GEMINI_API_KEY=                 # For AI conversations
-DEEPSEEK_API_KEY=               # (Optional) fallback provider
-GROQ_API_KEY=                   # (Optional) fallback provider
-ELEVENLABS_API_KEY=             # (Optional) premium TTS
-```
 
-## Security Features
+### Environment Setup
+1. Create Netlify site
+2. Connect GitHub repository
+3. Add environment variables in Netlify dashboard
+4. Push to main branch → Automatic deployment
 
-1. **API Key Protection**: All AI provider keys stored server-side in Netlify Functions
-2. **Row Level Security**: Supabase RLS policies ensure users only access their own data
-3. **Anonymous Mode**: Allows usage without authentication (local storage fallback)
-4. **Content Safety**: Configurable AI safety filters for inappropriate content
-5. **HTTPS Only**: Enforced via Netlify and Capacitor Android config
+---
 
 ## Performance Optimizations
 
-- **Translation Caching**: Client-side IndexedDB cache reduces redundant API calls
-- **Model Preloading**: All 30 character GLB models preloaded on app init
-- **Audio Caching**: TTS responses cached to avoid regeneration
+- **Translation Caching**: IndexedDB reduces API calls by ~60%
+- **Model Preloading**: All 30 character GLB models preloaded on init
+- **Audio Caching**: TTS responses cached in browser
 - **Lazy Loading**: Dialogue data fetched on-demand per scenario
-- **Parallel AI Requests**: Translation and transliteration run concurrently
-- **CDN Delivery**: Static assets served via Netlify Edge network
+- **Parallel AI Requests**: Translation + transliteration run concurrently
+- **Vendor Chunk Splitting**: React, Three.js, and Supabase in separate bundles
+- **CDN Delivery**: Static assets via Netlify Edge network
 
-## Browser/Platform Support
+---
+
+## Security Features
+
+1. **API Key Protection**: All AI provider keys secured server-side via Netlify Functions
+2. **Row Level Security**: Supabase RLS ensures users only access their own data
+3. **Anonymous Mode**: Local storage fallback when authentication unavailable
+4. **Input Validation**: XSS and SQL injection prevention
+5. **Rate Limiting**: 60 requests/minute, 1000/hour per user
+6. **Session Management**: Automatic refresh with secure JWT tokens
+
+---
+
+## Browser Support
 
 - **Web**: Chrome, Firefox, Safari, Edge (latest 2 versions)
-- **Mobile**: Android 7.0+ (via Capacitor)
+- **Mobile**: Android 7.0+ via Capacitor
 - **iOS**: Supported via Capacitor (build configuration present)
 - **WebGL Required**: For 3D rendering
+- **Speech Recognition**: Chrome/Edge (best support), limited on Firefox/Safari
+
+---
 
 ## Known Limitations
 
 - Mission AI requires stable internet connection
 - Voice recognition accuracy varies by accent/microphone quality
-- Some languages have fewer TTS voice options (3-4 vs 13+ for English)
-- 3D scene performance dependent on GPU (mobile devices may experience frame drops)
+- Some languages have fewer TTS voice options
+- 3D scene performance dependent on GPU (mobile may experience frame drops)
+- Transliteration only generated for select languages
+
+---
 
 ## Project Structure
-
 ```
 Turi-Beta/
 ├── src/
-│   ├── components/          # React components (dialogue, panels, UI)
-│   ├── scenes/              # Three.js 3D scenes (City, Character, HelperRobot)
-│   ├── services/            # Business logic (AI, auth, progress tracking)
-│   ├── config/              # Configuration (AI providers, security)
-│   ├── constants/           # Static data (characters, scenarios, languages, voices)
-│   ├── hooks/               # React hooks (useMobile, useTranslations)
-│   ├── store/               # Zustand state management
-│   ├── types/               # TypeScript interfaces
-│   └── data/csv/            # Dialogue content (300 CSV files)
-├── netlify/functions/       # Serverless API endpoints
-├── public/models/           # 3D assets (city.glb + 30 character models)
-├── android/                 # Capacitor Android project
-└── dist/                    # Production build output
+│   ├── components/          # 23 React components
+│   │   ├── DialogueBox.tsx  # Main dialogue component (5,700+ lines)
+│   │   ├── VocalQuizComponent.tsx
+│   │   ├── MissionSelectionPanel.tsx
+│   │   └── ...
+│   ├── scenes/              # Three.js 3D scenes
+│   │   ├── City.tsx
+│   │   ├── Character.tsx
+│   │   └── HelperRobotModel.tsx
+│   ├── services/            # Business logic (14 files)
+│   ├── config/              # Configuration
+│   ├── constants/           # Static data (30 languages, 150 missions)
+│   ├── hooks/               # React hooks
+│   ├── store/               # Zustand state
+│   └── types/               # TypeScript interfaces
+├── netlify/functions/       # 9 serverless API endpoints
+├── public/models/           # 31 GLB 3D models
+├── dist/                    # Production build
+└── android/                 # Capacitor Android project
 ```
+
+---
 
 ## License
 
-[Add your license information here]
+[Add your license here]
+
+---
 
 ## Credits
 
-Built with React, Three.js, Supabase, and Google AI.
+Built with React, Three.js, Supabase, Google AI, and Groq.
 
+**Developed in November 2025**
