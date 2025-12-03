@@ -222,26 +222,32 @@ function buildProviderRequestBody(
     
     case 'deepseek':
       return {
-        model: model,
-        messages: [{
-          role: 'user',
-          content: prompt
-        }],
-        temperature: generationConfig?.temperature || 0.7,
-        max_tokens: generationConfig?.maxOutputTokens || 1024,
-        top_p: generationConfig?.topP || 0.95
+        modelName: model,
+        requestBody: {
+          model: model,
+          messages: [{
+            role: 'user',
+            content: prompt
+          }],
+          temperature: generationConfig?.temperature || 0.7,
+          max_tokens: generationConfig?.maxOutputTokens || 1024,
+          top_p: generationConfig?.topP || 0.95
+        }
       };
     
     case 'groq':
       return {
-        model: model,
-        messages: [{
-          role: 'user',
-          content: prompt
-        }],
-        temperature: generationConfig?.temperature || 0.7,
-        max_tokens: generationConfig?.maxOutputTokens || 1024,
-        top_p: generationConfig?.topP || 0.95
+        modelName: model,
+        requestBody: {
+          model: model,
+          messages: [{
+            role: 'user',
+            content: prompt
+          }],
+          temperature: generationConfig?.temperature || 0.7,
+          max_tokens: generationConfig?.maxOutputTokens || 1024,
+          top_p: generationConfig?.topP || 0.95
+        }
       };
     
     default:

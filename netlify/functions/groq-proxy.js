@@ -23,16 +23,16 @@ export async function handler(event) {
 
   try {
     // Parse the request body
-    const requestBody = JSON.parse(event.body);
-    
-    if (!requestBody.model || !requestBody.messages) {
+    const { modelName, requestBody } = JSON.parse(event.body);
+
+    if (!modelName || !requestBody) {
       return {
         statusCode: 400,
-        body: JSON.stringify({ error: 'Missing model or messages in request' })
+        body: JSON.stringify({ error: 'Missing modelName or requestBody' })
       };
     }
-    
-    console.log('[Groq] Making request with model:', requestBody.model);
+
+    console.log('[Groq] Making request with model:', modelName);
     
     // Forward the request to Groq API
     // Groq uses OpenAI-compatible API format
